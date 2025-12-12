@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLPL OrgPortal</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Light Theme Defaults */
+            --bg-body: #F4F5F9;
+            --bg-card: #FFFFFF;
+            --bg-sidebar: #FFFFFF;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+            --primary-accent: #5B5CEB;
+            --primary-light: #EEF2FF;
+            --success: #10B981;
+            --success-light: #D1FAE5;
+            --warning: #F59E0B;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --sidebar-width: 260px;
+        }
+
+        body.dark-mode {
+            --bg-body: #1F2029;
+            --bg-card: #252836;
+            --bg-sidebar: #252836;
+            --text-primary: #FFFFFF;
+            --text-secondary: #9CA3AF;
+            --border-color: #374151;
+            --primary-accent: #6366F1;
+            --primary-light: rgba(99, 102, 241, 0.1);
+            --success: #34D399;
+            --success-light: rgba(52, 211, 153, 0.1);
+            --warning: #FBBF24;
+            --card-shadow: none;
+        }
+
+        * {
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* --- UTILITIES --- */
+        .hidden {
+            display: none !important;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .gap-2 {
+            gap: 8px;
+        }
+
+        .gap-4 {
+            gap: 16px;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        /* --- ICONS (SVG) --- */
+        .icon {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+            stroke: currentColor;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* --- LAYOUT --- */
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            transition: background 0.3s;
+            z-index: 20;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 40px;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: var(--primary-light);
+            color: var(--primary-accent);
+        }
+
+        .support-card {
+            background: var(--primary-light);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-top: auto;
+        }
+
+        .support-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-accent);
+            margin-bottom: 4px;
+        }
+
+        .support-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .btn-support {
+            background: var(--primary-accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn-support:hover {
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Top Header */
+        .top-header {
+            height: 70px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            transition: background 0.3s;
+        }
+
+        .breadcrumbs {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .breadcrumbs span {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .date-picker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-body);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-body);
+            color: var(--primary-accent);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-left: 20px;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Dashboard Area */
+        .dashboard-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .fade-enter {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            /* 4 Columns */
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        /* Full Width for Tables/Tree */
+        .grid-full {
+            grid-column: span 4;
+        }
+
+        .grid-half {
+            grid-column: span 2;
+        }
+
+        /* Metric Card */
+        .metric-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--primary-light);
+            color: var(--primary-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .metric-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .metric-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge-up {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        /* Chart Card */
+        .chart-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            min-height: 320px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* CSS Bar Chart */
+        .bar-chart-container {
+            flex: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 20px;
+            position: relative;
+        }
+
+        .bar-group {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 40px;
+            background: linear-gradient(180deg, var(--primary-accent) 0%, rgba(91, 92, 235, 0.6) 100%);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.6s ease;
+            min-height: 4px;
+        }
+
+        .bar-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* Table Card */
+        .table-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 16px;
+            font-size: 14px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .status-pending {
+            background: var(--primary-light);
+            color: var(--primary-accent);
+        }
+
+        /* Login Overlay */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-body);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s;
+        }
+
+        .login-box {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-accent);
+            color: white;
+            box-shadow: 0 4px 10px rgba(91, 92, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-body);
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-body);
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        /* TOAST NOTIFICATION */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            padding: 12px 24px;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-primary);
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 200;
+        }
+
+        #toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        #toast svg {
+            color: var(--success);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* --- SEARCH BAR --- */
+        .search-container {
+            position: relative;
+            width: 300px;
+            margin-right: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-body);
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px var(--primary-light);
+            background: var(--bg-card);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            width: 16px;
+            height: 16px;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            z-index: 50;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .search-results.visible {
+            display: block;
+        }
+
+        .search-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:hover {
+            background: var(--bg-body);
+        }
+
+        /* --- BRANCH DETAILS MODAL --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 150;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-container {
+            background: var(--bg-body);
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+            background: var(--bg-card);
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-body);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        .form-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .form-input::placeholder {
+            color: #9CA3AF;
+        }
+
+        /* Helpers for Grid Layout */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .grid-2-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .target-row {
+            margin-bottom: 16px;
+        }
+
+        .target-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .modal-footer {
+            padding: 20px 32px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-card);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 1. SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+        <div class="brand">
+            <img src="logo.png" alt="NLPL" style="height:32px; width:auto; border-radius:4px;">
+            <span style="font-size:18px;">NLPL</span>
+        </div>
+
+        <div class="nav-menu">
+            <a href="#" class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Dashboard
+            </a>
+            <a href="#" class="nav-item" id="nav-hierarchy" onclick="switchTab('hierarchy')">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Detailed View
+            </a>
+            <a href="#" class="nav-item" id="nav-settings" onclick="switchTab('settings')">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+                Settings
+            </a>
+            <a href="#" class="nav-item" id="nav-logout" onclick="handleLogout()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Sign Out
+            </a>
+        </div>
+
+        <div class="support-card">
+            <div class="support-title">Need Help?</div>
+            <div class="support-text">Check our documentation or contact support.</div>
+            <button class="btn-support" onclick="showToast('Support Ticket Created!', 'check')">Get Support</button>
+        </div>
+    </nav>
+
+    <!-- 2. MAIN CONTENT -->
+    <main class="main-content">
+
+        <!-- HEADER -->
+        <header class="top-header">
+            <div class="breadcrumbs" id="breadcrumbs">
+                Home / <span>Dashboard</span>
+            </div>
+
+            <div class="header-actions">
+                <div class="search-container">
+                    <svg class="icon search-icon" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="Jump to Branch..."
+                        oninput="handleSearch(this.value)" onfocus="handleSearch(this.value)">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+
+                <div class="date-picker">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:16px; height:16px;">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <span id="headerDate">FY 2024-25</span>
+                </div>
+
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+
+                <div class="user-profile">
+                    <div class="avatar" id="headerAvatar">C</div>
+                    <div class="user-info">
+                        <span class="user-name" id="headerName">CEO User</span>
+                        <span class="user-role" id="headerRole">Administrator</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD CONTAINER -->
+        <div class="dashboard-container" id="dashboard-container">
+            <!-- Injected by JS -->
+        </div>
+
+    </main>
+
+    <!-- 3. LOGIN OVERLAY -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <div class="brand" style="justify-content:center; margin-bottom:20px;">
+                <img src="logo.png" alt="NLPL" style="height:40px; width:auto;">
+            </div>
+
+            <h1 class="login-title">Welcome Back</h1>
+            <p class="login-subtitle">Enter your credentials to access the portal.</p>
+
+            <div style="text-align:left; margin-bottom: 24px;">
+                <button class="btn btn-primary" onclick="handleLogin('CEO')" style="margin-bottom: 16px;">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Login as Headquarters (CEO)
+                </button>
+
+                <div style="display:flex; align-items:center; gap:10px; margin: 16px 0;">
+                    <div style="height:1px; background:var(--border-color); flex:1;"></div>
+                    <span style="font-size:12px; color:var(--text-secondary);">OR REGIONAL ACCESS</span>
+                    <div style="height:1px; background:var(--border-color); flex:1;"></div>
+                </div>
+
+                <select id="dmSelect">
+                    <option value="" disabled selected>Select Manager Name...</option>
+                    <!-- Injected Options -->
+                </select>
+
+                <button class="btn btn-outline" onclick="handleLogin('DM')">
+                    Login as District Manager
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST ELEMENT -->
+    <div id="toast">
+        <svg class="icon" viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span id="toastMsg">Action Successful</span>
+    </div>
+
+
+    <!-- BRANCH DETAILS MODAL -->
+    <div class="modal-overlay" id="branchModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title" id="modalBranchTitle">Branch Details</div>
+                <button class="modal-close" onclick="closeBranchModal()">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- LEFT COLUMN -->
+                <div class="left-panel">
+
+                    <!-- Row 1 -->
+                    <div class="grid-2-col">
+                        <div class="form-section">
+                            <div class="form-section-title">FTOD - ACCOUNTS</div>
+                            <div class="form-row">
+                                <label class="form-label">Actual FTOD Account</label>
+                                <input class="form-input" id="ftod_actual" placeholder="Actual FTOD Account">
+                            </div>
+                            <div class="form-row">
+                                <label class="form-label">FTOD Collection Plan</label>
+                                <input class="form-input" id="ftod_plan" placeholder="FTOD Collection Plan">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="form-section-title">NOV-25 SLIPPED ACCOUNT</div>
+                            <div class="form-row">
+                                <label class="form-label">Actual Account</label>
+                                <input class="form-input" id="lived_actual" placeholder="Actual Account">
+                            </div>
+                            <div class="form-row">
+                                <label class="form-label">Collection Plan</label>
+                                <input class="form-input" id="lived_plan" placeholder="Collection Plan">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2 -->
+                    <div class="grid-2-col">
+                        <div class="form-section">
+                            <div class="form-section-title">PNPA ACCOUNTS</div>
+                            <div class="form-row">
+                                <label class="form-label">Actual PNPA Account</label>
+                                <input class="form-input" id="pnpa_actual" placeholder="Actual PNPA Account">
+                            </div>
+                            <div class="form-row">
+                                <label class="form-label">PNPA Collection Plan</label>
+                                <input class="form-input" id="pnpa_plan" placeholder="PNPA Collection Plan">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="form-section-title">NPA ACCOUNTS</div>
+                            <div class="form-row">
+                                <label class="form-label">NPA ACTIVATION</label>
+                                <input class="form-input" id="npa_activation" placeholder="NPA ACTIVATION">
+                            </div>
+                            <div class="form-row">
+                                <label class="form-label">NPA CLOSURE</label>
+                                <input class="form-input" id="npa_closure" placeholder="NPA CLOSURE">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3 -->
+                    <div class="form-section">
+                        <div class="form-section-title">FY 25-26 Accounts</div>
+                        <div class="grid-2-col">
+                            <div>
+                                <div class="form-row">
+                                    <label class="form-label">TOTAL OD ACCOUNTS</label>
+                                    <input class="form-input" id="fy_od_acc" placeholder="TOTAL OD ACCOUNTS">
+                                </div>
+                                <div class="form-row">
+                                    <label class="form-label">COLLECTION PLAN</label>
+                                    <input class="form-input" id="fy_od_plan" placeholder="COLLECTION PLAN">
+                                </div>
+                            </div>
+                            <div>
+                                <div class="form-row">
+                                    <label class="form-label">NON-STARTER ACCOUNTS</label>
+                                    <input class="form-input" id="fy_non_start_acc" placeholder="NON-STARTER ACCOUNTS">
+                                </div>
+                                <div class="form-row">
+                                    <label class="form-label">COLLECTION PLAN</label>
+                                    <input class="form-input" id="fy_non_start_plan" placeholder="COLLECTION PLAN">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT COLUMN -->
+                <div class="right-panel">
+
+                    <div class="form-section">
+                        <div class="form-section-title"
+                            style="text-align:left; display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" checked disabled> Disbursement Targets
+                        </div>
+
+                        <div class="target-row">
+                            <div class="target-header">
+                                <span>Sanction Pending (Accounts)</span>
+                                <span>Target: 0</span>
+                            </div>
+                            <input class="form-input" id="disb_sanc_pent_acc" placeholder="Enter achievement...">
+                        </div>
+
+                        <div class="target-row">
+                            <div class="target-header">
+                                <span>Sanction Pending (Amount)</span>
+                                <span>Target: 0</span>
+                            </div>
+                            <input class="form-input" id="disb_sanc_pent_amt" placeholder="Enter achievement...">
+                        </div>
+
+                        <div class="target-row">
+                            <div class="target-header">
+                                <span>IGL & FIG (Accounts)</span>
+                                <span>Target: 0</span>
+                            </div>
+                            <input class="form-input" id="disb_igl_acc" placeholder="Enter achievement...">
+                        </div>
+
+                        <div class="target-row">
+                            <div class="target-header">
+                                <span>IGL & FIG (Amount)</span>
+                                <span>Target: 0</span>
+                            </div>
+                            <input class="form-input" id="disb_igl_amt" placeholder="Enter achievement...">
+                        </div>
+
+                        <div class="target-row">
+                            <div class="target-header">
+                                <span>JL (Accounts)</span>
+                                <span>Target: 0</span>
+                            </div>
+                            <input class="form-input" id="disb_jl_acc" placeholder="Enter achievement...">
+                        </div>
+
+                        <div class="target-row">
+                            <div class="target-header">
+                                <span>JL (Amount)</span>
+                                <span>Target: 0</span>
+                            </div>
+                            <input class="form-input" id="disb_jl_amt" placeholder="Enter achievement...">
+                        </div>
+
+                        <textarea class="form-input" id="disb_notes" rows="3" style="width:100%;"
+                            placeholder="Additional Notes..."></textarea>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">KYC SOURCING</div>
+
+                        <div class="form-row">
+                            <label class="form-label">FIG AND IGL</label>
+                            <input class="form-input" id="kyc_fig_igl" placeholder="TOTAL OD ACCOUNTS">
+                        </div>
+
+                        <div class="form-row">
+                            <label class="form-label">IL</label>
+                            <input class="form-input" id="kyc_il" placeholder="COLLECTION PLAN">
+                        </div>
+
+                        <div class="form-row">
+                            <label class="form-label">NPA</label>
+                            <input class="form-input" id="kyc_npa" placeholder="COLLECTION PLAN">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" style="width:auto;" onclick="closeBranchModal()">Cancel</button>
+                <button class="btn btn-primary" style="width:auto; background: #4B5563;"
+                    onclick="saveBranchDetails(false)">Save & Close</button>
+                <button class="btn btn-primary" style="width:auto;" onclick="saveBranchDetails(true)">Save & Next Branch
+                    →</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // --- SUPABASE CONFIG ---
+        const SUPABASE_URL = 'https://zovnmmdfthpbubrorsgh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpvdm5tbWRmdGhwYnVicm9yc2doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NzE3ODgsImV4cCI6MjA3NzE0Nzc4OH0.92BH2sjUOgkw6iSRj1_4gt0p3eThg3QT4VK-Q4EdmBE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // --- DATA & STATE ---
+        const defaultTSVData = `Branch	District	DM name	Region	
+KADIRI	KADAPA	PUTTA PRASAD	ANDRA PRADESH	
+DHARMAVARAM	KADAPA	PUTTA PRASAD	ANDRA PRADESH	
+BUDWAL	KADAPA	PUTTA PRASAD	ANDRA PRADESH	
+KADAPA	KADAPA	PUTTA PRASAD	ANDRA PRADESH	
+KUDLIGI	KUDLIGI	A B MANJUNATHA	DHARWAD 	
+KHANAHOSAHALLI	KUDLIGI	A B MANJUNATHA	DHARWAD 	
+HARAPANAHALLI	KUDLIGI	A B MANJUNATHA	DHARWAD 	
+KOTTURU	KUDLIGI	A B MANJUNATHA	DHARWAD 	
+ SANDURU 	BALLARI	BAIRAPPA	DHARWAD 	
+SIRUGUPPA	BALLARI	BAIRAPPA	DHARWAD 	
+BALLARI	BALLARI	BAIRAPPA	DHARWAD 	
+KUDATHINI	BALLARI	BAIRAPPA	DHARWAD 	
+NARAGUNDA	BADAMI	BASAVARAJAPPA	DHARWAD 	
+BADAMI	BADAMI	BASAVARAJAPPA	DHARWAD 	
+GAJENDRAGAD	BADAMI	BASAVARAJAPPA	DHARWAD 	
+RAMDURGA	BADAMI	BASAVARAJAPPA	DHARWAD 	
+GADAG	GADAG	CHANDRAGOUD PATIL	DHARWAD 	
+LAXMESHWAR	GADAG	CHANDRAGOUD PATIL	DHARWAD 	
+MUNDARAGI	GADAG	CHANDRAGOUD PATIL	DHARWAD 	
+HARIHARA	DAVANAGERE	DAMODHARA	DHARWAD 	
+SANTHEBENNURU	DAVANAGERE	DAMODHARA	DHARWAD 	
+HONNALI	DAVANAGERE	DAMODHARA	DHARWAD 	
+DAVANAGERE	DAVANAGERE	DAMODHARA	DHARWAD 	
+DHARWAD	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	
+KALGHATGI	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	
+HUBLI-2	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	
+HUBLI	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	
+GOKAK	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
+KITTUR	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
+BAILHONGAL	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
+BELAGAVI	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
+YARAGATTI	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
+HAGARIBOMMANAHALLI	VIJAYANAGARA	PAVANKUMAR SHERKHANE	DHARWAD 	
+HUVENAHADAGALLI	VIJAYANAGARA	PAVANKUMAR SHERKHANE	DHARWAD 	
+HOSPET	VIJAYANAGARA	PAVANKUMAR SHERKHANE	DHARWAD 	
+CHIKKODI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	
+NIPPANI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	
+MUDALAGI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	
+ATHANI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	
+LOKAPUR	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	
+JAMAKHANDI	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	
+BILAGI	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	
+BAGALKOT	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	
+TALIKOTI	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
+SINDAGI	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
+MUDDEBIHAL	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
+TIKOTA	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
+VIJAYAPUR	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
+HUMNABAD	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	
+KAMALAPURA	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	
+HULSOOR	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	
+BASAVAKALYAN	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	
+BHALKI	BIDAR	MANOHAR	KALBURGI 	
+AURAD	BIDAR	MANOHAR	KALBURGI 	
+BIDAR-2	BIDAR	MANOHAR	KALBURGI 	
+BIDAR	BIDAR	MANOHAR	KALBURGI 	
+SIRWAR	LINGSUGUR	PANDARIGONDA	KALBURGI 	
+LINGSUGUR	LINGSUGUR	PANDARIGONDA	KALBURGI 	
+MANVI	LINGSUGUR	PANDARIGONDA	KALBURGI 	
+RAICHUR	LINGSUGUR	PANDARIGONDA	KALBURGI 	
+SINDHNUR	LINGSUGUR	PANDARIGONDA	KALBURGI 	
+SEDAM	SEDAM	PHILIP	KALBURGI 	
+CHINCHOLI	SEDAM	PHILIP	KALBURGI 	
+YADGIR	SEDAM	PHILIP	KALBURGI 	
+KALAGI	SEDAM	PHILIP	KALBURGI 	
+JEVARGI	KALBURGI	PRASHANTH	KALBURGI 	
+KALABURAGI	KALBURGI	PRASHANTH	KALBURGI 	
+ALAND	KALBURGI	PRASHANTH	KALBURGI 	
+KALBURGI-2	KALBURGI	PRASHANTH	KALBURGI 	
+CHADCHAN	INDI	RAJKUMAR PAWAR	KALBURGI 	
+ALMEL	INDI	RAJKUMAR PAWAR	KALBURGI 	
+AFZALPUR	INDI	RAJKUMAR PAWAR	KALBURGI 	
+INDI	INDI	RAJKUMAR PAWAR	KALBURGI 	
+DEVADURGA	SHAHAPUR	VEERESH	KALBURGI 	
+SHAHAPUR	SHAHAPUR	VEERESH	KALBURGI 	
+KOPPAL	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	
+HUNGUND	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	
+GANGAVATHI	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	
+KUSHTAGI	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	
+TANDUR	MAHABOOBNAGAR	MADHU	TELANGANA	
+MARIKAL	MAHABOOBNAGAR	MADHU	TELANGANA	
+MAHABUB NAGAR	MAHABOOBNAGAR	MADHU	TELANGANA	
+GADWAL	MAHABOOBNAGAR	MADHU	TELANGANA	
+KODANGAL	SANGAREDDY	SAMPATH KUMAR	TELANGANA	
+NARAYANKHED	SANGAREDDY	SAMPATH KUMAR	TELANGANA	
+SANGAREDDY	SANGAREDDY	SAMPATH KUMAR	TELANGANA	
+ZAHEERABAD	SANGAREDDY	SAMPATH KUMAR	TELANGANA	
+NR PURA	CHIKKAMAGALURU	AJITH KUMAR S A	TUMKUR	
+MUDIGERE	CHIKKAMAGALURU	AJITH KUMAR S A	TUMKUR	
+CHIKKAMAGALURU	CHIKKAMAGALURU	AJITH KUMAR S A	TUMKUR	
+PANCHANHALLI	KADUR	ARUN KUMAR K H	TUMKUR	
+TARIKERE	KADUR	ARUN KUMAR K H	TUMKUR	
+AJJAMPURA	KADUR	ARUN KUMAR K H	TUMKUR	
+KADUR	KADUR	ARUN KUMAR K H	TUMKUR	
+SIRA	TUMKUR	DINESH D	TUMKUR	
+KUNIGAL	TUMKUR	DINESH D	TUMKUR	
+MADHUGIRI	TUMKUR	DINESH D	TUMKUR	
+TUMKUR	TUMKUR	DINESH D	TUMKUR	
+KORATAGERE	TUMKUR	DINESH D	TUMKUR	
+HOLAKERE	HOLALKERE	KUMAR R	TUMKUR	
+CHANNAGIRI	HOLALKERE	KUMAR R	TUMKUR	
+HOSADURGA	HOLALKERE	KUMAR R	TUMKUR	
+JAGALORE	CHITRADURGA	MANOJ NAIK B	TUMKUR	
+CHITRADURGA	CHITRADURGA	MANOJ NAIK B	TUMKUR	
+CHALLAKERE	CHITRADURGA	MANOJ NAIK B	TUMKUR	
+HIRIYUR	CHITRADURGA	MANOJ NAIK B	TUMKUR	
+J P NAGAR	BENGALORE -URBAN	MUBARAK S	TUMKUR	
+HEBBAL	BENGALORE -URBAN	MUBARAK S	TUMKUR	
+CHANDAPURA	BENGALORE -URBAN	MUBARAK S	TUMKUR	
+KENGERI	BENGALORE -URBAN	MUBARAK S	TUMKUR	
+CHINTAMANI	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
+SRINIVASPURA	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
+DEVANAHALLI	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
+CHIKBALLAPURA	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
+BAGEPALLI	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
+CHIKKANAYAKANAHALLI	TIPTUR	P T VENKATESH	TUMKUR	
+HULIYAR	TIPTUR	P T VENKATESH	TUMKUR	
+GUBBI	TIPTUR	P T VENKATESH	TUMKUR	
+TIPTUR	TIPTUR	P T VENKATESH	TUMKUR	
+TUREVEKERE	TIPTUR	P T VENKATESH	TUMKUR	
+BETHAMANGALA	KOLAR	SHIVARAJA N	TUMKUR	
+KOLAR	KOLAR	SHIVARAJA N	TUMKUR	
+BANGARPET	KOLAR	SHIVARAJA N	TUMKUR	
+MALUR	KOLAR	SHIVARAJA N	TUMKUR	
+DODDABALLAPURA	BENGALORE -RURAL 	VINAY V L	TUMKUR	
+DABUSPET	BENGALORE -RURAL 	VINAY V L	TUMKUR	
+GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
+
+        let state = {
+            currentUser: null,
+            role: null,
+            rawData: null,
+            targetData: {},
+            branchDetails: {}, // Main Store
+            activeTab: 'dashboard',
+            viewStack: [],
+            fullTree: {}
+        };
+
+        // --- INIT ---
+        window.addEventListener("DOMContentLoaded", async () => {
+            const { headers, rows } = parseTSV(defaultTSVData);
+            state.rawData = { headers, rows };
+            state.fullTree = buildHierarchy(headers, rows);
+
+            // Populate DM Dropdown
+            populateDMDropdown(rows, headers);
+
+            // Load Local Targets (Keep local for now as per requirement focus on Branch Details)
+            const saved = localStorage.getItem('dosa_targets');
+            if (saved) state.targetData = JSON.parse(saved);
+
+            // Init Date
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById("headerDate").textContent = dateStr;
+
+            // Load Remote Data (Supabase)
+            await fetchSupabaseData();
+
+            // Hide Sidebar/Content initially
+            document.getElementById("sidebar").classList.add("hidden");
+            document.querySelector(".main-content").classList.add("hidden");
+        });
+
+        // --- SUPABASE ACTIONS ---
+        async function fetchSupabaseData() {
+            // Fetch today's data
+            // Format today YYYY-MM-DD
+            const today = new Date().toISOString().split('T')[0];
+
+            const { data, error } = await supabase
+                .from('daily_reports')
+                .select('*')
+                .eq('date', today);
+
+            if (error) {
+                console.error("Supabase Load Error:", error);
+                // Fallback to local if needed, or just show empty
+                const savedDetails = localStorage.getItem('dosa_branch_details');
+                if (savedDetails) state.branchDetails = JSON.parse(savedDetails);
+                return;
+            }
+
+            if (data) {
+                // Map DB rows back to state
+                state.branchDetails = {};
+                data.forEach(row => {
+                    if (row.branch_name && row.data) {
+                        state.branchDetails[row.branch_name] = row.data;
+                    }
+                });
+                console.log("Loaded " + data.length + " reports from Supabase.");
+            }
+        }
+
+        async function saveToSupabase(branchName, branchData) {
+            const today = new Date().toISOString().split('T')[0];
+
+            // Get meta info
+            const branchRow = state.rawData.rows.find(r => r[0] === branchName);
+            const district = branchRow ? branchRow[1] : "";
+            const dm = branchRow ? branchRow[2] : "";
+            const region = branchRow ? branchRow[3] : "";
+
+            const payload = {
+                date: today,
+                branch_name: branchName,
+                data: branchData,
+                region: region,
+                district: district,
+                dm_name: dm
+            };
+
+            const { data, error } = await supabase
+                .from('daily_reports')
+                .upsert(payload, { onConflict: 'date, branch_name' });
+
+            if (error) {
+                console.error("Supabase Save Error:", error);
+                showToast("Error saving to Cloud", "alert");
+                return false;
+            }
+            return true;
+        }
+
+        // --- THEME ---
+        function toggleTheme() {
+            document.body.classList.toggle("dark-mode");
+        }
+
+        // --- ACTIONS ---
+        function handleLogin(role) {
+            let user = "";
+            if (role === 'CEO') {
+                user = "CEO";
+                state.role = 'CEO';
+            } else {
+                user = document.getElementById("dmSelect").value;
+                if (!user) return alert("Please select a manager.");
+                state.role = 'DM';
+            }
+            state.currentUser = user;
+
+            // Show UI Logic
+            const overlay = document.getElementById("login-overlay");
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.classList.add("hidden");
+                document.getElementById("sidebar").classList.remove("hidden");
+                document.querySelector(".main-content").classList.remove("hidden");
+            }, 500);
+
+            // Update Header
+            document.getElementById("headerName").textContent = user;
+            document.getElementById("headerRole").textContent = role === 'CEO' ? "Global Administrator" : "District Manager";
+            document.getElementById("headerAvatar").textContent = user.charAt(0);
+
+            // Disable Sidebar items for DM
+            if (role === 'DM') {
+                document.getElementById('nav-dashboard').classList.add('hidden');
+                document.getElementById('nav-settings').classList.add('hidden');
+
+                // Auto switch to hierarchy
+                switchTab('hierarchy');
+            } else {
+                document.getElementById('nav-dashboard').classList.remove('hidden');
+                document.getElementById('nav-settings').classList.remove('hidden');
+
+                renderDashboard();
+            }
+        }
+
+        function handleLogout() {
+            location.reload();
+        }
+
+        function switchTab(tab) {
+            state.activeTab = tab;
+            document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+
+            if (tab === 'dashboard') {
+                document.querySelectorAll(".nav-item")[0].classList.add("active");
+                document.getElementById("breadcrumbs").innerHTML = 'Home / <span>Dashboard</span>';
+            }
+            if (tab === 'hierarchy') {
+                document.querySelectorAll(".nav-item")[1].classList.add("active");
+                document.getElementById("breadcrumbs").innerHTML = 'Home / <span>Detailed View</span>';
+                state.viewStack = []; // Reset drill-down
+            }
+            if (tab === 'settings') {
+                document.querySelectorAll(".nav-item")[2].classList.add("active");
+                document.getElementById("breadcrumbs").innerHTML = 'Home / <span>Settings</span>';
+            }
+
+            renderDashboard();
+        }
+
+        function showToast(msg, icon) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toastMsg").textContent = msg;
+            toast.classList.add("visible");
+            setTimeout(() => toast.classList.remove("visible"), 3000);
+        }
+
+        // --- DRILL DOWN ACTIONS ---
+        function pushStack(name, data) {
+            state.viewStack.push({ name, data });
+            renderDashboard();
+        }
+
+        function popStack() {
+            state.viewStack.pop();
+            renderDashboard();
+        }
+
+        // --- SEED / DELETE DATA ---
+        function seedData() {
+            const branches = state.rawData.rows.map(r => r[0]).filter(Boolean);
+
+            // Seed Targets
+            branches.forEach(b => {
+                state.targetData[b] = Math.floor(Math.random() * 20000) + 5000;
+            });
+
+            // Seed Branch Details
+            branches.forEach(b => {
+                state.branchDetails[b] = {
+                    'ftod_actual': Math.floor(Math.random() * 100),
+                    'ftod_plan': Math.floor(Math.random() * 100),
+                    'lived_actual': Math.floor(Math.random() * 50),
+                    'lived_plan': Math.floor(Math.random() * 50),
+                    'pnpa_actual': Math.floor(Math.random() * 20),
+                    'pnpa_plan': Math.floor(Math.random() * 20),
+                    'npa_activation': Math.floor(Math.random() * 10),
+                    'npa_closure': Math.floor(Math.random() * 10),
+                    'fy_od_acc': Math.floor(Math.random() * 500),
+                    'fy_od_plan': Math.floor(Math.random() * 500),
+                    'fy_non_start_acc': Math.floor(Math.random() * 50),
+                    'fy_non_start_plan': Math.floor(Math.random() * 50),
+
+                    'disb_sanc_pent_acc': Math.floor(Math.random() * 10),
+                    'disb_sanc_pent_amt': Math.floor(Math.random() * 1000000),
+                    'disb_igl_acc': Math.floor(Math.random() * 5),
+                    'disb_igl_amt': Math.floor(Math.random() * 500000),
+                    'disb_jl_acc': Math.floor(Math.random() * 15),
+                    'disb_jl_amt': Math.floor(Math.random() * 2000000),
+                    'disb_notes': "Auto-generated notes/comments for " + b,
+
+                    'kyc_fig_igl': Math.floor(Math.random() * 20),
+                    'kyc_il': Math.floor(Math.random() * 10),
+                    'kyc_npa': Math.floor(Math.random() * 5)
+                };
+            });
+
+            localStorage.setItem('dosa_targets', JSON.stringify(state.targetData));
+            // WARNING: Seeding only affects local state now, unless we iterate and save all to DB.
+            // For now, let's just keep it local for visuals, but show a warning
+            showToast("Randomized Data Generated (Local Only)", "check");
+
+            if (state.activeTab === 'hierarchy') renderDashboard();
+        }
+
+        function clearData() {
+            if (!confirm("Are you sure? This will delete all target data.")) return;
+            state.targetData = {};
+            state.branchDetails = {};
+            localStorage.removeItem('dosa_targets');
+            localStorage.removeItem('dosa_branch_details');
+            showToast("All Data Cleared (Local)", "alert");
+        }
+
+
+        // --- RENDERERS ---
+        function renderDashboard() {
+            const container = document.getElementById("dashboard-container");
+            container.innerHTML = "";
+            const grid = document.createElement("div");
+            grid.className = "dashboard-grid fade-enter";
+
+            // 1. DASHBOARD TAB
+            if (state.activeTab === 'dashboard') {
+                if (state.role === 'CEO') {
+                    const stats = calculateCEOStats();
+
+                    // TOP ROW CARDS
+                    grid.innerHTML += createMetricCard("Total Target", "₹" + (stats.totalTarget / 100000).toFixed(1) + "L", "trending-up", true);
+                    grid.innerHTML += createMetricCard("Active Branches", stats.totalBranches, "activity");
+                    grid.innerHTML += createMetricCard("Total Disbursement", "₹" + (stats.totalDisbursement / 10000000).toFixed(2) + "Cr", "award", true);
+                    grid.innerHTML += createMetricCard("Total NPA Accounts", stats.totalNPA, "bar-chart");
+
+                    // MIDDLE ROW - COMPLEX CHARTS
+                    grid.innerHTML += `
+                        <div class="chart-card grid-half">
+                            <div class="chart-header">
+                                <div class="chart-title">Regional NPA Trends (Activation)</div>
+                                <div style="font-size:11px; color:var(--text-secondary);">Line View</div>
+                            </div>
+                            <div class="bar-chart-container" style="align-items:center; justify-content:center;" id="lineChartHook"></div>
+                        </div>
+
+                        <div class="chart-card grid-half">
+                            <div class="chart-header">
+                                <div class="chart-title">Disbursement Mix (Product)</div>
+                            </div>
+                            <div class="bar-chart-container" style="align-items:center; justify-content:center;" id="donutChartHook"></div>
+                        </div>
+                    `;
+
+                    // BOTTOM ROW
+                    grid.innerHTML += `
+                        <div class="chart-card grid-full">
+                            <div class="chart-header"><div class="chart-title">Portfolio Health (Healthy vs Slipped vs NPA)</div></div>
+                            <div class="bar-chart-container" id="healthBarHook"></div>
+                        </div>
+                    `;
+
+
+                    container.appendChild(grid);
+
+                    // Render Charts
+                    renderLineChart(stats.regionNPA, document.getElementById("lineChartHook"));
+                    renderDonutChart(stats.disbursementMix, document.getElementById("donutChartHook"));
+                    renderBarChart(stats.portfolioHealth, document.getElementById("healthBarHook"));
+                } else {
+                    const tableCard = document.createElement("div");
+                    tableCard.className = "table-card grid-full";
+                    tableCard.innerHTML = `
+                        <div class="chart-header">
+                            <div class="chart-title">Branch Performance Targets</div>
+                            <button class="btn btn-primary" onclick="saveTargets()" style="width:auto; padding:8px 16px;">Save Changes</button>
+                        </div>
+                        <table>
+                            <thead><tr><th>District</th><th>Branch</th><th>Target Input</th><th>Status</th></tr></thead>
+                            <tbody id="dmTableHook"></tbody>
+                        </table>`;
+                    grid.appendChild(tableCard);
+                    container.appendChild(grid);
+                    renderDMTable(document.getElementById("dmTableHook"));
+                }
+            }
+
+            // 2. DETAILED VIEW / DRILL DOWN
+            else if (state.activeTab === 'hierarchy') {
+                const wrapper = document.createElement("div");
+                wrapper.className = "table-card grid-full";
+
+                // Determine Current Level
+                let currentData = state.fullTree;
+                let currentTitle = "All Regions";
+                let currentType = "Region";
+
+                // DM SPECIFIC OVERRIDE
+                if (state.role === 'DM') {
+                    const dmNode = getDMNode();
+                    if (dmNode) {
+                        currentData = dmNode;
+                        currentTitle = "My Districts";
+                        currentType = "District"; // Root for DM is District list
+                    }
+                }
+
+                if (state.viewStack.length > 0) {
+                    const top = state.viewStack[state.viewStack.length - 1];
+                    currentData = top.data;
+                    currentTitle = top.name;
+
+                    if (state.role === 'DM') {
+                        // Stack 0 = District List (Root)
+                        // Stack 1 = Branch List
+                        if (state.viewStack.length === 1) currentType = "Branch";
+                    } else {
+                        // CEO Logic
+                        if (state.viewStack.length === 1) currentType = "DM";
+                        if (state.viewStack.length === 2) currentType = "District";
+                        if (state.viewStack.length === 3) currentType = "Branch";
+                    }
+                }
+
+                // Header with Back Button
+                wrapper.innerHTML = `
+                    <div class="chart-header" style="justify-content:flex-start; gap:16px;">
+                        ${state.viewStack.length > 0 ?
+                        `<button class="btn btn-outline" onclick="popStack()" style="width:auto; padding:8px 12px;">
+                                <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                             </button>`
+                        : ''}
+                        <div class="chart-title">${currentTitle}</div>
+                    </div>
+                    <div id="drillDownGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:16px; padding-top:10px;"></div>
+                `;
+
+                grid.appendChild(wrapper);
+                container.appendChild(grid);
+
+                const ddGrid = document.getElementById("drillDownGrid");
+
+                // Render Items
+                if (currentData instanceof Set) {
+                    // Leaf Nodes (Branches)
+                    currentData.forEach(name => {
+                        ddGrid.appendChild(createDrillDownCard(name, "Branch", null, true));
+                    });
+                } else {
+                    Object.keys(currentData).sort().forEach(key => {
+                        ddGrid.appendChild(createDrillDownCard(key, currentType, currentData[key], false));
+                    });
+                }
+            }
+
+            // 3. SETTINGS TAB
+            else if (state.activeTab === 'settings') {
+                grid.innerHTML = `
+                    <div class="metric-card grid-half">
+                        <div class="chart-header"><div class="chart-title">Data Management</div></div>
+                        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:24px;">
+                            Use these tools to manage the demo data. NOT FOR PRODUCTION USE.
+                        </p>
+                        <div style="display:flex; gap:16px;">
+                            <button class="btn btn-primary" onclick="seedData()" style="background:var(--success); border:none;">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                                Generate Random Data (SEED)
+                            </button>
+                            <button class="btn btn-primary" onclick="clearData()" style="background:#EF4444; border:none;">
+                                <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                Delete All Data
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(grid);
+            }
+        }
+
+        // --- COMPONENTS ---
+        function createMetricCard(title, value, iconType, isSuccess = false) {
+            const icons = {
+                "trending-up": `<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>`,
+                "activity": `<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>`,
+                "bar-chart": `<line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line>`,
+                "award": `<circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>`
+            };
+
+            return `
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon">
+                        <svg class="icon" viewBox="0 0 24 24">${icons[iconType]}</svg>
+                    </div>
+                     ${isSuccess ? '<div class="metric-badge badge-up"><svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline></svg> +12%</div>' : ''}
+                </div>
+                <div>
+                    <div class="metric-title">${title}</div>
+                    <div class="metric-value">${value}</div>
+                </div>
+            </div>`;
+        }
+
+        function createDrillDownCard(name, type, children, isLeaf) {
+            const card = document.createElement("div");
+            card.style.cssText = `
+                background: var(--bg-body); border-radius: 12px; padding: 16px;
+                cursor: pointer; transition: background 0.2s; border: 1px solid var(--border-color);
+                display: flex; flex-direction: column; gap: 8px;
+            `;
+
+            // Calculate Value
+            let total = 0;
+            if (isLeaf) total = state.targetData[name] || 0;
+            else total = calculateTotal(type, name, children);
+
+            card.innerHTML = `
+                <div style="font-size:12px; color:var(--text-secondary); text-transform:uppercase; font-weight:600;">${type}</div>
+                <div style="font-size:15px; font-weight:600; color:var(--text-primary);">${name}</div>
+                <div style="font-size:18px; font-weight:700; color:var(--primary-accent); margin-top:auto;">${total.toLocaleString()}</div>
+            `;
+
+            if (!isLeaf) {
+                card.onclick = () => pushStack(name, children);
+                card.onmouseover = () => card.style.background = "var(--primary-light)";
+                card.onmouseout = () => card.style.background = "var(--bg-body)";
+            } else {
+                if (state.branchDetails[name]) {
+                    card.innerHTML += `<div style="margin-top:4px; font-size:11px; color:var(--success); display:flex; align-items:center; gap:4px;">
+                        <svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Details Filled
+                     </div>`;
+                    card.style.border = "1px solid var(--success-light)";
+                }
+
+                card.onclick = () => openBranchModal(name);
+                card.onmouseover = () => card.style.background = "var(--primary-light)";
+                card.onmouseout = () => card.style.background = "var(--bg-body)";
+                card.style.cursor = "pointer";
+            }
+
+            return card;
+        }
+
+        // --- BRANCH DETAILS MODAL LOGIC ---
+        let currentEditingBranch = null;
+
+        function openBranchModal(branchName) {
+            currentEditingBranch = branchName;
+            document.getElementById("modalBranchTitle").textContent = `${branchName} - Details`;
+
+            // Load Data if exists
+            const data = state.branchDetails[branchName] || {};
+
+            // Field Mapping
+            const fields = [
+                'ftod_actual', 'ftod_plan', 'lived_actual', 'lived_plan', // Note: 'lived' for NOV-25 slipped
+                'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
+                'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
+                'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
+                'disb_jl_acc', 'disb_jl_amt', 'disb_notes',
+                'kyc_fig_igl', 'kyc_il', 'kyc_npa'
+            ];
+
+            fields.forEach(id => {
+                document.getElementById(id).value = data[id] || "";
+            });
+
+            document.getElementById("branchModal").classList.add("visible");
+        }
+
+        function closeBranchModal() {
+            document.getElementById("branchModal").classList.remove("visible");
+            currentEditingBranch = null;
+        }
+
+        async function saveBranchDetails(andNext) {
+            if (!currentEditingBranch) return;
+
+            const data = {};
+            const fields = [
+                'ftod_actual', 'ftod_plan', 'lived_actual', 'lived_plan',
+                'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
+                'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
+                'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
+                'disb_jl_acc', 'disb_jl_amt', 'disb_notes',
+                'kyc_fig_igl', 'kyc_il', 'kyc_npa'
+            ];
+
+            fields.forEach(id => {
+                data[id] = document.getElementById(id).value;
+            });
+
+            // Optimistic Update
+            state.branchDetails[currentEditingBranch] = data;
+
+            // Persist to Cloud
+            await saveToSupabase(currentEditingBranch, data);
+
+            showToast(`Details Saved for ${currentEditingBranch}`, "check");
+
+            if (andNext) {
+                loadNextBranch();
+            } else {
+                closeBranchModal();
+            }
+
+            // Refresh view to show checkmark
+            if (state.activeTab === 'hierarchy') renderDashboard();
+        }
+
+        function loadNextBranch() {
+            // Flatten hierarchy to find next branch
+            // Simple approach: alphabetical list of all branches
+            const allBranches = state.rawData.rows.map(r => r[0]).filter(Boolean).sort();
+            const idx = allBranches.indexOf(currentEditingBranch);
+            if (idx !== -1 && idx < allBranches.length - 1) {
+                const nextBranch = allBranches[idx + 1];
+                openBranchModal(nextBranch);
+            } else {
+                showToast("Reached end of branch list", "alert");
+                closeBranchModal();
+            }
+        }
+
+        function handleSearch(query) {
+            const resultsDiv = document.getElementById("searchResults");
+            if (!query || query.length < 2) {
+                resultsDiv.classList.remove("visible");
+                return;
+            }
+
+            const branches = state.rawData.rows.map(r => ({ name: r[0], district: r[1] })).filter(b => b.name);
+            const matches = branches.filter(b => b.name.toLowerCase().includes(query.toLowerCase())).slice(0, 10);
+
+            if (matches.length === 0) {
+                resultsDiv.classList.remove("visible");
+                return;
+            }
+
+            resultsDiv.innerHTML = "";
+            matches.forEach(match => {
+                const isFilled = !!state.branchDetails[match.name];
+                const item = document.createElement("div");
+                item.className = "search-item";
+                item.innerHTML = `
+                    <div>
+                        <div style="font-weight:600">${match.name}</div>
+                        <div style="font-size:11px; color:var(--text-secondary);">${match.district}</div>
+                    </div>
+                    ${isFilled ? '<svg class="icon" style="width:14px;height:14px;color:var(--success);" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+                `;
+                item.onclick = () => {
+                    openBranchModal(match.name);
+                    resultsDiv.classList.remove("visible");
+                    document.querySelector(".search-input").value = "";
+                };
+                resultsDiv.appendChild(item);
+            });
+            resultsDiv.classList.add("visible");
+        }
+
+        // Close search when clicking outside
+        document.addEventListener('click', (e) => {
+            const searchContainer = document.querySelector('.search-container');
+            if (searchContainer && !searchContainer.contains(e.target)) {
+                document.getElementById("searchResults").classList.remove("visible");
+            }
+        });
+
+
+        function renderLineChart(data, container) {
+            const width = 400;
+            const height = 200;
+            const padding = 20;
+
+            const keys = Object.keys(data);
+            const values = Object.values(data);
+            const max = Math.max(...values, 1);
+
+            // Generate Points
+            const points = values.map((val, idx) => {
+                const x = (idx / (values.length - 1)) * (width - 2 * padding) + padding;
+                const y = height - ((val / max) * (height - 2 * padding)) - padding;
+                return `${x},${y}`;
+            }).join(" ");
+
+            // SVG
+            container.innerHTML = `
+                <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+                    <!-- Grid Lines -->
+                    <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" stroke="var(--border-color)" stroke-width="1" />
+                    <line x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}" stroke="var(--border-color)" stroke-width="1" />
+                    
+                    <!-- Path -->
+                    <polyline points="${points}" fill="none" stroke="var(--primary-accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                    
+                    <!-- Points -->
+                    ${values.map((val, idx) => {
+                const x = (idx / (values.length - 1)) * (width - 2 * padding) + padding;
+                const y = height - ((val / max) * (height - 2 * padding)) - padding;
+                return `<circle cx="${x}" cy="${y}" r="4" fill="var(--bg-card)" stroke="var(--primary-accent)" stroke-width="2" />`;
+            }).join('')}
+                </svg>
+                <div style="display:flex; justify-content:space-between; width:100%; margin-top:10px; font-size:10px; color:var(--text-secondary);">
+                    ${keys.map(k => `<span>${k.substring(0, 3)}</span>`).join('')}
+                </div>
+            `;
+            container.style.flexDirection = "column";
+        }
+
+        function renderDonutChart(data, container) {
+            const total = Object.values(data).reduce((a, b) => a + b, 0) || 1;
+            let currentAngle = 0;
+            const colors = ['#6366F1', '#10B981', '#F59E0B']; // Primary, Success, Warning
+
+            // SVG Slices
+            const slices = Object.entries(data).map(([key, val], idx) => {
+                const pct = val / total;
+                const angle = pct * 360;
+
+                return `${colors[idx]} ${currentAngle}deg ${(currentAngle += angle)}deg`;
+            });
+
+            const gradient = `conic-gradient(${slices.join(', ')})`;
+
+            container.innerHTML = `
+               <div style="position:relative; width:180px; height:180px; border-radius:50%; background:${gradient}; display:flex; align-items:center; justify-content:center;">
+                   <div style="width:120px; height:120px; background:var(--bg-card); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10;">
+                       <span style="font-size:12px; color:var(--text-secondary);">Total</span>
+                       <span style="font-size:16px; font-weight:700;">₹${(total / 100000).toFixed(1)}L</span>
+                   </div>
+               </div>
+               <div style="margin-left:20px; display:flex; flex-direction:column; gap:8px;">
+                   ${Object.entries(data).map(([k, v], i) => `
+                        <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+                            <span style="width:10px; height:10px; background:${colors[i]}; border-radius:2px;"></span>
+                            <span style="color:var(--text-secondary);">${k}</span>
+                            <span style="font-weight:600;">${Math.round((v / total) * 100)}%</span>
+                        </div>
+                   `).join('')}
+               </div>
+            `;
+            container.style.flexDirection = "row";
+        }
+
+        function renderBarChart(data, container) {
+            const max = Math.max(...Object.values(data), 1);
+            Object.keys(data).forEach(label => {
+                const val = data[label];
+                const pct = (val / max) * 100;
+                container.innerHTML += `
+                    <div class="bar-group">
+                        <div class="bar" style="height:${pct}%"></div>
+                        <div class="bar-label">${label.substring(0, 3)}</div>
+                    </div>`;
+            });
+        }
+
+        function renderLeaderboard(data, tbody) {
+            const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            sorted.forEach((item, idx) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${idx + 1}</td>
+                        <td><span style="font-weight:600">${item[0]}</span></td>
+                        <td>${item[1].toLocaleString()}</td>
+                        <td><span class="status-pill status-active">Top Tier</span></td>
+                    </tr>`;
+            });
+        }
+
+        function renderDMTable(tbody) {
+            const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === "dm name");
+            const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === "branch");
+            const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === "district");
+
+            const rows = state.rawData.rows.filter(r => (r[idxDM] || "").trim() === state.currentUser);
+
+            rows.forEach(row => {
+                const branch = row[idxBranch];
+                const district = row[idxDistrict];
+                const val = state.targetData[branch] || 0;
+
+                tbody.innerHTML += `
+                <tr>
+                    <td>${district}</td>
+                    <td>${branch}</td>
+                    <td>
+                        <input type="number" data-branch="${branch}" value="${val}" style="padding:8px; border:1px solid #ddd; border-radius:6px; width:100px;">
+                    </td>
+                    <td><span class="status-pill status-pending">Pending</span></td>
+                </tr>`;
+            });
+        }
+
+        function buildHierarchy(headers, rows) {
+            const tree = {};
+            rows.forEach(r => {
+                const [branch, dist, dm, region] = r;
+                if (!region) return;
+                if (!tree[region]) tree[region] = {};
+                if (!tree[region][dm]) tree[region][dm] = {};
+                if (!tree[region][dm][dist]) tree[region][dm][dist] = new Set();
+                tree[region][dm][dist].add(branch);
+            });
+            return tree;
+        }
+
+        function calculateTotal(type, name, children) {
+            if (children instanceof Set) {
+                let sum = 0;
+                children.forEach(branch => sum += (state.targetData[branch] || 0));
+                return sum;
+            }
+            let sum = 0;
+            Object.keys(children).forEach(k => sum += calculateTotal(getNextType(type), k, children[k]));
+            return sum;
+        }
+
+        function getNextType(t) { return t === "Region" ? "DM" : t === "DM" ? "District" : "Branch"; }
+
+        function parseTSV(text) {
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            const rows = lines.slice(1).map(line => line.split("\t").map(c => c.trim()));
+            return { headers: lines[0].split("\t"), rows };
+        }
+
+        function populateDMDropdown(rows, headers) {
+            const dms = new Set(rows.map(r => r[2]).filter(Boolean));
+            const sel = document.getElementById("dmSelect");
+            Array.from(dms).sort().forEach(dm => {
+                const opt = document.createElement("option");
+                opt.value = dm; opt.textContent = dm;
+                sel.appendChild(opt);
+            });
+        }
+
+        function getDMNode() {
+            // Find the node for the current logged in DM
+            if (!state.currentUser) return null;
+            for (const region in state.fullTree) {
+                if (state.fullTree[region][state.currentUser]) {
+                    return state.fullTree[region][state.currentUser];
+                }
+            }
+            return null;
+        }
+
+        function saveTargets() {
+            const inputs = document.querySelectorAll("input[data-branch]");
+            inputs.forEach(i => {
+                state.targetData[i.dataset.branch] = parseInt(i.value) || 0;
+            });
+            localStorage.setItem('dosa_targets', JSON.stringify(state.targetData));
+            showToast("Targets Saved Successfully!", "check");
+        }
+
+        function calculateCEOStats() {
+            let totalTarget = 0, totalBranches = 0;
+            // New aggregations
+            let totalDisbursement = 0;
+            let totalNPA = 0;
+            let totalFTOD = 0;
+
+            let regionStats = {};
+            let dmStats = {};
+
+            // For Charts
+            let regionNPA = {}; // For Line Chart
+            let disbursementMix = { IGL: 0, FIG: 0, JL: 0 }; // For Donut
+            let portfolioHealth = { healthy: 0, slipped: 0, npa: 0 }; // For Bar Chart
+
+            state.rawData.rows.forEach(row => {
+                const branch = row[0];
+                const region = row[3];
+                const dm = row[2];
+
+                if (branch) {
+                    // Targets
+                    if (state.targetData[branch]) {
+                        const val = state.targetData[branch];
+                        totalTarget += val;
+                        regionStats[region] = (regionStats[region] || 0) + val;
+                        dmStats[dm] = (dmStats[dm] || 0) + val;
+                    }
+
+                    // Detailed Params
+                    if (state.branchDetails[branch]) {
+                        const d = state.branchDetails[branch];
+
+                        // Parse safely
+                        const safeInt = (v) => parseInt(v) || 0;
+
+                        totalDisbursement += safeInt(d.disb_sanc_pent_amt) + safeInt(d.disb_igl_amt) + safeInt(d.disb_jl_amt);
+                        totalNPA += safeInt(d.npa_activation); // metric choice
+                        totalFTOD += safeInt(d.ftod_actual);
+
+                        // Regional NPA (Line Chart Point)
+                        regionNPA[region] = (regionNPA[region] || 0) + safeInt(d.npa_activation);
+
+                        // Disbursement Mix (Donut)
+                        disbursementMix.IGL += safeInt(d.disb_igl_amt);
+                        disbursementMix.FIG += safeInt(d.disb_sanc_pent_amt); // Mapping FIG to this for demo logic
+                        disbursementMix.JL += safeInt(d.disb_jl_amt);
+
+                        // Portfolio Health (Bar Bucket)
+                        portfolioHealth.healthy += safeInt(d.ftod_actual);
+                        portfolioHealth.slipped += safeInt(d.lived_actual);
+                        portfolioHealth.npa += safeInt(d.pnpa_actual);
+                    }
+
+                    totalBranches++;
+                }
+            });
+
+            // Ensure all regions exist for charts even if 0
+            state.rawData.rows.forEach(r => {
+                if (r[3]) {
+                    if (!regionStats[r[3]]) regionStats[r[3]] = 0;
+                    if (!regionNPA[r[3]]) regionNPA[r[3]] = 0;
+                }
+            });
+
+            let topRegion = "-"; let max = -1;
+            for (let k in regionStats) { if (regionStats[k] > max) { max = regionStats[k]; topRegion = k; } }
+
+            return {
+                totalTarget,
+                totalBranches,
+                avgTarget: totalBranches ? Math.round(totalTarget / totalBranches) : 0,
+                topRegion,
+                regionStats,
+                dmStats,
+                // New
+                totalDisbursement,
+                totalNPA,
+                totalFTOD,
+                regionNPA,
+                disbursementMix,
+                portfolioHealth
+            };
+        }
+    </script>
+</body>
+
+</html>
