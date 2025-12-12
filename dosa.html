@@ -897,15 +897,7 @@
                 </svg>
                 Detailed View
             </a>
-            <a href="#" class="nav-item" id="nav-settings" onclick="switchTab('settings')">
-                <svg class="icon" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path
-                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                    </path>
-                </svg>
-                Settings
-            </a>
+
             <a href="#" class="nav-item" id="nav-logout" onclick="handleLogout()">
                 <svg class="icon" viewBox="0 0 24 24">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -1391,6 +1383,9 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
             // Load Remote Data (Supabase)
             await fetchSupabaseData();
 
+            // Setup Realtime
+            setupRealtime();
+
             // Hide Sidebar/Content initially
             document.getElementById("sidebar").classList.add("hidden");
             document.querySelector(".main-content").classList.add("hidden");
@@ -1399,32 +1394,60 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
         // --- SUPABASE ACTIONS ---
         async function fetchSupabaseData() {
             // Fetch today's data
-            // Format today YYYY-MM-DD
             const today = new Date().toISOString().split('T')[0];
 
-            const { data, error } = await supabase
+            const { data: result, error } = await supabase
                 .from('daily_reports')
                 .select('*')
-                .eq('date', today);
+                .eq('date', today); // Filter for today's data
 
             if (error) {
                 console.error("Supabase Load Error:", error);
-                // Fallback to local if needed, or just show empty
-                const savedDetails = localStorage.getItem('dosa_branch_details');
-                if (savedDetails) state.branchDetails = JSON.parse(savedDetails);
                 return;
             }
 
-            if (data) {
-                // Map DB rows back to state
+            if (result) {
                 state.branchDetails = {};
-                data.forEach(row => {
-                    if (row.branch_name && row.data) {
-                        state.branchDetails[row.branch_name] = row.data;
+                result.forEach(row => {
+                    if (row.branch_name) {
+                        state.branchDetails[row.branch_name] = row; // Store full row directly
                     }
                 });
-                console.log("Loaded " + data.length + " reports from Supabase.");
+                console.log("Loaded " + result.length + " reports from Supabase (Live).");
+                renderDashboard(); // Initial render
             }
+        }
+
+        // --- REALTIME SUBSCRIPTION ---
+        function setupRealtime() {
+            supabase
+                .channel('public:daily_reports')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_reports' }, payload => {
+                    console.log('Realtime Change received!', payload);
+
+                    const today = new Date().toISOString().split('T')[0];
+                    const newData = payload.new;
+
+                    // Only care if it's for today
+                    if (newData && newData.date === today) {
+                        // Update State
+                        state.branchDetails[newData.branch_name] = newData;
+
+                        // Show Notification
+                        showToast(`Live Update: ${newData.branch_name}`, "check");
+
+                        // Re-render
+                        renderDashboard();
+
+                        // If modal is open for this branch, update fields LIVE? 
+                        // Maybe too intrusive to overwrite user input, but we should at least know.
+                    }
+                })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Connected to Supabase Realtime.');
+                    }
+                });
         }
 
         async function saveToSupabase(branchName, branchData) {
@@ -1436,13 +1459,37 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
             const dm = branchRow ? branchRow[2] : "";
             const region = branchRow ? branchRow[3] : "";
 
+            // Flatten payload
             const payload = {
                 date: today,
                 branch_name: branchName,
-                data: branchData,
                 region: region,
                 district: district,
-                dm_name: dm
+                dm_name: dm,
+
+                // Map fields directly
+                ftod_actual: branchData.ftod_actual,
+                ftod_plan: branchData.ftod_plan,
+                lived_actual: branchData.lived_actual,
+                lived_plan: branchData.lived_plan,
+                pnpa_actual: branchData.pnpa_actual,
+                pnpa_plan: branchData.pnpa_plan,
+                npa_activation: branchData.npa_activation,
+                npa_closure: branchData.npa_closure,
+                fy_od_acc: branchData.fy_od_acc,
+                fy_od_plan: branchData.fy_od_plan,
+                fy_non_start_acc: branchData.fy_non_start_acc,
+                fy_non_start_plan: branchData.fy_non_start_plan,
+                disb_sanc_pent_acc: branchData.disb_sanc_pent_acc,
+                disb_sanc_pent_amt: branchData.disb_sanc_pent_amt,
+                disb_igl_acc: branchData.disb_igl_acc,
+                disb_igl_amt: branchData.disb_igl_amt,
+                disb_jl_acc: branchData.disb_jl_acc,
+                disb_jl_amt: branchData.disb_jl_amt,
+                disb_notes: branchData.disb_notes,
+                kyc_fig_igl: branchData.kyc_fig_igl,
+                kyc_il: branchData.kyc_il,
+                kyc_npa: branchData.kyc_npa
             };
 
             const { data, error } = await supabase
@@ -1492,13 +1539,13 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
             // Disable Sidebar items for DM
             if (role === 'DM') {
                 document.getElementById('nav-dashboard').classList.add('hidden');
-                document.getElementById('nav-settings').classList.add('hidden');
+
 
                 // Auto switch to hierarchy
                 switchTab('hierarchy');
             } else {
                 document.getElementById('nav-dashboard').classList.remove('hidden');
-                document.getElementById('nav-settings').classList.remove('hidden');
+
 
                 renderDashboard();
             }
@@ -1521,10 +1568,7 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
                 document.getElementById("breadcrumbs").innerHTML = 'Home / <span>Detailed View</span>';
                 state.viewStack = []; // Reset drill-down
             }
-            if (tab === 'settings') {
-                document.querySelectorAll(".nav-item")[2].classList.add("active");
-                document.getElementById("breadcrumbs").innerHTML = 'Home / <span>Settings</span>';
-            }
+
 
             renderDashboard();
         }
@@ -1548,60 +1592,7 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
         }
 
         // --- SEED / DELETE DATA ---
-        function seedData() {
-            const branches = state.rawData.rows.map(r => r[0]).filter(Boolean);
 
-            // Seed Targets
-            branches.forEach(b => {
-                state.targetData[b] = Math.floor(Math.random() * 20000) + 5000;
-            });
-
-            // Seed Branch Details
-            branches.forEach(b => {
-                state.branchDetails[b] = {
-                    'ftod_actual': Math.floor(Math.random() * 100),
-                    'ftod_plan': Math.floor(Math.random() * 100),
-                    'lived_actual': Math.floor(Math.random() * 50),
-                    'lived_plan': Math.floor(Math.random() * 50),
-                    'pnpa_actual': Math.floor(Math.random() * 20),
-                    'pnpa_plan': Math.floor(Math.random() * 20),
-                    'npa_activation': Math.floor(Math.random() * 10),
-                    'npa_closure': Math.floor(Math.random() * 10),
-                    'fy_od_acc': Math.floor(Math.random() * 500),
-                    'fy_od_plan': Math.floor(Math.random() * 500),
-                    'fy_non_start_acc': Math.floor(Math.random() * 50),
-                    'fy_non_start_plan': Math.floor(Math.random() * 50),
-
-                    'disb_sanc_pent_acc': Math.floor(Math.random() * 10),
-                    'disb_sanc_pent_amt': Math.floor(Math.random() * 1000000),
-                    'disb_igl_acc': Math.floor(Math.random() * 5),
-                    'disb_igl_amt': Math.floor(Math.random() * 500000),
-                    'disb_jl_acc': Math.floor(Math.random() * 15),
-                    'disb_jl_amt': Math.floor(Math.random() * 2000000),
-                    'disb_notes': "Auto-generated notes/comments for " + b,
-
-                    'kyc_fig_igl': Math.floor(Math.random() * 20),
-                    'kyc_il': Math.floor(Math.random() * 10),
-                    'kyc_npa': Math.floor(Math.random() * 5)
-                };
-            });
-
-            localStorage.setItem('dosa_targets', JSON.stringify(state.targetData));
-            // WARNING: Seeding only affects local state now, unless we iterate and save all to DB.
-            // For now, let's just keep it local for visuals, but show a warning
-            showToast("Randomized Data Generated (Local Only)", "check");
-
-            if (state.activeTab === 'hierarchy') renderDashboard();
-        }
-
-        function clearData() {
-            if (!confirm("Are you sure? This will delete all target data.")) return;
-            state.targetData = {};
-            state.branchDetails = {};
-            localStorage.removeItem('dosa_targets');
-            localStorage.removeItem('dosa_branch_details');
-            showToast("All Data Cleared (Local)", "alert");
-        }
 
 
         // --- RENDERERS ---
@@ -1741,28 +1732,7 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
                 }
             }
 
-            // 3. SETTINGS TAB
-            else if (state.activeTab === 'settings') {
-                grid.innerHTML = `
-                    <div class="metric-card grid-half">
-                        <div class="chart-header"><div class="chart-title">Data Management</div></div>
-                        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:24px;">
-                            Use these tools to manage the demo data. NOT FOR PRODUCTION USE.
-                        </p>
-                        <div style="display:flex; gap:16px;">
-                            <button class="btn btn-primary" onclick="seedData()" style="background:var(--success); border:none;">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                                Generate Random Data (SEED)
-                            </button>
-                            <button class="btn btn-primary" onclick="clearData()" style="background:#EF4444; border:none;">
-                                <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                Delete All Data
-                            </button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(grid);
-            }
+
         }
 
         // --- COMPONENTS ---
@@ -1874,12 +1844,18 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
                 'kyc_fig_igl', 'kyc_il', 'kyc_npa'
             ];
 
-            fields.forEach(id => {
-                data[id] = document.getElementById(id).value;
-            });
+            // Validation
+            for (const id of fields) {
+                const val = document.getElementById(id).value;
+                if (!val || val.trim() === "") {
+                    alert("Please fill all fields. Enter 0 if not applicable.");
+                    return;
+                }
+                data[id] = val;
+            }
 
-            // Optimistic Update
-            state.branchDetails[currentEditingBranch] = data;
+            // Optimistic Update REMOVED - Wait for Supabase
+            // state.branchDetails[currentEditingBranch] = data;
 
             // Persist to Cloud
             await saveToSupabase(currentEditingBranch, data);
