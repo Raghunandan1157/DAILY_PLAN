@@ -1426,22 +1426,19 @@
 
                         <div class="target-row">
                             <div class="target-header">
-                                <span>JL (Accounts)</span>
+                                <span>IL (Accounts)</span>
                                 <span>Target: 0</span>
                             </div>
-                            <input class="form-input" id="disb_jl_acc" placeholder="Enter achievement...">
+                            <input class="form-input" id="disb_il_acc" placeholder="Enter achievement...">
                         </div>
 
                         <div class="target-row">
                             <div class="target-header">
-                                <span>JL (Amount)</span>
+                                <span>IL (Amount)</span>
                                 <span>Target: 0</span>
                             </div>
-                            <input class="form-input" id="disb_jl_amt" placeholder="Enter achievement...">
+                            <input class="form-input" id="disb_il_amt" placeholder="Enter achievement...">
                         </div>
-
-                        <textarea class="form-input" id="disb_notes" rows="3" style="width:100%;"
-                            placeholder="Additional Notes..."></textarea>
                     </div>
 
                     <div class="form-section">
@@ -1746,9 +1743,8 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
                 disb_sanc_pent_amt: branchData.disb_sanc_pent_amt,
                 disb_igl_acc: branchData.disb_igl_acc,
                 disb_igl_amt: branchData.disb_igl_amt,
-                disb_jl_acc: branchData.disb_jl_acc,
-                disb_jl_amt: branchData.disb_jl_amt,
-                disb_notes: branchData.disb_notes,
+                disb_il_acc: branchData.disb_il_acc,
+                disb_il_amt: branchData.disb_il_amt,
                 kyc_fig_igl: branchData.kyc_fig_igl,
                 kyc_il: branchData.kyc_il,
                 kyc_npa: branchData.kyc_npa
@@ -2102,7 +2098,7 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
                 'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
                 'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
                 'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
-                'disb_jl_acc', 'disb_jl_amt', 'disb_notes',
+                'disb_il_acc', 'disb_il_amt',
                 'kyc_fig_igl', 'kyc_il', 'kyc_npa'
             ];
 
@@ -2127,7 +2123,7 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
                 'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
                 'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
                 'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
-                'disb_jl_acc', 'disb_jl_amt', 'disb_notes',
+                'disb_il_acc', 'disb_il_amt',
                 'kyc_fig_igl', 'kyc_il', 'kyc_npa'
             ];
 
@@ -2477,7 +2473,7 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
 
             // For Charts
             let regionNPA = {}; // For Line Chart
-            let disbursementMix = { IGL: 0, FIG: 0, JL: 0 }; // For Donut
+            let disbursementMix = { IGL: 0, FIG: 0, IL: 0 }; // For Donut
             let portfolioHealth = { healthy: 0, slipped: 0, npa: 0 }; // For Bar Chart
 
             state.rawData.rows.forEach(row => {
@@ -2501,7 +2497,7 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
                         // Parse safely
                         const safeInt = (v) => parseInt(v) || 0;
 
-                        totalDisbursement += safeInt(d.disb_sanc_pent_amt) + safeInt(d.disb_igl_amt) + safeInt(d.disb_jl_amt);
+                        totalDisbursement += safeInt(d.disb_sanc_pent_amt) + safeInt(d.disb_igl_amt) + safeInt(d.disb_il_amt);
                         totalNPA += safeInt(d.npa_activation); // metric choice
                         totalFTOD += safeInt(d.ftod_actual);
 
@@ -2511,7 +2507,7 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
                         // Disbursement Mix (Donut)
                         disbursementMix.IGL += safeInt(d.disb_igl_amt);
                         disbursementMix.FIG += safeInt(d.disb_sanc_pent_amt); // Mapping FIG to this for demo logic
-                        disbursementMix.JL += safeInt(d.disb_jl_amt);
+                        disbursementMix.IL += safeInt(d.disb_il_amt);
 
                         // Portfolio Health (Bar Bucket)
                         portfolioHealth.healthy += safeInt(d.ftod_actual);
