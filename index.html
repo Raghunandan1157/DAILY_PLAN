@@ -535,6 +535,21 @@
             transition: opacity 0.5s;
         }
 
+        #daily-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 200;
+            /* Above login */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s;
+        }
+
         .login-box {
             background: var(--bg-card);
             border-radius: 24px;
@@ -637,6 +652,33 @@
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+
+        /* --- READ ONLY MODE --- */
+        .read-only-mode .form-section {
+            background: var(--success-light);
+            border-color: var(--success);
+        }
+
+        .read-only-mode .form-input {
+            background: white;
+            color: var(--text-primary);
+            border-color: var(--success);
+            cursor: not-allowed;
+        }
+
+        .read-only-mode .modal-footer {
+            display: none;
+        }
+
+        .read-only-banner {
+            background: var(--success);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
         /* --- SEARCH BAR --- */
@@ -1275,6 +1317,12 @@
         </div>
     </div>
 
+    <!-- DAILY OVERLAY -->
+    <div id="daily-overlay" class="hidden">
+        <div id="daily-date"
+            style="font-size: 48px; font-weight: 700; color: var(--primary-accent); animation: fadeIn 1s;"></div>
+    </div>
+
     <!-- TOAST ELEMENT -->
     <div id="toast">
         <svg class="icon" viewBox="0 0 24 24">
@@ -1787,33 +1835,57 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
             }
             state.currentUser = user;
 
-            // Show UI Logic
-            const overlay = document.getElementById("login-overlay");
-            overlay.style.opacity = '0';
+            // DAILY FLOW SEQUENCE
+            const dailyOverlay = document.getElementById("daily-overlay");
+            const dateText = document.getElementById("daily-date");
+            const loginOverlay = document.getElementById("login-overlay");
+
+            // 1. Show White Overlay immediately (on top of login)
+            dailyOverlay.classList.remove("hidden");
+            dailyOverlay.style.background = "white";
+            dateText.textContent = ""; // Start White/Empty
+
+            // Hide Login Overlay (underneath)
+            loginOverlay.style.opacity = '0';
+            setTimeout(() => loginOverlay.classList.add("hidden"), 500);
+
+            // 2. Wait 3 Seconds (White Screen)
             setTimeout(() => {
-                overlay.classList.add("hidden");
-                document.getElementById("sidebar").classList.remove("hidden");
-                document.querySelector(".main-content").classList.remove("hidden");
-            }, 500);
+                // 3. Show Date
+                const now = new Date();
+                // Format: 12 Jan 2025
+                const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                dateText.textContent = dateStr;
 
-            // Update Header
-            document.getElementById("headerName").textContent = user;
-            document.getElementById("headerRole").textContent = role === 'CEO' ? "Global Administrator" : "District Manager";
-            document.getElementById("headerAvatar").textContent = user.charAt(0);
+                // 4. Wait Another 3 Seconds (Show Date)
+                setTimeout(() => {
+                    // 5. Load App
+                    dailyOverlay.style.opacity = '0';
+                    setTimeout(() => {
+                        dailyOverlay.classList.add("hidden");
 
-            // Disable Sidebar items for DM
-            if (role === 'DM') {
-                document.getElementById('nav-dashboard').classList.add('hidden');
+                        // Show Main Content
+                        document.getElementById("sidebar").classList.remove("hidden");
+                        document.querySelector(".main-content").classList.remove("hidden");
 
+                        // Update Header
+                        document.getElementById("headerName").textContent = user;
+                        document.getElementById("headerRole").textContent = role === 'CEO' ? "Global Administrator" : "District Manager";
+                        document.getElementById("headerAvatar").textContent = user.charAt(0);
 
-                // Auto switch to hierarchy
-                switchTab('hierarchy');
-            } else {
-                document.getElementById('nav-dashboard').classList.remove('hidden');
+                        // Disable Sidebar items for DM
+                        if (role === 'DM') {
+                            document.getElementById('nav-dashboard').classList.add('hidden');
+                            // Auto switch to hierarchy
+                            switchTab('hierarchy');
+                        } else {
+                            document.getElementById('nav-dashboard').classList.remove('hidden');
+                            renderDashboard();
+                        }
 
-
-                renderDashboard();
-            }
+                    }, 500);
+                }, 3000);
+            }, 3000);
         }
 
         function handleLogout() {
@@ -2102,9 +2174,35 @@ GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
                 'kyc_fig_igl', 'kyc_il', 'kyc_npa'
             ];
 
-            fields.forEach(id => {
-                document.getElementById(id).value = data[id] || "";
-            });
+            const modalContainer = document.querySelector(".modal-container");
+            const existingBanner = document.querySelector(".read-only-banner");
+            if (existingBanner) existingBanner.remove();
+
+            if (data && Object.keys(data).length > 0) {
+                // DATA EXISTS -> READ ONLY MODE
+                modalContainer.classList.add("read-only-mode");
+
+                // Add Banner
+                const banner = document.createElement("div");
+                banner.className = "read-only-banner";
+                banner.textContent = `Submitted on ${new Date().toLocaleDateString()} - View Only`;
+                document.querySelector(".modal-body").prepend(banner);
+
+                fields.forEach(id => {
+                    const el = document.getElementById(id);
+                    el.value = data[id] || "";
+                    el.disabled = true;
+                });
+            } else {
+                // NO DATA -> EDIT MODE
+                modalContainer.classList.remove("read-only-mode");
+
+                fields.forEach(id => {
+                    const el = document.getElementById(id);
+                    el.value = "";
+                    el.disabled = false;
+                });
+            }
 
             document.getElementById("branchModal").classList.add("visible");
         }
