@@ -1816,6 +1816,715 @@
                 display: none;
             }
         }
+
+        /* ============================================
+           ENHANCED MOBILE RESPONSIVE STYLES
+           Mobile-First Approach Additions
+           ============================================ */
+
+        /* --- iOS & MOBILE-SPECIFIC FIXES --- */
+        @supports (-webkit-touch-callout: none) {
+
+            /* iOS-specific styles */
+            body {
+                -webkit-text-size-adjust: 100%;
+            }
+
+            /* Prevent iOS zoom on input focus */
+            input,
+            select,
+            textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        /* Smooth scrolling for touch devices */
+        .dashboard-container,
+        .modal-body,
+        .detail-modal-body,
+        .search-results {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+
+        /* --- EXTRA SMALL SCREENS (≤ 480px) --- */
+        @media (max-width: 480px) {
+            :root {
+                --sidebar-width: 85vw;
+            }
+
+            /* Base body adjustments */
+            body {
+                font-size: 14px;
+            }
+
+            /* Header */
+            .top-header {
+                height: 60px;
+                padding: 0 12px;
+                gap: 8px;
+            }
+
+            .hamburger-btn {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                width: 40px;
+                height: 40px;
+                min-width: 40px;
+                padding: 8px;
+                margin-right: 8px;
+            }
+
+            .breadcrumbs {
+                font-size: 12px;
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 120px;
+            }
+
+            .header-actions {
+                gap: 8px;
+            }
+
+            /* Hide search on very small screens */
+            .search-container {
+                display: none;
+            }
+
+            /* Date picker compact mode */
+            .date-picker-wrapper {
+                min-width: 0;
+            }
+
+            .date-picker {
+                padding: 8px 10px;
+                font-size: 12px;
+                border-radius: 8px;
+            }
+
+            .date-picker .icon {
+                width: 14px;
+                height: 14px;
+            }
+
+            #headerDate {
+                max-width: 80px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            /* Theme toggle compact */
+            .theme-toggle {
+                width: 36px;
+                height: 36px;
+                padding: 6px;
+            }
+
+            /* User profile - icon only */
+            .user-profile {
+                padding-left: 8px;
+                border-left: none;
+            }
+
+            .avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
+            }
+
+            .user-info {
+                display: none !important;
+            }
+
+            /* Dashboard container */
+            .dashboard-container {
+                padding: 12px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            /* Metric cards */
+            .metric-card {
+                padding: 16px;
+                gap: 8px;
+                border-radius: 12px;
+            }
+
+            .metric-title {
+                font-size: 12px;
+            }
+
+            .metric-value {
+                font-size: 20px;
+            }
+
+            .metric-badge {
+                font-size: 10px;
+                padding: 3px 6px;
+            }
+
+            .metric-icon {
+                width: 36px;
+                height: 36px;
+                border-radius: 10px;
+            }
+
+            /* Chart cards */
+            .chart-card {
+                padding: 16px;
+                min-height: 250px;
+                border-radius: 12px;
+            }
+
+            .chart-title {
+                font-size: 14px;
+            }
+
+            /* Table cards */
+            .table-card {
+                padding: 12px;
+                border-radius: 12px;
+            }
+
+            th {
+                padding: 10px 8px;
+                font-size: 10px;
+            }
+
+            td {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+
+            /* Date dropdown full width */
+            .date-dropdown {
+                position: fixed;
+                top: 60px;
+                left: 8px;
+                right: 8px;
+                width: auto;
+                max-height: calc(100vh - 80px);
+                overflow-y: auto;
+                border-radius: 16px;
+            }
+
+            .date-quick-buttons {
+                flex-wrap: wrap;
+            }
+
+            .date-quick-btn {
+                flex: 1 1 30%;
+                padding: 10px 6px;
+                font-size: 10px;
+            }
+
+            .date-quick-btn .btn-icon {
+                font-size: 16px;
+            }
+
+            .calendar-day {
+                font-size: 11px;
+            }
+
+            /* Login overlay */
+            .login-box {
+                width: 100%;
+                max-width: none;
+                margin: 0 12px;
+                padding: 24px 20px;
+                border-radius: 20px;
+            }
+
+            .login-title {
+                font-size: 20px;
+            }
+
+            .login-subtitle {
+                font-size: 13px;
+            }
+
+            .btn {
+                padding: 14px;
+                font-size: 14px;
+                min-height: 48px;
+            }
+
+            select {
+                padding: 14px 12px;
+                font-size: 16px;
+                min-height: 48px;
+            }
+
+            /* Daily overlay */
+            #overlay-time {
+                font-size: 48px !important;
+            }
+
+            #overlay-date {
+                font-size: 18px !important;
+                margin-bottom: 40px !important;
+            }
+
+            .date-btn {
+                min-width: 100px;
+                padding: 16px 12px;
+                border-radius: 12px;
+            }
+
+            .db-label {
+                font-size: 12px;
+            }
+
+            .db-date {
+                font-size: 14px;
+            }
+
+            #daily-overlay .overlay-content>div:last-of-type {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+
+            /* Modals - full screen on mobile */
+            .modal-container {
+                width: 100%;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+            }
+
+            .modal-header {
+                padding: 14px 16px;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+
+            .modal-title {
+                font-size: 16px;
+            }
+
+            .modal-body {
+                padding: 16px;
+                flex: 1;
+                overflow-y: auto;
+            }
+
+            .form-section {
+                padding: 16px;
+                margin-bottom: 16px;
+                border-radius: 10px;
+            }
+
+            .form-section-title {
+                font-size: 12px;
+                margin-bottom: 14px;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 6px;
+                margin-bottom: 12px;
+            }
+
+            .form-label {
+                font-size: 12px;
+                flex: none;
+            }
+
+            .form-input {
+                padding: 12px;
+                font-size: 16px;
+                min-height: 44px;
+                border-radius: 8px;
+            }
+
+            .grid-2-col {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .target-row {
+                margin-bottom: 12px;
+            }
+
+            .target-header {
+                font-size: 10px;
+            }
+
+            .modal-footer {
+                padding: 14px 16px;
+                position: sticky;
+                bottom: 0;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .modal-footer button {
+                flex: 1 1 100%;
+                min-height: 44px;
+                font-size: 13px;
+            }
+
+            /* Detail modal */
+            .detail-modal-container {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+
+            .detail-modal-header {
+                padding: 12px 16px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .detail-modal-back {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .detail-modal-title {
+                font-size: 16px;
+                order: 2;
+                width: 100%;
+                margin-top: 8px;
+            }
+
+            .detail-modal-subtitle {
+                font-size: 11px;
+            }
+
+            .detail-modal-close {
+                width: 32px;
+                height: 32px;
+            }
+
+            .detail-modal-body {
+                padding: 12px;
+            }
+
+            .detail-summary-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+
+            .detail-stat-card {
+                padding: 14px;
+                border-radius: 12px;
+            }
+
+            .detail-stat-value {
+                font-size: 22px;
+            }
+
+            .detail-stat-label {
+                font-size: 10px;
+            }
+
+            .detail-filter-bar {
+                gap: 8px;
+                margin-bottom: 14px;
+            }
+
+            .detail-filter-btn {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+
+            .detail-branch-list {
+                border-radius: 12px;
+            }
+
+            .detail-branch-header,
+            .detail-branch-row {
+                grid-template-columns: 1fr 1fr;
+                padding: 10px 12px;
+                font-size: 11px;
+            }
+
+            .detail-branch-header>*:nth-child(n+3),
+            .detail-branch-row>*:nth-child(n+3) {
+                display: none;
+            }
+
+            .detail-pct-badge {
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+
+            /* Drill down grid */
+            #drillDownGrid {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+
+            /* Support card in sidebar */
+            .support-card {
+                padding: 16px;
+                border-radius: 12px;
+            }
+
+            .support-title {
+                font-size: 13px;
+            }
+
+            .support-text {
+                font-size: 11px;
+            }
+
+            .btn-support {
+                padding: 10px 16px;
+                font-size: 12px;
+            }
+
+            /* Toast */
+            #toast {
+                left: 12px;
+                right: 12px;
+                transform: translateY(100px);
+                padding: 12px 16px;
+                font-size: 13px;
+                border-radius: 12px;
+            }
+
+            #toast.visible {
+                transform: translateY(0);
+            }
+
+            /* Loader */
+            .loader-spinner {
+                width: 40px;
+                height: 40px;
+            }
+
+            .loader-text {
+                font-size: 13px;
+            }
+        }
+
+        /* --- SMALL SCREENS (481px - 640px) --- */
+        @media (min-width: 481px) and (max-width: 640px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }
+
+            .dashboard-container {
+                padding: 16px;
+            }
+
+            .grid-full {
+                grid-column: span 2;
+            }
+
+            .grid-half {
+                grid-column: span 2;
+            }
+
+            .metric-card {
+                padding: 18px;
+            }
+
+            #drillDownGrid {
+                grid-template-columns: 1fr 1fr !important;
+            }
+
+            .date-btn {
+                min-width: 120px;
+            }
+
+            #overlay-time {
+                font-size: 60px !important;
+            }
+        }
+
+        /* --- MEDIUM SCREENS (641px - 768px) --- */
+        @media (min-width: 641px) and (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 18px;
+            }
+
+            .grid-full {
+                grid-column: span 2;
+            }
+
+            .modal-body {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-2-col {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .detail-summary-row {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* --- ENHANCED TOUCH TARGETS (applies to all sizes) --- */
+        @media (hover: none) and (pointer: coarse) {
+            /* Touch device detection */
+
+            .nav-item {
+                padding: 14px 16px;
+                min-height: 48px;
+            }
+
+            .btn,
+            .btn-primary,
+            .btn-outline,
+            .btn-support,
+            .date-btn,
+            .date-quick-btn,
+            .calendar-nav-btn,
+            .detail-filter-btn,
+            .date-apply-btn {
+                min-height: 44px;
+            }
+
+            .form-input,
+            select,
+            input[type="date"],
+            input[type="text"] {
+                min-height: 44px;
+                padding: 12px;
+            }
+
+            .modal-close,
+            .detail-modal-close,
+            .theme-toggle,
+            .hamburger-btn {
+                min-width: 44px;
+                min-height: 44px;
+            }
+
+            /* Larger tap targets for calendar days */
+            .calendar-day {
+                min-height: 36px;
+                min-width: 36px;
+            }
+
+            /* Better spacing for clickable items */
+            .search-item {
+                padding: 14px 16px;
+            }
+
+            .detail-branch-row {
+                min-height: 56px;
+            }
+
+            /* Remove hover effects that don't work on touch */
+            .metric-card:hover {
+                transform: none;
+            }
+
+            .clickable-metric:hover {
+                transform: none;
+                box-shadow: var(--card-shadow);
+            }
+
+            /* Add active states instead */
+            .metric-card:active,
+            .clickable-metric:active {
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+
+            .btn:active,
+            .nav-item:active,
+            .date-btn:active {
+                transform: scale(0.97);
+            }
+        }
+
+        /* --- LANDSCAPE MOBILE --- */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .top-header {
+                height: 50px;
+            }
+
+            .dashboard-container {
+                padding: 10px;
+            }
+
+            /* Login adjustments for landscape */
+            .login-box {
+                padding: 20px;
+                max-height: 95vh;
+                overflow-y: auto;
+            }
+
+            /* Daily overlay adjustments */
+            #overlay-time {
+                font-size: 40px !important;
+            }
+
+            #overlay-date {
+                font-size: 16px !important;
+                margin-bottom: 20px !important;
+            }
+
+            .date-btn {
+                padding: 12px 16px;
+            }
+        }
+
+        /* --- SAFE AREA INSETS (Notch devices) --- */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            .top-header {
+                padding-top: max(0px, env(safe-area-inset-top));
+            }
+
+            .sidebar {
+                padding-top: max(24px, env(safe-area-inset-top));
+                padding-bottom: max(24px, env(safe-area-inset-bottom));
+            }
+
+            .modal-footer {
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+            }
+
+            .modal-container,
+            .detail-modal-container {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+
+            #toast {
+                bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px));
+            }
+        }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+
+            .sidebar,
+            .hamburger-btn,
+            .theme-toggle,
+            .modal-overlay,
+            .detail-modal-overlay,
+            #login-overlay,
+            #daily-overlay,
+            #toast,
+            .global-loader {
+                display: none !important;
+            }
+
+            .main-content {
+                width: 100% !important;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 </head>
 
