@@ -2357,14 +2357,16 @@
                 padding: 14px 16px;
                 position: sticky;
                 bottom: 0;
-                gap: 10px;
+                gap: 8px;
                 flex-wrap: wrap;
+                display: flex;
             }
 
             .modal-footer button {
-                flex: 1 1 100%;
-                min-height: var(--button-height);
-                font-size: 13px;
+                flex: 1 1 calc(50% - 4px);
+                min-height: 44px;
+                font-size: 12px;
+                padding: 10px 8px;
             }
 
             /* Detail modal */
