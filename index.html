@@ -5,48 +5,201 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Device Selector</title>
   <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #f0f4f8;
-      font-family: Arial, Helvetica, sans-serif;
+    :root{
+      --bg1:#0b1220;
+      --bg2:#0b2a4a;
+      --card:#0f1b2f;
+      --text:#eaf2ff;
+      --muted:#b7c7e6;
+      --brand:#4ea1ff;
+      --brand2:#6d5cff;
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --ring: 0 0 0 3px rgba(78,161,255,.25);
+      --radius: 18px;
     }
-    .container {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      align-items: center;
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:24px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, Helvetica, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 20% 15%, rgba(78,161,255,.25), transparent 60%),
+        radial-gradient(800px 450px at 85% 75%, rgba(109,92,255,.22), transparent 60%),
+        linear-gradient(160deg, var(--bg1), var(--bg2));
     }
-    .btn {
-      display: inline-block;
-      padding: 1.5rem 3rem;
-      font-size: 1.5rem;
-      color: #fff;
-      background: #0077ff;
-      border: none;
-      border-radius: 0.5rem;
-      text-decoration: none;
-      text-align: center;
-      min-width: 200px;
-      transition: background 0.3s ease;
+
+    .wrap{
+      width:min(980px, 100%);
+      display:grid;
+      gap:18px;
     }
-    .btn:hover {
-      background: #005fcc;
+
+    .card{
+      background: rgba(15,27,47,.82);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
     }
-    @media (min-width: 600px) {
-      .container {
-        flex-direction: row;
-      }
+
+    .header{
+      padding:22px 22px 16px;
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+
+    .logo{
+      width:48px;
+      height:48px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      flex:0 0 auto;
+    }
+    .logo img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      padding:8px;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      line-height:1.2;
+    }
+    .title h1{
+      margin:0;
+      font-size: 20px;
+      letter-spacing:.2px;
+    }
+    .title p{
+      margin:6px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .content{
+      padding: 0 22px 22px;
+      display:grid;
+      gap:14px;
+    }
+
+    .grid{
+      display:grid;
+      gap:14px;
+      grid-template-columns: 1fr;
+    }
+
+    .btn{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      text-decoration:none;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .btn:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.18);
+    }
+    .btn:focus{
+      outline:none;
+      box-shadow: var(--ring);
+    }
+
+    .left{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .left .big{
+      font-size:16px;
+      font-weight:700;
+    }
+    .left .small{
+      font-size:13px;
+      color: var(--muted);
+    }
+
+    .pill{
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(135deg, rgba(78,161,255,.22), rgba(109,92,255,.18));
+      white-space:nowrap;
+    }
+
+    .footer{
+      padding: 14px 22px 18px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      font-size: 12px;
+      color: rgba(183,199,230,.85);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    @media (min-width: 720px){
+      .grid{ grid-template-columns: 1fr 1fr; }
+      .title h1{ font-size: 24px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <a href="laptop.html" class="btn">Laptop</a>
-    <a href="mobile.html" class="btn">Mobile</a>
-  </div>
+  <main class="wrap">
+    <section class="card">
+      <div class="header">
+        <div class="logo">
+          <img src="logo.png" alt="Logo" />
+        </div>
+        <div class="title">
+          <h1>Select your device</h1>
+          <p>Pick the layout that fits your screen best.</p>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="grid">
+          <a class="btn" href="laptop.html" aria-label="Open laptop version">
+            <div class="left">
+              <div class="big">Laptop</div>
+              <div class="small">Bigger layout • more space</div>
+            </div>
+            <span class="pill">Open →</span>
+          </a>
+
+          <a class="btn" href="mobile.html" aria-label="Open mobile version">
+            <div class="left">
+              <div class="big">Mobile</div>
+              <div class="small">Clean layout • touch friendly</div>
+            </div>
+            <span class="pill">Open →</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>
