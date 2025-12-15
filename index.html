@@ -878,7 +878,37 @@
             align-items: center;
             justify-content: center;
             transition: opacity 0.5s;
+            overflow-y: auto;
+            padding: 20px;
         }
+
+        .overlay-time {
+            font-size: 80px;
+            font-weight: 300;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .overlay-date {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-accent);
+            margin-bottom: 60px;
+        }
+
+        .date-buttons-container {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .overlay-hint {
+            margin-top: 24px;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
 
         .login-box {
             background: var(--bg-card);
@@ -1822,6 +1852,61 @@
            Mobile-First Approach Additions
            ============================================ */
 
+        /* --- GLOBAL OVERFLOW PREVENTION --- */
+        html {
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        html,
+        body {
+            max-width: 100vw;
+            overscroll-behavior-x: none;
+        }
+
+        /* Prevent any element from causing horizontal scroll */
+        .main-content,
+        .dashboard-container,
+        .modal-body,
+        .detail-modal-body,
+        .login-box,
+        .form-section {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* Table scroll container for wide tables */
+        .table-scroll-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-card {
+            overflow-x: auto;
+        }
+
+        /* --- PERFORMANCE OPTIMIZATIONS --- */
+        .sidebar,
+        .modal-container,
+        .detail-modal-container {
+            will-change: transform;
+        }
+
+        /* Reduce motion for users who prefer it */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
         /* --- iOS & MOBILE-SPECIFIC FIXES --- */
         @supports (-webkit-touch-callout: none) {
 
@@ -2063,17 +2148,20 @@
             }
 
             /* Daily overlay */
+            .overlay-time,
             #overlay-time {
                 font-size: 48px !important;
             }
 
+            .overlay-date,
             #overlay-date {
                 font-size: 18px !important;
                 margin-bottom: 40px !important;
             }
 
             .date-btn {
-                min-width: 100px;
+                min-width: 100%;
+                max-width: 280px;
                 padding: 16px 12px;
                 border-radius: 12px;
             }
@@ -2086,9 +2174,18 @@
                 font-size: 14px;
             }
 
-            #daily-overlay .overlay-content>div:last-of-type {
+            .date-buttons-container {
                 flex-direction: column !important;
-                gap: 10px !important;
+                gap: 12px !important;
+                align-items: center;
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+
+            .overlay-hint {
+                font-size: 11px;
+                margin-top: 20px;
             }
 
             /* Modals - full screen on mobile */
@@ -2743,18 +2840,15 @@
 
     <!-- DAILY OVERLAY (DATE SELECTION) -->
     <div id="daily-overlay" class="hidden">
-        <div class="overlay-content" style="text-align:center;">
+        <div class="overlay-content" style="text-align:center; padding: 20px;">
             <!-- Time at Top -->
-            <div id="overlay-time"
-                style="font-size: 80px; font-weight: 300; color: var(--text-primary); margin-bottom: 8px;">00:00:00
-            </div>
+            <div id="overlay-time" class="overlay-time">00:00:00</div>
 
             <!-- Date in Center -->
-            <div id="overlay-date"
-                style="font-size: 24px; font-weight: 600; color: var(--primary-accent); margin-bottom: 60px;"></div>
+            <div id="overlay-date" class="overlay-date"></div>
 
             <!-- 3 Buttons -->
-            <div style="display: flex; gap: 16px; justify-content: center;">
+            <div class="date-buttons-container">
                 <button class="date-btn" onclick="selectSystemDate(0)">
                     <div class="db-label">Today</div>
                     <div class="db-date" id="btn-date-0">...</div>
@@ -2768,7 +2862,7 @@
                     <div class="db-date" id="btn-date-2">...</div>
                 </button>
             </div>
-            <div style="margin-top:24px; color:var(--text-secondary); font-size:12px;">Select date to proceed</div>
+            <div class="overlay-hint">Select date to proceed</div>
         </div>
     </div>
 
