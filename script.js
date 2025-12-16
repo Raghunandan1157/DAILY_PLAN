@@ -708,8 +708,6 @@ async function saveToSupabase(branchName, branchData, table) {
         fy_od_plan: toNum(branchData.fy_od_plan),
         fy_non_start_acc: toNum(branchData.fy_non_start_acc),
         fy_non_start_plan: toNum(branchData.fy_non_start_plan),
-        disb_sanc_pent_acc: toNum(branchData.disb_sanc_pent_acc),
-        disb_sanc_pent_amt: toNum(branchData.disb_sanc_pent_amt),
         disb_igl_acc: toNum(branchData.disb_igl_acc),
         disb_igl_amt: toNum(branchData.disb_igl_amt),
         disb_il_acc: toNum(branchData.disb_il_acc),
@@ -1061,11 +1059,6 @@ function renderDashboard() {
                                     <div style="font-size:18px; font-weight:700; color:var(--success);">₹${(stats.totalDisbursement / 10000000).toFixed(2)} Cr</div>
                                 </div>
                                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; padding:16px 0;">
-                                    <div class="clickable-section" onclick="openDetailModal('disb_sanction')" style="background:var(--bg-body); padding:16px; border-radius:12px; text-align:center; cursor:pointer;">
-                                        <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Sanction Pending</div>
-                                        <div style="font-size:20px; font-weight:700; color:var(--primary-accent);">${stats.disbSancAcc}</div>
-                                        <div style="font-size:11px; color:var(--text-secondary);">₹${(stats.disbSancAmt / 100000).toFixed(1)}L</div>
-                                    </div>
                                     <div class="clickable-section" onclick="openDetailModal('disb_igl')" style="background:var(--bg-body); padding:16px; border-radius:12px; text-align:center; cursor:pointer;">
                                         <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">IGL & FIG</div>
                                         <div style="font-size:20px; font-weight:700; color:#10B981;">${stats.disbIglAcc}</div>
@@ -1078,7 +1071,7 @@ function renderDashboard() {
                                     </div>
                                     <div class="clickable-section" onclick="openDetailModal('disbursement')" style="background:var(--primary-light); padding:16px; border-radius:12px; text-align:center; cursor:pointer;">
                                         <div style="font-size:11px; color:var(--primary-accent); margin-bottom:4px;">Total Accounts</div>
-                                        <div style="font-size:20px; font-weight:700; color:var(--primary-accent);">${stats.disbSancAcc + stats.disbIglAcc + stats.disbIlAcc}</div>
+                                        <div style="font-size:20px; font-weight:700; color:var(--primary-accent);">${stats.disbIglAcc + stats.disbIlAcc}</div>
                                         <div style="font-size:11px; color:var(--text-secondary);">Click for all details</div>
                                     </div>
                                 </div>
@@ -1458,8 +1451,6 @@ function createViewSummary(targetData, achieveData) {
     )}
                             
                             ${section('Disbursement',
-        metricRow('Sanction Pending (Acc)', 'disb_sanc_pent_acc') +
-        metricRow('Sanction Pending (Amt)', 'disb_sanc_pent_amt') +
         metricRow('IGL & FIG (Acc)', 'disb_igl_acc') +
         metricRow('IGL & FIG (Amt)', 'disb_igl_amt') +
         metricRow('IL (Acc)', 'disb_il_acc') +
@@ -1509,7 +1500,7 @@ function openBranchModal(branchName) {
     const achieveFields = [
         'ftod_actual', 'lived_actual', 'pnpa_actual', 'npa_activation', 'npa_closure',
         'fy_od_acc', 'fy_non_start_acc',
-        'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
+        'disb_igl_acc', 'disb_igl_amt',
         'disb_il_acc', 'disb_il_amt',
         'kyc_fig_igl', 'kyc_il', 'kyc_npa'
     ];
@@ -1672,7 +1663,7 @@ async function saveBranchDetails(andNext) {
         'ftod_actual', 'ftod_plan', 'lived_actual', 'lived_plan',
         'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
         'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
-        'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
+        'disb_igl_acc', 'disb_igl_amt',
         'disb_il_acc', 'disb_il_amt',
         'kyc_fig_igl', 'kyc_il', 'kyc_npa'
     ];
@@ -2178,7 +2169,7 @@ function calculateBranchAveragePercentage(branchName) {
         'ftod_actual', 'ftod_plan', 'lived_actual', 'lived_plan',
         'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
         'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
-        'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
+        'disb_igl_acc', 'disb_igl_amt',
         'disb_il_acc', 'disb_il_amt', 'kyc_fig_igl', 'kyc_il', 'kyc_npa'
     ];
 
@@ -2280,7 +2271,6 @@ function calculateCEOStats() {
     let npaActivation = 0, npaClosure = 0;
 
     // Disbursement
-    let disbSancAcc = 0, disbSancAmt = 0;
     let disbIglAcc = 0, disbIglAmt = 0;
     let disbIlAcc = 0, disbIlAmt = 0;
 
@@ -2332,8 +2322,6 @@ function calculateCEOStats() {
                 npaClosure += safeInt(a.npa_closure);
 
                 // Disbursement
-                disbSancAcc += safeInt(a.disb_sanc_pent_acc);
-                disbSancAmt += safeInt(a.disb_sanc_pent_amt);
                 disbIglAcc += safeInt(a.disb_igl_acc);
                 disbIglAmt += safeInt(a.disb_igl_amt);
                 disbIlAcc += safeInt(a.disb_il_acc);
@@ -2381,7 +2369,7 @@ function calculateCEOStats() {
         : 0;
 
     const totalCollectionPlan = ftodPlan + livedPlan + pnpaPlan;
-    const totalDisbursement = disbSancAmt + disbIglAmt + disbIlAmt;
+    const totalDisbursement = disbIglAmt + disbIlAmt;
     const kycTotal = kycFigIgl + kycIl + kycNpa;
 
     return {
@@ -2401,7 +2389,6 @@ function calculateCEOStats() {
 
         // Disbursement
         totalDisbursement,
-        disbSancAcc, disbSancAmt,
         disbIglAcc, disbIglAmt,
         disbIlAcc, disbIlAmt,
 
@@ -2448,7 +2435,6 @@ function openDetailModal(type, data = null) {
         'npa': { icon: '🔴', title: 'NPA Movement Details', subtitle: 'Activation vs Closure' },
         'portfolio': { icon: '📉', title: 'Portfolio Health Details', subtitle: 'Account distribution' },
         'disbursement': { icon: '💳', title: 'Disbursement Details', subtitle: 'Product-wise breakdown' },
-        'disb_sanction': { icon: '📝', title: 'Sanction Pending Details', subtitle: 'Pending approvals' },
         'disb_igl': { icon: '🌱', title: 'IGL & FIG Details', subtitle: 'Individual/Group loans' },
         'disb_il': { icon: '🏠', title: 'IL Details', subtitle: 'Individual loans' },
         'region': { icon: '🌍', title: `Region: ${data || 'All'}`, subtitle: 'Regional performance' },
@@ -2498,7 +2484,6 @@ function renderDetailContent(type, data) {
         case 'npa': return renderMetricDetail('npa', stats);
         case 'portfolio': return renderPortfolioDetailView(data, stats);
         case 'disbursement': return renderDisbursementDetailView(stats);
-        case 'disb_sanction': return renderDisbProductDetail('sanction', stats);
         case 'disb_igl': return renderDisbProductDetail('igl', stats);
         case 'disb_il': return renderDisbProductDetail('il', stats);
         case 'region': return renderRegionDetailView(data, stats);
@@ -2867,11 +2852,6 @@ function renderPortfolioDetailView(category, stats) {
 function renderDisbursementDetailView(stats) {
     return `
                 <div class="detail-summary-row">
-                    <div class="detail-stat-card clickable-section" onclick="openDetailModal('disb_sanction')">
-                        <div class="detail-stat-value" style="color:#6366F1;">${stats.disbSancAcc}</div>
-                        <div class="detail-stat-label">Sanction Pending</div>
-                        <div style="font-size:12px; color:var(--text-secondary);">₹${(stats.disbSancAmt / 100000).toFixed(1)}L</div>
-                    </div>
                     <div class="detail-stat-card clickable-section" onclick="openDetailModal('disb_igl')">
                         <div class="detail-stat-value" style="color:#10B981;">${stats.disbIglAcc}</div>
                         <div class="detail-stat-label">IGL & FIG</div>
@@ -2895,7 +2875,6 @@ function renderDisbursementDetailView(stats) {
 // --- Disbursement Product Detail ---
 function renderDisbProductDetail(product, stats) {
     const config = {
-        'sanction': { accField: 'disb_sanc_pent_acc', amtField: 'disb_sanc_pent_amt', label: 'Sanction Pending' },
         'igl': { accField: 'disb_igl_acc', amtField: 'disb_igl_amt', label: 'IGL & FIG' },
         'il': { accField: 'disb_il_acc', amtField: 'disb_il_amt', label: 'IL' }
     };
@@ -3352,12 +3331,11 @@ function renderDisbursementBranchTable(stats) {
         const entry = state.branchDetails[name];
         if (entry && entry.achievement) {
             const a = entry.achievement;
-            const total = (parseInt(a.disb_sanc_pent_amt) || 0) + (parseInt(a.disb_igl_amt) || 0) + (parseInt(a.disb_il_amt) || 0);
+            const total = (parseInt(a.disb_igl_amt) || 0) + (parseInt(a.disb_il_amt) || 0);
             if (total > 0) {
                 data.push({
                     name,
                     region,
-                    sanction: (parseInt(a.disb_sanc_pent_amt) || 0),
                     igl: (parseInt(a.disb_igl_amt) || 0),
                     il: (parseInt(a.disb_il_amt) || 0),
                     total
@@ -3370,20 +3348,18 @@ function renderDisbursementBranchTable(stats) {
 
     return `
                 <div class="detail-branch-list">
-                    <div class="detail-branch-header" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
+                    <div class="detail-branch-header" style="grid-template-columns: 2fr 1fr 1fr 1fr;">
                         <div>Branch</div>
-                        <div>Sanction (₹L)</div>
                         <div>IGL (₹L)</div>
                         <div>IL (₹L)</div>
                         <div>Total (₹L)</div>
                     </div>
                     ${data.map(b => `
-                        <div class="detail-branch-row" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
+                        <div class="detail-branch-row" style="grid-template-columns: 2fr 1fr 1fr 1fr;">
                             <div>
                                 <div class="detail-branch-name">${b.name}</div>
                                 <div class="detail-branch-region">${b.region}</div>
                             </div>
-                            <div>${(b.sanction / 100000).toFixed(1)}</div>
                             <div>${(b.igl / 100000).toFixed(1)}</div>
                             <div>${(b.il / 100000).toFixed(1)}</div>
                             <div style="font-weight:700; color:var(--primary-accent);">${(b.total / 100000).toFixed(1)}</div>
