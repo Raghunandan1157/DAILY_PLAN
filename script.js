@@ -2306,10 +2306,11 @@ function createViewSummary(targetData, achieveData) {
     };
 
     // Create metric row HTML
-    const metricRow = (label, targetField, achieveField) => {
+    // isActual: When true, don't show achievement value or percentage for "Actual" account rows
+    const metricRow = (label, targetField, achieveField, isActual = false) => {
         const t = getVal(targetData, targetField);
-        const a = getVal(achieveData, achieveField || targetField);
-        const { pct, color } = calcPercent(t, a);
+        const a = isActual ? '-' : getVal(achieveData, achieveField || targetField);
+        const { pct, color } = isActual ? { pct: '-', color: '#6B7280' } : calcPercent(t, a);
         const progressWidth = t === 0 ? 0 : Math.min((a / t) * 100, 100);
 
         return `
@@ -2349,17 +2350,17 @@ function createViewSummary(targetData, achieveData) {
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                         <div>
                             ${section('FTOD - Accounts',
-        metricRow('Actual FTOD', 'ftod_actual') +
+        metricRow('Actual FTOD', 'ftod_actual', null, true) +
         metricRow('Collection Plan', 'ftod_plan')
     )}
                             
                             ${section('Slipped Accounts (Lived)',
-        metricRow('Actual Account', 'nov_25_Slipped_Accounts_Actual') +
+        metricRow('Actual Account', 'nov_25_Slipped_Accounts_Actual', null, true) +
         metricRow('Collection Plan', 'nov_25_Slipped_Accounts_Plan')
     )}
                             
                             ${section('PNPA Accounts',
-        metricRow('Actual PNPA', 'pnpa_actual') +
+        metricRow('Actual PNPA', 'pnpa_actual', null, true) +
         metricRow('Collection Plan', 'pnpa_plan')
     )}
                             
@@ -2370,9 +2371,9 @@ function createViewSummary(targetData, achieveData) {
                         </div>
                         <div>
                             ${section('FY 25-26 Accounts',
-        metricRow('Total OD Accounts', 'fy_od_acc') +
+        metricRow('Total OD Accounts', 'fy_od_acc', null, true) +
         metricRow('OD Collection Plan', 'fy_od_plan') +
-        metricRow('Non-Starter Accounts', 'fy_non_start_acc') +
+        metricRow('Non-Starter Accounts', 'fy_non_start_acc', null, true) +
         metricRow('Non-Starter Plan', 'fy_non_start_plan')
     )}
                             
