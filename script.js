@@ -2123,6 +2123,26 @@ function openBranchModal(branchName) {
     // Local alias for use in this function
     let reportState = currentModalState;
 
+    // Helper to update labels dynamically
+    const updateLabel = (id, text) => {
+        const el = document.getElementById(id);
+        if (el && el.previousElementSibling) el.previousElementSibling.textContent = text;
+    };
+
+    if (reportState === 'ACHIEVEMENT') {
+        updateLabel('ftod_plan', 'Achievement Plan');
+        updateLabel('lived_plan', 'Achievement Plan');
+        updateLabel('pnpa_plan', 'Achievement Plan');
+        updateLabel('fy_od_plan', 'Achievement Plan');
+        updateLabel('fy_non_start_plan', 'Achievement Plan');
+    } else {
+        updateLabel('ftod_plan', 'FTOD Collection Plan');
+        updateLabel('lived_plan', 'Collection Plan');
+        updateLabel('pnpa_plan', 'PNPA Collection Plan');
+        updateLabel('fy_od_plan', 'COLLECTION PLAN');
+        updateLabel('fy_non_start_plan', 'COLLECTION PLAN');
+    }
+
     // Helper lists
     const planFields = [
         'ftod_plan', 'lived_plan', 'pnpa_plan', 'fy_od_plan', 'fy_non_start_plan'
@@ -3687,7 +3707,7 @@ function renderKYCDetail(stats) {
                     </div>
                     <div class="detail-stat-card">
                         <div class="detail-stat-value" style="color:#10B981;">${stats.kycNpa}</div>
-                        <div class="detail-stat-label">NPA</div>
+                        <div class="detail-stat-label">FOR NPA</div>
                     </div>
                     <div class="detail-stat-card">
                         <div class="detail-stat-value">${stats.kycTotal}</div>
@@ -3701,7 +3721,7 @@ function renderKYCDetail(stats) {
                         <div>Region</div>
                         <div style="color:#6366F1;">FIG/IGL</div>
                         <div style="color:#F59E0B;">IL</div>
-                        <div style="color:#10B981;">NPA</div>
+                        <div style="color:#10B981;">FOR NPA</div>
                     </div>
                     ${kycData.map(b => `
                         <div class="detail-branch-row" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
@@ -4049,3 +4069,47 @@ function filterPortfolio(filter) {
     event.target.classList.add('active');
     // For now just visual feedback, could implement actual filtering
 }
+
+// --- INPUT VALIDATION ---
+function setupInputValidators() {
+    const pairs = [
+        { plan: 'ftod_plan', actual: 'ftod_actual', name: 'FTOD Collection Plan' },
+        { plan: 'lived_plan', actual: 'lived_actual', name: 'Slipped Collection Plan' },
+        { plan: 'pnpa_plan', actual: 'pnpa_actual', name: 'PNPA Collection Plan' },
+        { plan: 'fy_od_plan', actual: 'fy_od_acc', name: 'OD Collection Plan' },
+        { plan: 'fy_non_start_plan', actual: 'fy_non_start_acc', name: 'Non-Starter Collection Plan' }
+    ];
+
+    pairs.forEach(pair => {
+        const planInput = document.getElementById(pair.plan);
+        const actualInput = document.getElementById(pair.actual);
+
+        if (planInput && actualInput) {
+            // Validate when plan input changes
+            planInput.addEventListener('input', function () {
+                // Remove non-numeric characters for safety if needed, or just parse
+                const planVal = parseInt(this.value) || 0;
+                const actualVal = parseInt(actualInput.value) || 0;
+
+                if (planVal > actualVal) {
+                    showToast(`${pair.name} cannot be more than Actual Account (${actualVal})`, "alert");
+                    this.value = actualVal;
+                }
+            });
+
+            // Re-validate when actual input changes
+            actualInput.addEventListener('input', function () {
+                const planVal = parseInt(planInput.value) || 0;
+                const actualVal = parseInt(this.value) || 0;
+                if (planVal > actualVal) {
+                    planInput.value = actualVal;
+                }
+            });
+        }
+    });
+}
+
+// Initialize validators
+document.addEventListener('DOMContentLoaded', setupInputValidators);
+// Also call immediately in case DOM is already loaded (script is at end of body)
+setupInputValidators();
