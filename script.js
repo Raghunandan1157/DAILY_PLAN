@@ -1149,9 +1149,13 @@ function renderReports(buffer) {
 
             <!-- 3. ACTIONS -->
             <div style="padding: 16px; border-top: 1px solid var(--border-color); display:flex; justify-content:flex-end; gap:12px;">
-                <button class="btn btn-primary" onclick="downloadCustomReport()" style="padding:10px 24px;">
+                <button class="btn btn-outline" onclick="downloadPlanReport()" style="padding:10px 24px;">
                     <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    Download Excel Report
+                    Download Plan Report
+                </button>
+                <button class="btn btn-primary" onclick="downloadAchievementPlanReport()" style="padding:10px 24px;">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download Achievement Plan Report
                 </button>
             </div>
         </div>
@@ -1185,8 +1189,18 @@ function setReportDate(offset) {
     fetchSupabaseData(); // Re-fetch for the new date
 }
 
-// --- DOWNLOAD REPORT (Styled HTML for Excel) ---
-function downloadCustomReport() {
+// --- COLOR HELPER FOR REPORTS ---
+function getCellColor(achievement, plan) {
+    if (!plan || plan === 0) return '#FFFFFF'; // White for no plan
+    const percentage = (achievement / plan) * 100;
+
+    if (percentage >= 100) return '#D1FAE5'; // Green - Met or exceeded
+    if (percentage >= 50) return '#FEF3C7';   // Yellow - 50-99%
+    return '#FECACA';                          // Light red - Below 50%
+}
+
+// --- DOWNLOAD PLAN REPORT (Basic Plan Data Only) ---
+function downloadPlanReport() {
     // Colors
     const cPeach = '#FFDAB9';
     const cGreen = '#D1FAE5';
@@ -1208,7 +1222,7 @@ function downloadCustomReport() {
             <x:ExcelWorkbook>
                 <x:ExcelWorksheets>
                     <x:ExcelWorksheet>
-                        <x:Name>Daily Report</x:Name>
+                        <x:Name>Plan Report</x:Name>
                         <x:WorksheetOptions>
                             <x:Panes></x:Panes>
                         </x:WorksheetOptions>
@@ -1285,7 +1299,6 @@ function downloadCustomReport() {
             </tr>
     `;
 
-    const dataRows = [];
     const dateStr = state.systemDate;
     let idCounter = 1;
 
@@ -1309,32 +1322,30 @@ function downloadCustomReport() {
         const dm = row[idxDM] || "";
 
         const entry = state.branchDetails[branchName];
-
-        const a = entry && entry.achievement ? entry.achievement : {};
         const t = entry && entry.target ? entry.target : {};
 
-        // MAPPING
-        const ftodAct = getInt(a.ftod_actual || t.ftod_actual);
-        const ftodPlan = getInt(a.ftod_plan || t.ftod_plan);
-        const slipDem = getInt(a.lived_actual || t.lived_actual);
-        const slipColl = getInt(a.lived_plan || t.lived_plan);
-        const pnpaAct = getInt(a.pnpa_actual || t.pnpa_actual);
-        const pnpaPlan = getInt(a.pnpa_plan || t.pnpa_plan);
-        const npaAct = getInt(a.npa_activation || t.npa_activation);
-        const npaClose = getInt(a.npa_closure || t.npa_closure);
-        const odAcc = getInt(a.fy_od_acc || t.fy_od_acc);
-        const odPlan = getInt(a.fy_od_plan || t.fy_od_plan);
-        const nsAcc = getInt(a.fy_non_start_acc || t.fy_non_start_acc);
-        const nsPlan = getInt(a.fy_non_start_plan || t.fy_non_start_plan);
+        // MAPPING - Only use target (plan) data
+        const ftodAct = getInt(t.ftod_actual);
+        const ftodPlan = getInt(t.ftod_plan);
+        const slipDem = getInt(t.lived_actual);
+        const slipColl = getInt(t.lived_plan);
+        const pnpaAct = getInt(t.pnpa_actual);
+        const pnpaPlan = getInt(t.pnpa_plan);
+        const npaAct = getInt(t.npa_activation);
+        const npaClose = getInt(t.npa_closure);
+        const odAcc = getInt(t.fy_od_acc);
+        const odPlan = getInt(t.fy_od_plan);
+        const nsAcc = getInt(t.fy_non_start_acc);
+        const nsPlan = getInt(t.fy_non_start_plan);
         const sancAcc = 0;
         const sancAmt = 0;
-        const disbIglAcc = getInt(a.disb_igl_acc || t.disb_igl_acc);
-        const disbIglAmt = getInt(a.disb_igl_amt || t.disb_igl_amt);
-        const disbIlAcc = getInt(a.disb_il_acc || t.disb_il_acc);
-        const disbIlAmt = getInt(a.disb_il_amt || t.disb_il_amt);
-        const kycFig = getInt(a.kyc_fig_igl || t.kyc_fig_igl);
-        const kycIl = getInt(a.kyc_il || t.kyc_il);
-        const kycNpa = getInt(a.kyc_npa || t.kyc_npa);
+        const disbIglAcc = getInt(t.disb_igl_acc);
+        const disbIglAmt = getInt(t.disb_igl_amt);
+        const disbIlAcc = getInt(t.disb_il_acc);
+        const disbIlAmt = getInt(t.disb_il_amt);
+        const kycFig = getInt(t.kyc_fig_igl);
+        const kycIl = getInt(t.kyc_il);
+        const kycNpa = getInt(t.kyc_npa);
 
         table += `
         <tr>
@@ -1361,12 +1372,210 @@ function downloadCustomReport() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `Daily_Report_${state.systemDate}.xls`); // .xls for HTML
+    link.setAttribute("download", `Plan_Report_${state.systemDate}.xls`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
+
+// --- DOWNLOAD ACHIEVEMENT PLAN REPORT (With Comparison & Colors) ---
+function downloadAchievementPlanReport() {
+    // Colors
+    const cPeach = '#FFDAB9';
+    const cGreen = '#D1FAE5';
+    const cBlue = '#E0F2FE';
+    const cPink = '#FCE7F3';
+    const cYellow = '#FEF3C7';
+    const cCyan = '#CFFAFE';
+    const cOrange = '#FFEDD5';
+    const cHeader = '#000000';
+    const cWhite = '#FFFFFF';
+
+    // HTML Header for Excel to detect charset
+    let table = `
+    <html xmlns:x="urn:schemas-microsoft-com:office:excel">
+    <head>
+        <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
+        <!--[if gte mso 9]>
+        <xml>
+            <x:ExcelWorkbook>
+                <x:ExcelWorksheets>
+                    <x:ExcelWorksheet>
+                        <x:Name>Achievement Plan Report</x:Name>
+                        <x:WorksheetOptions>
+                            <x:Panes></x:Panes>
+                        </x:WorksheetOptions>
+                    </x:ExcelWorksheet>
+                </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+            table { border-collapse: collapse; width: 100%; }
+            th { border: 1px solid #000; text-align: center; font-family: Arial, sans-serif; font-size: 10pt; }
+            td { border: 1px solid #000; text-align: right; font-family: Arial, sans-serif; font-size: 10pt; white-space: nowrap; }
+            .txt-left { text-align: left; }
+            .txt-center { text-align: center; }
+            /* Header Colors */
+            .bg-header { background: ${cHeader}; color: white; font-weight: bold; }
+            .bg-peach { background: ${cPeach}; color: black; }
+            .bg-green { background: ${cGreen}; color: black; }
+            .bg-blue { background: ${cBlue}; color: black; }
+            .bg-pink { background: ${cPink}; color: black; }
+            .bg-yellow { background: ${cYellow}; color: black; }
+            .bg-cyan { background: ${cCyan}; color: black; }
+            .bg-orange { background: ${cOrange}; color: black; }
+            .bg-white { background: ${cWhite}; color: black; }
+        </style>
+    </head>
+    <body>
+        <table>
+            <!-- Row 1: Group Headers -->
+            <tr>
+                <th rowspan="2" class="bg-white">ID</th>
+                <th rowspan="2" class="bg-white">DATE</th>
+                <th rowspan="2" class="bg-white">BRANCH_NAME</th>
+                <th rowspan="2" class="bg-white">REGION</th>
+                <th rowspan="2" class="bg-white">DISTRICT</th>
+                <th rowspan="2" class="bg-white">DM_NAME</th>
+                
+                <!-- FTOD -->
+                <th colspan="2" class="bg-blue">FTOD</th>
+                <!-- Slipped -->
+                <th colspan="2" class="bg-green">Nov Slipped</th>
+                <!-- PNPA -->
+                <th colspan="2" class="bg-pink">PNPA</th>
+                <!-- NPA -->
+                <th colspan="2" class="bg-yellow">NPA</th>
+                <!-- FY 25-26 -->
+                <th colspan="4" class="bg-cyan">FY 25-26</th>
+                <!-- Sanction Pending -->
+                <th colspan="2" class="bg-peach">Sanction pending</th>
+                <!-- Disbursement Plan -->
+                <th colspan="4" class="bg-orange">Disbursement Plan</th>
+                <!-- KYC -->
+                <th colspan="3" class="bg-blue">KYC Sourcing</th>
+            </tr>
+            
+            <!-- Row 2: Sub Headers -->
+            <tr>
+                <!-- FTOD -->
+                <th class="bg-blue">FTOD Actual</th><th class="bg-blue">FTOD Plan</th>
+                <!-- Slipped -->
+                <th class="bg-green">Nov-25 Demand</th><th class="bg-green">Nov-25 Collections</th>
+                <!-- PNPA -->
+                <th class="bg-pink">Actual</th><th class="bg-pink">Plan</th>
+                <!-- NPA -->
+                <th class="bg-yellow">Activation</th><th class="bg-yellow">Closure</th>
+                <!-- FY 25-26 -->
+                <th class="bg-cyan">Actual OD Acc</th><th class="bg-cyan">OD Plan</th><th class="bg-cyan">Non starter Acc</th><th class="bg-cyan">Non starter Plan</th>
+                <!-- Sanction -->
+                <th class="bg-peach">Accounts</th><th class="bg-peach">Amount</th>
+                <!-- Disbursement -->
+                <th class="bg-orange">IGL Acc</th><th class="bg-orange">IGL Amt</th><th class="bg-orange">IL Acc</th><th class="bg-orange">IL Amt</th>
+                <!-- KYC -->
+                <th class="bg-blue">IGL&FIG</th><th class="bg-blue">IL</th><th class="bg-blue">NPA</th>
+            </tr>
+    `;
+
+    const dateStr = state.systemDate;
+    let idCounter = 1;
+
+    // Helper to get int
+    const getInt = (val) => {
+        const n = parseInt(val);
+        return isNaN(n) ? 0 : n;
+    };
+
+    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
+    const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
+    const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
+    const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
+
+    state.rawData.rows.forEach(row => {
+        const branchName = row[idxBranch];
+        if (!branchName) return;
+
+        const region = row[idxRegion] || "";
+        const district = row[idxDistrict] || "";
+        const dm = row[idxDM] || "";
+
+        const entry = state.branchDetails[branchName];
+
+        // Separate achievement and target data for comparison
+        const a = entry && entry.achievement ? entry.achievement : {};
+        const t = entry && entry.target ? entry.target : {};
+
+        // MAPPING - Use achievement for actual, target for plan
+        const ftodAct = getInt(a.ftod_actual);
+        const ftodPlan = getInt(t.ftod_plan);
+        const slipDem = getInt(a.lived_actual);
+        const slipColl = getInt(t.lived_plan);
+        const pnpaAct = getInt(a.pnpa_actual);
+        const pnpaPlan = getInt(t.pnpa_plan);
+        const npaAct = getInt(a.npa_activation);
+        const npaClose = getInt(a.npa_closure);
+        const odAcc = getInt(a.fy_od_acc);
+        const odPlan = getInt(t.fy_od_plan);
+        const nsAcc = getInt(a.fy_non_start_acc);
+        const nsPlan = getInt(t.fy_non_start_plan);
+        const sancAcc = 0;
+        const sancAmt = 0;
+        const disbIglAcc = getInt(a.disb_igl_acc);
+        const disbIglAmt = getInt(a.disb_igl_amt);
+        const disbIlAcc = getInt(a.disb_il_acc);
+        const disbIlAmt = getInt(a.disb_il_amt);
+        const kycFig = getInt(a.kyc_fig_igl);
+        const kycIl = getInt(a.kyc_il);
+        const kycNpa = getInt(a.kyc_npa);
+
+        // Calculate colors for each achievement cell
+        const colorFtodPlan = getCellColor(ftodAct, ftodPlan);
+        const colorSlipColl = getCellColor(slipDem, slipColl);
+        const colorPnpaPlan = getCellColor(pnpaAct, pnpaPlan);
+        const colorOdPlan = getCellColor(odAcc, odPlan);
+        const colorNsPlan = getCellColor(nsAcc, nsPlan);
+        const colorDisbIglAcc = getCellColor(disbIglAcc, getInt(t.disb_igl_acc));
+        const colorDisbIglAmt = getCellColor(disbIglAmt, getInt(t.disb_igl_amt));
+        const colorDisbIlAcc = getCellColor(disbIlAcc, getInt(t.disb_il_acc));
+        const colorDisbIlAmt = getCellColor(disbIlAmt, getInt(t.disb_il_amt));
+        const colorKycFig = getCellColor(kycFig, getInt(t.kyc_fig_igl));
+        const colorKycIl = getCellColor(kycIl, getInt(t.kyc_il));
+        const colorKycNpa = getCellColor(kycNpa, getInt(t.kyc_npa));
+
+        table += `
+        <tr>
+            <td class="txt-center">${idCounter++}</td>
+            <td class="txt-center">${dateStr}</td>
+            <td class="txt-left">${branchName}</td>
+            <td class="txt-left">${region}</td>
+            <td class="txt-left">${district}</td>
+            <td class="txt-left">${dm}</td>
+            <td>${ftodAct}</td><td style="background:${colorFtodPlan};">${ftodPlan}</td>
+            <td>${slipDem}</td><td style="background:${colorSlipColl};">${slipColl}</td>
+            <td>${pnpaAct}</td><td style="background:${colorPnpaPlan};">${pnpaPlan}</td>
+            <td>${npaAct}</td><td>${npaClose}</td>
+            <td>${odAcc}</td><td style="background:${colorOdPlan};">${odPlan}</td><td>${nsAcc}</td><td style="background:${colorNsPlan};">${nsPlan}</td>
+            <td>${sancAcc}</td><td>${sancAmt}</td>
+            <td style="background:${colorDisbIglAcc};">${disbIglAcc}</td><td style="background:${colorDisbIglAmt};">${disbIglAmt}</td><td style="background:${colorDisbIlAcc};">${disbIlAcc}</td><td style="background:${colorDisbIlAmt};">${disbIlAmt}</td>
+            <td style="background:${colorKycFig};">${kycFig}</td><td style="background:${colorKycIl};">${kycIl}</td><td style="background:${colorKycNpa};">${kycNpa}</td>
+        </tr>`;
+    });
+
+    table += `</table></body></html>`;
+
+    const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Achievement_Plan_Report_${state.systemDate}.xls`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 
 
 // --- NEW RENDERERS ---

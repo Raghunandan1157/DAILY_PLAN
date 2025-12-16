@@ -2617,12 +2617,14 @@
             }
         }
 
-        /* --- TOGGLE SWITCH --- */
+        /* --- TOGGLE SWITCH STYLES --- */
+        
+        /* DEFAULT TOGGLE (Improved) */
         .switch {
             position: relative;
             display: inline-block;
-            width: 40px;
-            height: 20px;
+            width: 48px;
+            height: 24px;
         }
 
         .switch input {
@@ -2638,44 +2640,203 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
-            -webkit-transition: .4s;
-            transition: .4s;
+            background-color: #D1D5DB;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode .slider {
+            background-color: #4B5563;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 16px;
-            width: 16px;
+            height: 20px;
+            width: 20px;
             left: 2px;
             bottom: 2px;
             background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        input:checked+.slider {
-            background-color: var(--primary);
+        body.dark-mode .slider:before {
+            background-color: #F3F4F6;
         }
 
-        input:focus+.slider {
-            box-shadow: 0 0 1px var(--primary);
+        input:checked + .slider {
+            background-color: var(--primary-accent);
         }
 
-        input:checked+.slider:before {
-            -webkit-transform: translateX(20px);
-            -ms-transform: translateX(20px);
-            transform: translateX(20px);
+        input:focus + .slider {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
         }
 
-        /* Rounded sliders */
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
         .slider.round {
-            border-radius: 34px;
+            border-radius: 30px;
         }
 
         .slider.round:before {
             border-radius: 50%;
+        }
+
+        /* MINIMAL TOGGLE (Green Theme) */
+        .switch.minimal-toggle {
+            width: 62px;
+            height: 30px;
+        }
+
+        .switch.minimal-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch.minimal-toggle .slider {
+            background-color: #D1D5DB;
+            transition: all 0.3s ease-in-out;
+        }
+
+        body.dark-mode .switch.minimal-toggle .slider {
+            background-color: #374151;
+        }
+
+        .switch.minimal-toggle .slider:before {
+            height: 23.8px;
+            width: 23.8px;
+            left: 3.4px;
+            bottom: 3.4px;
+            background-color: #9CA3AF;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .switch.minimal-toggle .slider:before {
+            background-color: #6B7280;
+        }
+
+        .switch.minimal-toggle input:checked + .slider {
+            background-color: #86EFAC;
+        }
+
+        body.dark-mode .switch.minimal-toggle input:checked + .slider {
+            background-color: #14532d;
+        }
+
+        .switch.minimal-toggle input:checked + .slider:before {
+            transform: translateX(32.3px);
+            background-color: rgba(34, 197, 94, 0.7);
+        }
+
+        body.dark-mode .switch.minimal-toggle input:checked + .slider:before {
+            background-color: #22C55E;
+        }
+
+        /* ORANGE TOGGLE */
+        .switch.orange-toggle {
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch.orange-toggle input {
+            appearance: none;
+            position: relative;
+            width: 48px;
+            height: 24px;
+            border-radius: 24px;
+            background-color: #D6D3D1;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            outline: none;
+        }
+
+        body.dark-mode .switch.orange-toggle input {
+            background-color: #57534E;
+        }
+
+        .switch.orange-toggle input:before {
+            content: '';
+            position: absolute;
+            left: calc(1.5em - 1.6em);
+            top: calc(1.5em - 1.6em);
+            width: 1.6em;
+            height: 1.7em;
+            border-radius: 50%;
+            border: 1px solid #A8A29E;
+            background-color: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        body.dark-mode .switch.orange-toggle input:before {
+            border-color: #78716C;
+        }
+
+        .switch.orange-toggle input:checked {
+            background-color: #EA580C;
+        }
+
+        .switch.orange-toggle input:checked:before {
+            transform: translateX(100%);
+            border-color: #EA580C;
+        }
+
+        .switch.orange-toggle input:hover:before {
+            box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .switch.orange-toggle input:checked:hover:before {
+            box-shadow: 0 0 0 8px rgba(236, 72, 72, 0.15);
+        }
+
+        /* View Mode Toggle Container Styles */
+        .view-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 12px;
+            background: var(--bg-body);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+
+        .view-mode-toggle:hover {
+            border-color: var(--primary-accent);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .toggle-label#labelPlan {
+            color: var(--primary-accent);
+            font-weight: 600;
+        }
+
+        .toggle-label#labelReview {
+            color: var(--text-secondary);
+        }
+
+        /* Update label colors when toggle is checked */
+        #viewModeToggle:checked ~ #labelPlan,
+        .view-mode-toggle:has(#viewModeToggle:checked) #labelPlan {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        #viewModeToggle:checked ~ #labelReview,
+        .view-mode-toggle:has(#viewModeToggle:checked) #labelReview {
+            color: var(--primary-accent);
+            font-weight: 600;
         }
 
         /* --- PLAN MODE STYLES --- */
