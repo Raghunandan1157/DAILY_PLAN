@@ -1137,7 +1137,7 @@ function renderReports(buffer) {
                     </div>
                     <div style="width:1px; height:24px; background:var(--border-color); margin:0 8px;"></div>
                     <input type="date" id="reportDateInput" value="${state.systemDate}" 
-                        onchange="state.systemDate = this.value; updateHeaderDate(this.value);"
+                        onchange="state.systemDate = this.value; updateHeaderDate(this.value); fetchSupabaseData();"
                         style="padding:8px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-body); color:var(--text-primary);">
                 </div>
             </div>
@@ -1254,7 +1254,7 @@ function downloadPlanReport() {
         <table>
             <!-- Title Row -->
             <tr>
-                <th colspan="27" class="title-row">Plan Report - ${state.systemDate}</th>
+                <th colspan="25" class="title-row">Plan Report - ${state.systemDate}</th>
             </tr>
             <!-- Row 1: Group Headers -->
             <tr>
@@ -1275,8 +1275,6 @@ function downloadPlanReport() {
                 <th colspan="2" class="bg-yellow">NPA</th>
                 <!-- FY 25-26 -->
                 <th colspan="4" class="bg-cyan">FY 25-26</th>
-                <!-- Sanction Pending -->
-                <th colspan="2" class="bg-peach">Sanction pending</th>
                 <!-- Disbursement Plan -->
                 <th colspan="4" class="bg-orange">Disbursement Plan</th>
                 <!-- KYC -->
@@ -1295,8 +1293,6 @@ function downloadPlanReport() {
                 <th class="bg-yellow">Activation</th><th class="bg-yellow">Closure</th>
                 <!-- FY 25-26 -->
                 <th class="bg-cyan">Actual OD Acc</th><th class="bg-cyan">OD Plan</th><th class="bg-cyan">Non starter Acc</th><th class="bg-cyan">Non starter Plan</th>
-                <!-- Sanction -->
-                <th class="bg-peach">Accounts</th><th class="bg-peach">Amount</th>
                 <!-- Disbursement -->
                 <th class="bg-orange">IGL Acc</th><th class="bg-orange">IGL Amt</th><th class="bg-orange">IL Acc</th><th class="bg-orange">IL Amt</th>
                 <!-- KYC -->
@@ -1324,7 +1320,6 @@ function downloadPlanReport() {
         ftodAct: 0, ftodPlan: 0, slipDem: 0, slipColl: 0,
         pnpaAct: 0, pnpaPlan: 0, npaAct: 0, npaClose: 0,
         odAcc: 0, odPlan: 0, nsAcc: 0, nsPlan: 0,
-        sancAcc: 0, sancAmt: 0,
         disbIglAcc: 0, disbIglAmt: 0, disbIlAcc: 0, disbIlAmt: 0,
         kycFig: 0, kycIl: 0, kycNpa: 0
     };
@@ -1375,7 +1370,6 @@ function downloadPlanReport() {
         totals.npaAct += npaAct; totals.npaClose += npaClose;
         totals.odAcc += odAcc; totals.odPlan += odPlan;
         totals.nsAcc += nsAcc; totals.nsPlan += nsPlan;
-        totals.sancAcc += sancAcc; totals.sancAmt += sancAmt;
         totals.disbIglAcc += disbIglAcc; totals.disbIglAmt += disbIglAmt;
         totals.disbIlAcc += disbIlAcc; totals.disbIlAmt += disbIlAmt;
         totals.kycFig += kycFig; totals.kycIl += kycIl; totals.kycNpa += kycNpa;
@@ -1393,8 +1387,7 @@ function downloadPlanReport() {
             <td class="bg-pink">${formatIndian(pnpaAct)}</td><td class="bg-pink">${formatIndian(pnpaPlan)}</td>
             <td class="bg-yellow">${formatIndian(npaAct)}</td><td class="bg-yellow">${formatIndian(npaClose)}</td>
             <td class="bg-cyan">${formatIndian(odAcc)}</td><td class="bg-cyan">${formatIndian(odPlan)}</td><td class="bg-cyan">${formatIndian(nsAcc)}</td><td class="bg-cyan">${formatIndian(nsPlan)}</td>
-            <td class="bg-peach">${formatIndian(sancAcc)}</td><td class="bg-peach">${formatIndian(sancAmt)}</td>
-            <td class="bg-orange">${formatIndian(disbIglAcc)}</td><td class="bg-orange">${formatIndian(disbIglAmt)}</td><td class="bg-orange">${formatIndian(disbIlAcc)}</td><td class="bg-orange">${formatIndian(disbIlAmt)}</td>
+            <td class="bg-orange">${formatIndian(disbIglAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIglAmt)}</td><td class="bg-orange">${formatIndian(disbIlAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIlAmt)}</td>
             <td class="bg-blue">${formatIndian(kycFig)}</td><td class="bg-blue">${formatIndian(kycIl)}</td><td class="bg-blue">${formatIndian(kycNpa)}</td>
         </tr>`;
     });
@@ -1408,8 +1401,7 @@ function downloadPlanReport() {
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaPlan)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaClose)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odPlan)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsPlan)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.sancAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.sancAmt)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAmt)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAmt)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIglAmt)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIlAmt)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycFig)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycIl)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycNpa)}</td>
         </tr>`;
 
@@ -1481,7 +1473,7 @@ function downloadAchievementPlanReport() {
         <table>
             <!-- Title Row -->
             <tr>
-                <th colspan="27" class="title-row">Achievement Plan Report - ${state.systemDate}</th>
+                <th colspan="25" class="title-row">Achievement Plan Report - ${state.systemDate}</th>
             </tr>
             <!-- Row 1: Group Headers -->
             <tr>
@@ -1502,8 +1494,6 @@ function downloadAchievementPlanReport() {
                 <th colspan="2" class="bg-yellow">NPA</th>
                 <!-- FY 25-26 -->
                 <th colspan="4" class="bg-cyan">FY 25-26</th>
-                <!-- Sanction Pending -->
-                <th colspan="2" class="bg-peach">Sanction pending</th>
                 <!-- Disbursement Plan -->
                 <th colspan="4" class="bg-orange">Disbursement Plan</th>
                 <!-- KYC -->
@@ -1522,8 +1512,6 @@ function downloadAchievementPlanReport() {
                 <th class="bg-yellow">Activation</th><th class="bg-yellow">Closure</th>
                 <!-- FY 25-26 -->
                 <th class="bg-cyan">Actual OD Acc</th><th class="bg-cyan">OD Plan</th><th class="bg-cyan">Non starter Acc</th><th class="bg-cyan">Non starter Plan</th>
-                <!-- Sanction -->
-                <th class="bg-peach">Accounts</th><th class="bg-peach">Amount</th>
                 <!-- Disbursement -->
                 <th class="bg-orange">IGL Acc</th><th class="bg-orange">IGL Amt</th><th class="bg-orange">IL Acc</th><th class="bg-orange">IL Amt</th>
                 <!-- KYC -->
@@ -1551,7 +1539,6 @@ function downloadAchievementPlanReport() {
         ftodAct: 0, ftodPlan: 0, slipDem: 0, slipColl: 0,
         pnpaAct: 0, pnpaPlan: 0, npaAct: 0, npaClose: 0,
         odAcc: 0, odPlan: 0, nsAcc: 0, nsPlan: 0,
-        sancAcc: 0, sancAmt: 0,
         disbIglAcc: 0, disbIglAmt: 0, disbIlAcc: 0, disbIlAmt: 0,
         kycFig: 0, kycIl: 0, kycNpa: 0
     };
@@ -1588,8 +1575,6 @@ function downloadAchievementPlanReport() {
         const odPlan = getInt(t.fy_od_plan);
         const nsAcc = getInt(a.fy_non_start_acc);
         const nsPlan = getInt(t.fy_non_start_plan);
-        const sancAcc = 0;
-        const sancAmt = 0;
         const disbIglAcc = getInt(a.disb_igl_acc);
         const disbIglAmt = getInt(a.disb_igl_amt);
         const disbIlAcc = getInt(a.disb_il_acc);
@@ -1605,7 +1590,6 @@ function downloadAchievementPlanReport() {
         totals.npaAct += npaAct; totals.npaClose += npaClose;
         totals.odAcc += odAcc; totals.odPlan += odPlan;
         totals.nsAcc += nsAcc; totals.nsPlan += nsPlan;
-        totals.sancAcc += sancAcc; totals.sancAmt += sancAmt;
         totals.disbIglAcc += disbIglAcc; totals.disbIglAmt += disbIglAmt;
         totals.disbIlAcc += disbIlAcc; totals.disbIlAmt += disbIlAmt;
         totals.kycFig += kycFig; totals.kycIl += kycIl; totals.kycNpa += kycNpa;
@@ -1623,8 +1607,7 @@ function downloadAchievementPlanReport() {
             <td class="bg-pink">${formatIndian(pnpaAct)}</td><td class="bg-pink">${formatIndian(pnpaPlan)}</td>
             <td class="bg-yellow">${formatIndian(npaAct)}</td><td class="bg-yellow">${formatIndian(npaClose)}</td>
             <td class="bg-cyan">${formatIndian(odAcc)}</td><td class="bg-cyan">${formatIndian(odPlan)}</td><td class="bg-cyan">${formatIndian(nsAcc)}</td><td class="bg-cyan">${formatIndian(nsPlan)}</td>
-            <td class="bg-peach">${formatIndian(sancAcc)}</td><td class="bg-peach">${formatIndian(sancAmt)}</td>
-            <td class="bg-orange">${formatIndian(disbIglAcc)}</td><td class="bg-orange">${formatIndian(disbIglAmt)}</td><td class="bg-orange">${formatIndian(disbIlAcc)}</td><td class="bg-orange">${formatIndian(disbIlAmt)}</td>
+            <td class="bg-orange">${formatIndian(disbIglAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIglAmt)}</td><td class="bg-orange">${formatIndian(disbIlAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIlAmt)}</td>
             <td class="bg-blue">${formatIndian(kycFig)}</td><td class="bg-blue">${formatIndian(kycIl)}</td><td class="bg-blue">${formatIndian(kycNpa)}</td>
         </tr>`;
     });
@@ -1638,8 +1621,7 @@ function downloadAchievementPlanReport() {
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaPlan)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaClose)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odPlan)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsPlan)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.sancAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.sancAmt)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAmt)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAmt)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIglAmt)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIlAmt)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycFig)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycIl)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycNpa)}</td>
         </tr>`;
 
