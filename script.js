@@ -1142,53 +1142,16 @@ function renderReports(buffer) {
                 </div>
             </div>
 
-            <!-- 2. DATA SELECTION -->
-            <div style="padding: 16px;">
-                <div style="font-size:14px; font-weight:600; margin-bottom:12px;">2. Select Data Fields</div>
-                
-                <div class="report-options-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:24px;">
-                    
-                    <!-- Basic Info -->
-                    <div>
-                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase;">Basic Info</div>
-                        <label class="checkbox-row"><input type="checkbox" checked disabled> Branch Name</label>
-                        <label class="checkbox-row"><input type="checkbox" checked disabled> Region & District</label>
-                        <label class="checkbox-row"><input type="checkbox" checked disabled> DM Name</label>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_status" checked> Status (Completed/Pending)</label>
-                    </div>
-
-                    <!-- Collections -->
-                    <div>
-                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase;">Collections (FTOD/Lived/PNPA)</div>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_coll_plan" checked> Plan Values</label>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_coll_act" checked> Achievement Values</label>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_coll_pct"> Achievement %</label>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_coll_var"> Variance (Act - Plan)</label>
-                    </div>
-
-                    <!-- Disbursement -->
-                    <div>
-                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase;">Disbursement (IGL/IL)</div>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_disb_plan" checked> Plan Amount</label>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_disb_act" checked> Actual Amount</label>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_disb_counts"> Account Counts</label>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_disb_prod"> Product Wise (IGL vs IL)</label>
-                    </div>
-
-                    <!-- KYC & Others -->
-                    <div>
-                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase;">Other Metrics</div>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_kyc" checked> KYC Sourcing</label>
-                        <label class="checkbox-row"><input type="checkbox" id="chk_npa" checked> NPA Movement</label>
-                    </div>
-                </div>
-            </div>
+            <!-- 2. DATA SELECTION (REMOVED) -->
+             <div style="padding: 16px; display:none;">
+                <!-- Options removed as per request -->
+             </div>
 
             <!-- 3. ACTIONS -->
             <div style="padding: 16px; border-top: 1px solid var(--border-color); display:flex; justify-content:flex-end; gap:12px;">
-                <button class="btn btn-primary" onclick="downloadCustomReport()" style="padding:10px 24px; display:flex; align-items:center; gap:8px;">
+                <button class="btn btn-primary" onclick="downloadCustomReport()" style="padding:10px 24px;">
                     <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    Download Report
+                    Download Excel Report
                 </button>
             </div>
         </div>
@@ -1222,120 +1185,183 @@ function setReportDate(offset) {
     fetchSupabaseData(); // Re-fetch for the new date
 }
 
+// --- DOWNLOAD REPORT (Styled HTML for Excel) ---
 function downloadCustomReport() {
-    const config = {
-        status: document.getElementById('chk_status').checked,
-        coll_plan: document.getElementById('chk_coll_plan').checked,
-        coll_act: document.getElementById('chk_coll_act').checked,
-        coll_pct: document.getElementById('chk_coll_pct').checked,
-        coll_var: document.getElementById('chk_coll_var').checked,
-        disb_plan: document.getElementById('chk_disb_plan').checked,
-        disb_act: document.getElementById('chk_disb_act').checked,
-        disb_counts: document.getElementById('chk_disb_counts').checked,
-        disb_prod: document.getElementById('chk_disb_prod').checked,
-        kyc: document.getElementById('chk_kyc').checked,
-        npa: document.getElementById('chk_npa').checked,
+    // Colors
+    const cPeach = '#FFDAB9';
+    const cGreen = '#D1FAE5';
+    const cBlue = '#E0F2FE';
+    const cPink = '#FCE7F3';
+    const cYellow = '#FEF3C7';
+    const cCyan = '#CFFAFE';
+    const cOrange = '#FFEDD5';
+    const cHeader = '#000000';
+    const cWhite = '#FFFFFF';
+
+    // HTML Header for Excel to detect charset
+    let table = `
+    <html xmlns:x="urn:schemas-microsoft-com:office:excel">
+    <head>
+        <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
+        <!--[if gte mso 9]>
+        <xml>
+            <x:ExcelWorkbook>
+                <x:ExcelWorksheets>
+                    <x:ExcelWorksheet>
+                        <x:Name>Daily Report</x:Name>
+                        <x:WorksheetOptions>
+                            <x:Panes></x:Panes>
+                        </x:WorksheetOptions>
+                    </x:ExcelWorksheet>
+                </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+            table { border-collapse: collapse; width: 100%; }
+            th { border: 1px solid #000; text-align: center; font-family: Arial, sans-serif; font-size: 10pt; }
+            td { border: 1px solid #000; text-align: right; font-family: Arial, sans-serif; font-size: 10pt; white-space: nowrap; }
+            .txt-left { text-align: left; }
+            .txt-center { text-align: center; }
+            /* Header Colors */
+            .bg-header { background: ${cHeader}; color: white; font-weight: bold; }
+            .bg-peach { background: ${cPeach}; color: black; }
+            .bg-green { background: ${cGreen}; color: black; }
+            .bg-blue { background: ${cBlue}; color: black; }
+            .bg-pink { background: ${cPink}; color: black; }
+            .bg-yellow { background: ${cYellow}; color: black; }
+            .bg-cyan { background: ${cCyan}; color: black; }
+            .bg-orange { background: ${cOrange}; color: black; }
+            .bg-white { background: ${cWhite}; color: black; }
+        </style>
+    </head>
+    <body>
+        <table>
+            <!-- Row 1: Group Headers -->
+            <tr>
+                <th rowspan="2" class="bg-white">ID</th>
+                <th rowspan="2" class="bg-white">DATE</th>
+                <th rowspan="2" class="bg-white">BRANCH_NAME</th>
+                <th rowspan="2" class="bg-white">REGION</th>
+                <th rowspan="2" class="bg-white">DISTRICT</th>
+                <th rowspan="2" class="bg-white">DM_NAME</th>
+                
+                <!-- FTOD -->
+                <th colspan="2" class="bg-blue">FTOD</th>
+                <!-- Slipped -->
+                <th colspan="2" class="bg-green">Nov Slipped</th>
+                <!-- PNPA -->
+                <th colspan="2" class="bg-pink">PNPA</th>
+                <!-- NPA -->
+                <th colspan="2" class="bg-yellow">NPA</th>
+                <!-- FY 25-26 -->
+                <th colspan="4" class="bg-cyan">FY 25-26</th>
+                <!-- Sanction Pending -->
+                <th colspan="2" class="bg-peach">Sanction pending</th>
+                <!-- Disbursement Plan -->
+                <th colspan="4" class="bg-orange">Disbursement Plan</th>
+                <!-- KYC -->
+                <th colspan="3" class="bg-blue">KYC Sourcing</th>
+            </tr>
+            
+            <!-- Row 2: Sub Headers -->
+            <tr>
+                <!-- FTOD -->
+                <th class="bg-blue">FTOD Actual</th><th class="bg-blue">FTOD Plan</th>
+                <!-- Slipped -->
+                <th class="bg-green">Nov-25 Demand</th><th class="bg-green">Nov-25 Collections</th>
+                <!-- PNPA -->
+                <th class="bg-pink">Actual</th><th class="bg-pink">Plan</th>
+                <!-- NPA -->
+                <th class="bg-yellow">Activation</th><th class="bg-yellow">Closure</th>
+                <!-- FY 25-26 -->
+                <th class="bg-cyan">Actual OD Acc</th><th class="bg-cyan">OD Plan</th><th class="bg-cyan">Non starter Acc</th><th class="bg-cyan">Non starter Plan</th>
+                <!-- Sanction -->
+                <th class="bg-peach">Accounts</th><th class="bg-peach">Amount</th>
+                <!-- Disbursement -->
+                <th class="bg-orange">IGL Acc</th><th class="bg-orange">IGL Amt</th><th class="bg-orange">IL Acc</th><th class="bg-orange">IL Amt</th>
+                <!-- KYC -->
+                <th class="bg-blue">IGL&FIG</th><th class="bg-blue">IL</th><th class="bg-blue">NPA</th>
+            </tr>
+    `;
+
+    const dataRows = [];
+    const dateStr = state.systemDate;
+    let idCounter = 1;
+
+    // Helper to get int
+    const getInt = (val) => {
+        const n = parseInt(val);
+        return isNaN(n) ? 0 : n;
     };
 
-    const headers = ['Region', 'District', 'Branch', 'DM Name'];
-    if (config.status) headers.push('Status');
-
-    // Headers Building
-    if (config.coll_plan) headers.push('FTOD Plan', 'Lived Plan', 'PNPA Plan', 'Total Coll Plan');
-    if (config.coll_act) headers.push('FTOD Actual', 'Lived Actual', 'PNPA Actual', 'Total Coll Actual');
-    if (config.coll_pct) headers.push('FTOD %', 'Lived %', 'PNPA %', 'Total Coll %');
-    if (config.coll_var) headers.push('FTOD Var', 'Lived Var', 'PNPA Var');
-
-    if (config.disb_prod) {
-        if (config.disb_plan) headers.push('IGL Plan Amt', 'IL Plan Amt');
-        if (config.disb_act) headers.push('IGL Actual Amt', 'IL Actual Amt');
-        if (config.disb_counts) headers.push('IGL Acc', 'IL Acc');
-    } else {
-        if (config.disb_plan) headers.push('Total Disb Plan');
-        if (config.disb_act) headers.push('Total Disb Actual');
-        if (config.disb_counts) headers.push('Total Disb Accounts');
-    }
-
-    if (config.kyc) {
-        headers.push('KYC Total');
-    }
-    if (config.npa) headers.push('NPA Activated', 'NPA Closed');
-
-    const data = [];
-
-    // Indices
+    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
     const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
     const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
-    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
     const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
 
     state.rawData.rows.forEach(row => {
-        const branch = row[idxBranch];
-        if (!branch) return;
+        const branchName = row[idxBranch];
+        if (!branchName) return;
 
-        const entry = state.branchDetails[branch] || {};
-        const t = entry.target || {};
-        const a = entry.achievement || {};
+        const region = row[idxRegion] || "";
+        const district = row[idxDistrict] || "";
+        const dm = row[idxDM] || "";
 
-        const rowData = [row[idxRegion], row[idxDistrict], branch, row[idxDM]];
+        const entry = state.branchDetails[branchName];
 
-        // Status
-        if (config.status) {
-            let s = 'No Data';
-            if (entry.target && entry.achievement) s = 'Completed';
-            else if (entry.target) s = 'Pending';
-            rowData.push(s);
-        }
+        const a = entry && entry.achievement ? entry.achievement : {};
+        const t = entry && entry.target ? entry.target : {};
 
-        // Helpers
-        const getInt = (v) => parseInt(v) || 0;
-        const getFloat = (v) => parseFloat(v) || 0;
-        const calcPct = (act, pln) => pln > 0 ? Math.round((act / pln) * 100) + '%' : '0%';
-        const calcVar = (act, pln) => (act - pln);
+        // MAPPING
+        const ftodAct = getInt(a.ftod_actual || t.ftod_actual);
+        const ftodPlan = getInt(a.ftod_plan || t.ftod_plan);
+        const slipDem = getInt(a.lived_actual || t.lived_actual);
+        const slipColl = getInt(a.lived_plan || t.lived_plan);
+        const pnpaAct = getInt(a.pnpa_actual || t.pnpa_actual);
+        const pnpaPlan = getInt(a.pnpa_plan || t.pnpa_plan);
+        const npaAct = getInt(a.npa_activation || t.npa_activation);
+        const npaClose = getInt(a.npa_closure || t.npa_closure);
+        const odAcc = getInt(a.fy_od_acc || t.fy_od_acc);
+        const odPlan = getInt(a.fy_od_plan || t.fy_od_plan);
+        const nsAcc = getInt(a.fy_non_start_acc || t.fy_non_start_acc);
+        const nsPlan = getInt(a.fy_non_start_plan || t.fy_non_start_plan);
+        const sancAcc = 0;
+        const sancAmt = 0;
+        const disbIglAcc = getInt(a.disb_igl_acc || t.disb_igl_acc);
+        const disbIglAmt = getInt(a.disb_igl_amt || t.disb_igl_amt);
+        const disbIlAcc = getInt(a.disb_il_acc || t.disb_il_acc);
+        const disbIlAmt = getInt(a.disb_il_amt || t.disb_il_amt);
+        const kycFig = getInt(a.kyc_fig_igl || t.kyc_fig_igl);
+        const kycIl = getInt(a.kyc_il || t.kyc_il);
+        const kycNpa = getInt(a.kyc_npa || t.kyc_npa);
 
-        // Data Prep
-        const ftodP = getInt(t.ftod_plan), ftodA = getInt(a.ftod_actual);
-        const livedP = getInt(t.lived_plan), livedA = getInt(a.lived_actual);
-        const pnpaP = getInt(t.pnpa_plan), pnpaA = getInt(a.pnpa_actual);
-        const totCollP = ftodP + livedP + pnpaP;
-        const totCollA = ftodA + livedA + pnpaA;
-
-        if (config.coll_plan) rowData.push(ftodP, livedP, pnpaP, totCollP);
-        if (config.coll_act) rowData.push(ftodA, livedA, pnpaA, totCollA);
-        if (config.coll_pct) rowData.push(calcPct(ftodA, ftodP), calcPct(livedA, livedP), calcPct(pnpaA, pnpaP), calcPct(totCollA, totCollP));
-        if (config.coll_var) rowData.push(calcVar(ftodA, ftodP), calcVar(livedA, livedP), calcVar(pnpaA, pnpaP));
-
-        // Disbursement Data
-        const iglAmtP = getFloat(t.disb_igl_amt), iglAmtA = getFloat(a.disb_igl_amt);
-        const ilAmtP = getFloat(t.disb_il_amt), ilAmtA = getFloat(a.disb_il_amt);
-        const iglAcc = getInt(a.disb_igl_acc), ilAcc = getInt(a.disb_il_acc); // Using actuals for counts
-
-        if (config.disb_prod) {
-            if (config.disb_plan) rowData.push(iglAmtP, ilAmtP);
-            if (config.disb_act) rowData.push(iglAmtA, ilAmtA);
-            if (config.disb_counts) rowData.push(iglAcc, ilAcc);
-        } else {
-            if (config.disb_plan) rowData.push(iglAmtP + ilAmtP);
-            if (config.disb_act) rowData.push(iglAmtA + ilAmtA);
-            if (config.disb_counts) rowData.push(iglAcc + ilAcc);
-        }
-
-        if (config.kyc) {
-            const kycTot = getInt(a.kyc_fig_igl) + getInt(a.kyc_il) + getInt(a.kyc_npa);
-            rowData.push(kycTot);
-        }
-        if (config.npa) rowData.push(getInt(a.npa_activation), getInt(a.npa_closure));
-
-        data.push(rowData);
+        table += `
+        <tr>
+            <td class="txt-center">${idCounter++}</td>
+            <td class="txt-center">${dateStr}</td>
+            <td class="txt-left">${branchName}</td>
+            <td class="txt-left">${region}</td>
+            <td class="txt-left">${district}</td>
+            <td class="txt-left">${dm}</td>
+            <td>${ftodAct}</td><td>${ftodPlan}</td>
+            <td>${slipDem}</td><td>${slipColl}</td>
+            <td>${pnpaAct}</td><td>${pnpaPlan}</td>
+            <td>${npaAct}</td><td>${npaClose}</td>
+            <td>${odAcc}</td><td>${odPlan}</td><td>${nsAcc}</td><td>${nsPlan}</td>
+            <td>${sancAcc}</td><td>${sancAmt}</td>
+            <td>${disbIglAcc}</td><td>${disbIglAmt}</td><td>${disbIlAcc}</td><td>${disbIlAmt}</td>
+            <td>${kycFig}</td><td>${kycIl}</td><td>${kycNpa}</td>
+        </tr>`;
     });
 
-    // Generate CSV
-    const csvContent = [headers.join(',')].concat(data.map(e => e.join(','))).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    table += `</table></body></html>`;
+
+    const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `Master_Report_${state.systemDate}.csv`);
+    link.setAttribute("download", `Daily_Report_${state.systemDate}.xls`); // .xls for HTML
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -2129,18 +2155,54 @@ function openBranchModal(branchName) {
         if (el && el.previousElementSibling) el.previousElementSibling.textContent = text;
     };
 
+    // Helper to toggle visibility
+    const toggleRow = (id, visible) => {
+        const el = document.getElementById(id);
+        if (el && el.parentElement) {
+            el.parentElement.style.display = visible ? '' : 'none';
+        }
+    };
+
     if (reportState === 'ACHIEVEMENT') {
-        updateLabel('ftod_plan', 'Achievement Plan');
-        updateLabel('lived_plan', 'Achievement Plan');
-        updateLabel('pnpa_plan', 'Achievement Plan');
-        updateLabel('fy_od_plan', 'Achievement Plan');
-        updateLabel('fy_non_start_plan', 'Achievement Plan');
+        updateLabel('ftod_plan', 'Achievement');
+        updateLabel('lived_plan', 'Achievement');
+        updateLabel('pnpa_plan', 'Achievement');
+
+        // Specific labels for OD/Non-Starter
+        updateLabel('fy_od_plan', 'TOTAL OD Achievement');
+        updateLabel('fy_non_start_plan', 'NON-STARTER Achievement');
+
+        // Update Section Titles
+        const lblDisb = document.getElementById('lbl_disb');
+        if (lblDisb) lblDisb.textContent = "Disbursement Achievement";
+
+        const lblKyc = document.getElementById('lbl_kyc');
+        if (lblKyc) lblKyc.textContent = "KYC SOURCING Achievement";
+
+        // Hide Actuals and set to 0
+        ['ftod_actual', 'lived_actual', 'pnpa_actual', 'fy_od_acc', 'fy_non_start_acc'].forEach(id => {
+            toggleRow(id, false);
+            const el = document.getElementById(id);
+            if (el) el.value = "0";
+        });
     } else {
         updateLabel('ftod_plan', 'FTOD Collection Plan');
         updateLabel('lived_plan', 'Collection Plan');
         updateLabel('pnpa_plan', 'PNPA Collection Plan');
         updateLabel('fy_od_plan', 'COLLECTION PLAN');
         updateLabel('fy_non_start_plan', 'COLLECTION PLAN');
+
+        // Reset Section Titles
+        const lblDisb = document.getElementById('lbl_disb');
+        if (lblDisb) lblDisb.textContent = "Disbursement Targets";
+
+        const lblKyc = document.getElementById('lbl_kyc');
+        if (lblKyc) lblKyc.textContent = "KYC SOURCING";
+
+        // Show Actuals
+        ['ftod_actual', 'lived_actual', 'pnpa_actual', 'fy_od_acc', 'fy_non_start_acc'].forEach(id => {
+            toggleRow(id, true);
+        });
     }
 
     // Helper lists
@@ -4087,6 +4149,9 @@ function setupInputValidators() {
         if (planInput && actualInput) {
             // Validate when plan input changes
             planInput.addEventListener('input', function () {
+                // SKIP VALIDATION IN ACHIEVEMENT MODE (Actuals are 0/hidden)
+                if (typeof currentModalState !== 'undefined' && currentModalState === 'ACHIEVEMENT') return;
+
                 // Remove non-numeric characters for safety if needed, or just parse
                 const planVal = parseInt(this.value) || 0;
                 const actualVal = parseInt(actualInput.value) || 0;
