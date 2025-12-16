@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toggle Demos - Choose Your Style</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 40px;
+            min-height: 100vh;
+        }
+
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .demo-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .demo-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .toggle-demo {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 24px;
+            transition: all 0.3s;
+        }
+
+        .toggle-demo:hover {
+            border-color: var(--primary-accent);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .demo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .demo-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .demo-badge {
+            padding: 6px 12px;
+            background: var(--primary-light);
+            color: var(--primary-accent);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .demo-badge.recommended {
+            background: #DCFCE7;
+            color: #16A34A;
+        }
+
+        .toggle-showcase {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 40px;
+            background: var(--bg-body);
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .demo-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--bg-body);
+            border-radius: 8px;
+        }
+
+        .demo-description strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .theme-switcher {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-radius: 50px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .theme-switcher:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-switcher svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .theme-switcher span {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary-accent);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 24px;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            gap: 12px;
+        }
+
+        .back-link svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-container">
+        <a href="index.html" class="back-link">
+            <svg viewBox="0 0 24 24">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Dashboard
+        </a>
+
+        <h1 class="demo-title">Plan / Review Toggle Styles</h1>
+        <p class="demo-subtitle">Choose your preferred toggle design for the dashboard</p>
+
+        <!-- DEFAULT TOGGLE -->
+        <div class="toggle-demo">
+            <div class="demo-header">
+                <div class="demo-name">Default Toggle (Improved)</div>
+                <div class="demo-badge recommended">Recommended</div>
+            </div>
+
+            <div class="toggle-showcase">
+                <span class="toggle-label" style="color: var(--primary-accent); font-weight: 600;">Plan</span>
+                <label class="switch">
+                    <input type="checkbox" id="toggle1">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-label" style="color: var(--text-secondary);">Review</span>
+            </div>
+
+            <div class="demo-description">
+                <strong>Best for:</strong> Clean, professional look with smooth transitions. <br>
+                <strong>Features:</strong> Purple accent color matching your brand, larger size for better touch
+                interaction, smooth cubic-bezier animation, subtle shadow effects for depth.
+            </div>
+        </div>
+
+        <!-- MINIMAL TOGGLE -->
+        <div class="toggle-demo">
+            <div class="demo-header">
+                <div class="demo-name">Minimal Toggle (Green)</div>
+                <div class="demo-badge">Alternative</div>
+            </div>
+
+            <div class="toggle-showcase">
+                <span class="toggle-label" style="color: var(--primary-accent); font-weight: 600;">Plan</span>
+                <label class="switch minimal-toggle">
+                    <input type="checkbox" id="toggle2">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-label" style="color: var(--text-secondary);">Review</span>
+            </div>
+
+            <div class="demo-description">
+                <strong>Best for:</strong> Success/achievement indication with green color theme.<br>
+                <strong>Features:</strong> Larger size, green color for "active" state, minimal design with gray default
+                state, smooth ease-in-out transition.
+            </div>
+        </div>
+
+        <!-- ORANGE TOGGLE -->
+        <div class="toggle-demo">
+            <div class="demo-header">
+                <div class="demo-name">Orange Toggle</div>
+                <div class="demo-badge">Alternative</div>
+            </div>
+
+            <div class="toggle-showcase">
+                <span class="toggle-label" style="color: var(--primary-accent); font-weight: 600;">Plan</span>
+                <label class="switch orange-toggle">
+                    <input type="checkbox" id="toggle3">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-label" style="color: var(--text-secondary);">Review</span>
+            </div>
+
+            <div class="demo-description">
+                <strong>Best for:</strong> Bold, attention-grabbing design with vibrant orange.<br>
+                <strong>Features:</strong> Stone gray default with orange active state, hover effect with expanding
+                ring, distinctive border on toggle circle, modern appearance.
+            </div>
+        </div>
+
+        <!-- IMPLEMENTATION NOTES -->
+        <div class="toggle-demo" style="background: var(--primary-light); border-color: var(--primary-accent);">
+            <div class="demo-header">
+                <div class="demo-name">📝 How to Use</div>
+            </div>
+
+            <div class="demo-description" style="background: white;">
+                <strong>To use the Default (Recommended) toggle:</strong><br>
+                Your current HTML already uses this style! No changes needed.<br><br>
+
+                <strong>To switch to Minimal Toggle:</strong><br>
+                In <code>index.html</code> line 107, change <code>&lt;label class="switch"&gt;</code> to
+                <code>&lt;label class="switch minimal-toggle"&gt;</code><br><br>
+
+                <strong>To switch to Orange Toggle:</strong><br>
+                In <code>index.html</code> line 107, change <code>&lt;label class="switch"&gt;</code> to
+                <code>&lt;label class="switch orange-toggle"&gt;</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Switcher Button -->
+    <div class="theme-switcher" onclick="toggleTheme()">
+        <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <span>Toggle Theme</span>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+        }
+
+        // Update labels when toggles change
+        document.querySelectorAll('input[type="checkbox"]').forEach(toggle => {
+            toggle.addEventListener('change', function () {
+                const container = this.closest('.toggle-showcase');
+                const labels = container.querySelectorAll('.toggle-label');
+
+                if (this.checked) {
+                    labels[0].style.color = 'var(--text-secondary)';
+                    labels[0].style.fontWeight = '500';
+                    labels[1].style.color = 'var(--primary-accent)';
+                    labels[1].style.fontWeight = '600';
+                } else {
+                    labels[0].style.color = 'var(--primary-accent)';
+                    labels[0].style.fontWeight = '600';
+                    labels[1].style.color = 'var(--text-secondary)';
+                    labels[1].style.fontWeight = '500';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
