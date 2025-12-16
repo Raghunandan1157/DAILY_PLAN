@@ -710,8 +710,8 @@ async function saveToSupabase(branchName, branchData, table) {
         // Map fields directly with conversion
         ftod_actual: toNum(branchData.ftod_actual),
         ftod_plan: toNum(branchData.ftod_plan),
-        lived_actual: toNum(branchData.lived_actual),
-        lived_plan: toNum(branchData.lived_plan),
+        nov_25_Slipped_Accounts_Actual: toNum(branchData.nov_25_Slipped_Accounts_Actual),
+        nov_25_Slipped_Accounts_Plan: toNum(branchData.nov_25_Slipped_Accounts_Plan),
         pnpa_actual: toNum(branchData.pnpa_actual),
         pnpa_plan: toNum(branchData.pnpa_plan),
         npa_activation: toNum(branchData.npa_activation),
@@ -1343,8 +1343,8 @@ function downloadPlanReport() {
         // MAPPING - Only use target (plan) data
         const ftodAct = getInt(t.ftod_actual);
         const ftodPlan = getInt(t.ftod_plan);
-        const slipDem = getInt(t.lived_actual);
-        const slipColl = getInt(t.lived_plan);
+        const slipDem = getInt(t.nov_25_Slipped_Accounts_Actual);
+        const slipColl = getInt(t.nov_25_Slipped_Accounts_Plan);
         const pnpaAct = getInt(t.pnpa_actual);
         const pnpaPlan = getInt(t.pnpa_plan);
         const npaAct = getInt(t.npa_activation);
@@ -1565,8 +1565,8 @@ function downloadAchievementPlanReport() {
         // MAPPING - Use achievement for actual, target for plan
         const ftodAct = getInt(a.ftod_actual);
         const ftodPlan = getInt(t.ftod_plan);
-        const slipDem = getInt(a.lived_actual);
-        const slipColl = getInt(t.lived_plan);
+        const slipDem = getInt(a.nov_25_Slipped_Accounts_Actual);
+        const slipColl = getInt(t.nov_25_Slipped_Accounts_Plan);
         const pnpaAct = getInt(a.pnpa_actual);
         const pnpaPlan = getInt(t.pnpa_plan);
         const npaAct = getInt(a.npa_activation);
@@ -2097,7 +2097,7 @@ function calculateAggregateStatsForBranches(branchNames) {
         if (hasPlan) {
             const t = entry.target;
             const ftod = safeInt(t.ftod_plan);
-            const lived = safeInt(t.lived_plan);
+            const lived = safeInt(t.nov_25_Slipped_Accounts_Plan);
             const pnpa = safeInt(t.pnpa_plan);
 
             stats.ftodPlan += ftod;
@@ -2110,7 +2110,7 @@ function calculateAggregateStatsForBranches(branchNames) {
         if (hasAchieve) {
             const a = entry.achievement;
             const ftod = safeInt(a.ftod_actual);
-            const lived = safeInt(a.lived_actual);
+            const lived = safeInt(a.nov_25_Slipped_Accounts_Actual);
             const pnpa = safeInt(a.pnpa_actual);
 
             stats.ftodAchieve += ftod;
@@ -2354,8 +2354,8 @@ function createViewSummary(targetData, achieveData) {
     )}
                             
                             ${section('Slipped Accounts (Lived)',
-        metricRow('Actual Account', 'lived_actual') +
-        metricRow('Collection Plan', 'lived_plan')
+        metricRow('Actual Account', 'nov_25_Slipped_Accounts_Actual') +
+        metricRow('Collection Plan', 'nov_25_Slipped_Accounts_Plan')
     )}
                             
                             ${section('PNPA Accounts',
@@ -2436,7 +2436,7 @@ function openBranchModal(branchName) {
 
     if (reportState === 'ACHIEVEMENT') {
         updateLabel('ftod_plan', 'Achievement');
-        updateLabel('lived_plan', 'Achievement');
+        updateLabel('nov_25_Slipped_Accounts_Plan', 'Achievement');
         updateLabel('pnpa_plan', 'Achievement');
 
         // Specific labels for OD/Non-Starter
@@ -2451,14 +2451,14 @@ function openBranchModal(branchName) {
         if (lblKyc) lblKyc.textContent = "KYC SOURCING Achievement";
 
         // Hide Actuals and set to 0
-        ['ftod_actual', 'lived_actual', 'pnpa_actual', 'fy_od_acc', 'fy_non_start_acc'].forEach(id => {
+        ['ftod_actual', 'nov_25_Slipped_Accounts_Actual', 'pnpa_actual', 'fy_od_acc', 'fy_non_start_acc'].forEach(id => {
             toggleRow(id, false);
             const el = document.getElementById(id);
             if (el) el.value = "0";
         });
     } else {
         updateLabel('ftod_plan', 'FTOD Collection Plan');
-        updateLabel('lived_plan', 'Collection Plan');
+        updateLabel('nov_25_Slipped_Accounts_Plan', 'Collection Plan');
         updateLabel('pnpa_plan', 'PNPA Collection Plan');
         updateLabel('fy_od_plan', 'COLLECTION PLAN');
         updateLabel('fy_non_start_plan', 'COLLECTION PLAN');
@@ -2471,17 +2471,17 @@ function openBranchModal(branchName) {
         if (lblKyc) lblKyc.textContent = "KYC SOURCING";
 
         // Show Actuals
-        ['ftod_actual', 'lived_actual', 'pnpa_actual', 'fy_od_acc', 'fy_non_start_acc'].forEach(id => {
+        ['ftod_actual', 'nov_25_Slipped_Accounts_Actual', 'pnpa_actual', 'fy_od_acc', 'fy_non_start_acc'].forEach(id => {
             toggleRow(id, true);
         });
     }
 
     // Helper lists
     const planFields = [
-        'ftod_plan', 'lived_plan', 'pnpa_plan', 'fy_od_plan', 'fy_non_start_plan'
+        'ftod_plan', 'nov_25_Slipped_Accounts_Plan', 'pnpa_plan', 'fy_od_plan', 'fy_non_start_plan'
     ];
     const achieveFields = [
-        'ftod_actual', 'lived_actual', 'pnpa_actual', 'npa_activation', 'npa_closure',
+        'ftod_actual', 'nov_25_Slipped_Accounts_Actual', 'pnpa_actual', 'npa_activation', 'npa_closure',
         'fy_od_acc', 'fy_non_start_acc',
         'disb_igl_acc', 'disb_igl_amt',
         'disb_il_acc', 'disb_il_amt',
@@ -2544,7 +2544,7 @@ function openBranchModal(branchName) {
         // Define mappings
         const pairs = {
             'ftod_actual': 'ftod_plan',
-            'lived_actual': 'lived_plan',
+            'nov_25_Slipped_Accounts_Actual': 'nov_25_Slipped_Accounts_Plan',
             'pnpa_actual': 'pnpa_plan',
             'fy_od_acc': 'fy_od_plan',
             'fy_non_start_acc': 'fy_non_start_plan'
@@ -2643,7 +2643,7 @@ async function saveBranchDetails(andNext) {
     // If Mode ACHIEVEMENT: Capture Actuals, Keep Plan from Plan Record
 
     const allFields = [
-        'ftod_actual', 'ftod_plan', 'lived_actual', 'lived_plan',
+        'ftod_actual', 'ftod_plan', 'nov_25_Slipped_Accounts_Actual', 'nov_25_Slipped_Accounts_Plan',
         'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
         'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
         'disb_igl_acc', 'disb_igl_amt',
@@ -3149,7 +3149,7 @@ function calculateBranchAveragePercentage(branchName) {
 
     // All fields that have target/achievement pairs
     const fields = [
-        'ftod_actual', 'ftod_plan', 'lived_actual', 'lived_plan',
+        'ftod_actual', 'ftod_plan', 'nov_25_Slipped_Accounts_Actual', 'nov_25_Slipped_Accounts_Plan',
         'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
         'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
         'disb_igl_acc', 'disb_igl_amt',
@@ -3305,7 +3305,7 @@ function calculateCEOStats() {
             if (hasPlan) {
                 const t = branchEntry.target;
                 ftodPlan += safeInt(t.ftod_plan);
-                livedPlan += safeInt(t.lived_plan);
+                livedPlan += safeInt(t.nov_25_Slipped_Accounts_Plan);
                 pnpaPlan += safeInt(t.pnpa_plan);
 
                 // Disbursement Plans (from daily_reports)
@@ -3320,7 +3320,7 @@ function calculateCEOStats() {
                 const a = branchEntry.achievement;
 
                 ftodAchieve += safeInt(a.ftod_actual);
-                livedAchieve += safeInt(a.lived_actual);
+                livedAchieve += safeInt(a.nov_25_Slipped_Accounts_Actual);
                 pnpaAchieve += safeInt(a.pnpa_actual);
                 npaActivation += safeInt(a.npa_activation);
                 npaClosure += safeInt(a.npa_closure);
@@ -3338,7 +3338,7 @@ function calculateCEOStats() {
 
                 // Portfolio Health (Actuals)
                 portfolioHealth.healthy += safeInt(a.ftod_actual);
-                portfolioHealth.slipped += safeInt(a.lived_actual);
+                portfolioHealth.slipped += safeInt(a.nov_25_Slipped_Accounts_Actual);
                 portfolioHealth.npa += safeInt(a.pnpa_actual);
             }
 
@@ -3718,7 +3718,7 @@ function renderCollectionDetail(stats) {
 function renderMetricDetail(metricType, stats) {
     const config = {
         'ftod': { label: 'FTOD', targetField: 'ftod_plan', achieveField: 'ftod_actual', target: stats.ftodPlan, achieve: stats.ftodAchieve },
-        'slipped': { label: 'Slipped', targetField: 'lived_plan', achieveField: 'lived_actual', target: stats.livedPlan, achieve: stats.livedAchieve },
+        'slipped': { label: 'Slipped', targetField: 'nov_25_Slipped_Accounts_Plan', achieveField: 'nov_25_Slipped_Accounts_Actual', target: stats.livedPlan, achieve: stats.livedAchieve },
         'pnpa': { label: 'PNPA', targetField: 'pnpa_plan', achieveField: 'pnpa_actual', target: stats.pnpaPlan, achieve: stats.pnpaAchieve },
         'npa': { label: 'NPA Movement', targetField: null, achieveField: null, activation: stats.npaActivation, closure: stats.npaClosure }
     };
@@ -4206,7 +4206,7 @@ function getPortfolioBreakdown() {
                 name,
                 region,
                 healthy: parseInt(entry.achievement.ftod_actual) || 0,
-                slipped: parseInt(entry.achievement.lived_actual) || 0,
+                slipped: parseInt(entry.achievement.nov_25_Slipped_Accounts_Actual) || 0,
                 pnpa: parseInt(entry.achievement.pnpa_actual) || 0
             });
         }
@@ -4271,7 +4271,7 @@ function getKYCBreakdown() {
 function renderMetricBranchTable(metricType, stats) {
     const config = {
         'ftod': { targetField: 'ftod_plan', achieveField: 'ftod_actual', label: 'FTOD' },
-        'slipped': { targetField: 'lived_plan', achieveField: 'lived_actual', label: 'Slipped' },
+        'slipped': { targetField: 'nov_25_Slipped_Accounts_Plan', achieveField: 'nov_25_Slipped_Accounts_Actual', label: 'Slipped' },
         'pnpa': { targetField: 'pnpa_plan', achieveField: 'pnpa_actual', label: 'PNPA' },
         'collection': { targetField: null, achieveField: null, label: 'All' }
     };
@@ -4293,8 +4293,8 @@ function renderMetricBranchTable(metricType, stats) {
                 target = parseInt(entry.target[cfg.targetField]) || 0;
                 achieve = parseInt(entry.achievement[cfg.achieveField]) || 0;
             } else {
-                target = (parseInt(entry.target.ftod_plan) || 0) + (parseInt(entry.target.lived_plan) || 0) + (parseInt(entry.target.pnpa_plan) || 0);
-                achieve = (parseInt(entry.achievement.ftod_actual) || 0) + (parseInt(entry.achievement.lived_actual) || 0) + (parseInt(entry.achievement.pnpa_actual) || 0);
+                target = (parseInt(entry.target.ftod_plan) || 0) + (parseInt(entry.target.nov_25_Slipped_Accounts_Plan) || 0) + (parseInt(entry.target.pnpa_plan) || 0);
+                achieve = (parseInt(entry.achievement.ftod_actual) || 0) + (parseInt(entry.achievement.nov_25_Slipped_Accounts_Actual) || 0) + (parseInt(entry.achievement.pnpa_actual) || 0);
             }
 
             const pct = target > 0 ? Math.round((achieve / target) * 100) : 0;
@@ -4407,7 +4407,7 @@ function filterPortfolio(filter) {
 function setupInputValidators() {
     const pairs = [
         { plan: 'ftod_plan', actual: 'ftod_actual', name: 'FTOD Collection Plan' },
-        { plan: 'lived_plan', actual: 'lived_actual', name: 'Slipped Collection Plan' },
+        { plan: 'nov_25_Slipped_Accounts_Plan', actual: 'nov_25_Slipped_Accounts_Actual', name: 'Slipped Collection Plan' },
         { plan: 'pnpa_plan', actual: 'pnpa_actual', name: 'PNPA Collection Plan' },
         { plan: 'fy_od_plan', actual: 'fy_od_acc', name: 'OD Collection Plan' },
         { plan: 'fy_non_start_plan', actual: 'fy_non_start_acc', name: 'Non-Starter Collection Plan' }
