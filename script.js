@@ -1401,16 +1401,16 @@ function downloadPlanReport() {
 
     // Grand Total Row
     table += `
-        <tr style="font-weight: bold; background: #D1D5DB;">
-            <td class="txt-center" colspan="6" style="background: #D1D5DB; font-weight: bold;">GRAND TOTAL</td>
-            <td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.ftodAct)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.ftodPlan)}</td>
-            <td class="bg-green" style="font-weight: bold;">${formatIndian(totals.slipDem)}</td><td class="bg-green" style="font-weight: bold;">${formatIndian(totals.slipColl)}</td>
-            <td class="bg-pink" style="font-weight: bold;">${formatIndian(totals.pnpaAct)}</td><td class="bg-pink" style="font-weight: bold;">${formatIndian(totals.pnpaPlan)}</td>
-            <td class="bg-yellow" style="font-weight: bold;">${formatIndian(totals.npaAct)}</td><td class="bg-yellow" style="font-weight: bold;">${formatIndian(totals.npaClose)}</td>
-            <td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.odAcc)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.odPlan)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.nsAcc)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.nsPlan)}</td>
-            <td class="bg-peach" style="font-weight: bold;">${formatIndian(totals.sancAcc)}</td><td class="bg-peach" style="font-weight: bold;">${formatIndian(totals.sancAmt)}</td>
-            <td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIglAcc)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIglAmt)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIlAcc)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIlAmt)}</td>
-            <td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycFig)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycIl)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycNpa)}</td>
+        <tr style="font-weight: bold; background: #FFFF00;">
+            <td class="txt-center" colspan="6" style="background: #FFFF00; font-weight: bold;">GRAND TOTAL</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.ftodAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.ftodPlan)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.slipDem)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.slipColl)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaPlan)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaClose)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odPlan)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsPlan)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.sancAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.sancAmt)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAmt)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAmt)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycFig)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycIl)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycNpa)}</td>
         </tr>`;
 
     table += `</table></body></html>`;
@@ -1631,16 +1631,16 @@ function downloadAchievementPlanReport() {
 
     // Grand Total Row
     table += `
-        <tr style="font-weight: bold; background: #D1D5DB;">
-            <td class="txt-center" colspan="6" style="background: #D1D5DB; font-weight: bold;">GRAND TOTAL</td>
-            <td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.ftodAct)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.ftodPlan)}</td>
-            <td class="bg-green" style="font-weight: bold;">${formatIndian(totals.slipDem)}</td><td class="bg-green" style="font-weight: bold;">${formatIndian(totals.slipColl)}</td>
-            <td class="bg-pink" style="font-weight: bold;">${formatIndian(totals.pnpaAct)}</td><td class="bg-pink" style="font-weight: bold;">${formatIndian(totals.pnpaPlan)}</td>
-            <td class="bg-yellow" style="font-weight: bold;">${formatIndian(totals.npaAct)}</td><td class="bg-yellow" style="font-weight: bold;">${formatIndian(totals.npaClose)}</td>
-            <td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.odAcc)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.odPlan)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.nsAcc)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.nsPlan)}</td>
-            <td class="bg-peach" style="font-weight: bold;">${formatIndian(totals.sancAcc)}</td><td class="bg-peach" style="font-weight: bold;">${formatIndian(totals.sancAmt)}</td>
-            <td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIglAcc)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIglAmt)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIlAcc)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIlAmt)}</td>
-            <td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycFig)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycIl)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycNpa)}</td>
+        <tr style="font-weight: bold; background: #FFFF00;">
+            <td class="txt-center" colspan="6" style="background: #FFFF00; font-weight: bold;">GRAND TOTAL</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.ftodAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.ftodPlan)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.slipDem)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.slipColl)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaPlan)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaClose)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odPlan)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsPlan)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.sancAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.sancAmt)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAmt)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAmt)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycFig)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycIl)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycNpa)}</td>
         </tr>`;
 
     table += `</table></body></html>`;
