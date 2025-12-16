@@ -41,6 +41,16 @@
         </svg>
         Detailed View
       </a>
+      <a href="#" class="nav-item hidden" id="nav-reports" onclick="switchTab('reports')">
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        Reporting
+      </a>
 
       <a href="#" class="nav-item" id="nav-logout" onclick="handleLogout()">
         <svg class="icon" viewBox="0 0 24 24">
@@ -90,7 +100,8 @@
           <div class="search-results" id="searchResults"></div>
         </div>
 
-        <div class="view-mode-toggle" style="margin-right: 16px; display: flex; align-items: center; gap: 8px;">
+        <div class="view-mode-toggle hidden" id="viewModeToggleContainer"
+          style="display: flex; align-items: center; gap: 8px;">
           <span class="toggle-label" id="labelPlan"
             style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Plan</span>
           <label class="switch">
@@ -302,7 +313,8 @@
               <div class="form-section-title">FTOD - ACCOUNTS</div>
               <div class="form-row">
                 <label class="form-label">Actual FTOD Account</label>
-                <input class="form-input" id="ftod_actual" placeholder="Actual FTOD Account">
+                <input class="form-input" id="ftod_actual" placeholder="Actual FTOD Account" maxlength="3"
+                  oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
               </div>
               <div class="form-row">
                 <label class="form-label">FTOD Collection Plan</label>
@@ -314,7 +326,8 @@
               <div class="form-section-title">NOV-25 SLIPPED ACCOUNT</div>
               <div class="form-row">
                 <label class="form-label">Actual Account</label>
-                <input class="form-input" id="lived_actual" placeholder="Actual Account">
+                <input class="form-input" id="lived_actual" placeholder="Actual Account" maxlength="3"
+                  oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
               </div>
               <div class="form-row">
                 <label class="form-label">Collection Plan</label>
@@ -329,7 +342,8 @@
               <div class="form-section-title">PNPA ACCOUNTS</div>
               <div class="form-row">
                 <label class="form-label">Actual PNPA Account</label>
-                <input class="form-input" id="pnpa_actual" placeholder="Actual PNPA Account">
+                <input class="form-input" id="pnpa_actual" placeholder="Actual PNPA Account" maxlength="3"
+                  oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
               </div>
               <div class="form-row">
                 <label class="form-label">PNPA Collection Plan</label>
@@ -341,11 +355,13 @@
               <div class="form-section-title">NPA ACCOUNTS</div>
               <div class="form-row">
                 <label class="form-label">NPA ACTIVATION</label>
-                <input class="form-input" id="npa_activation" placeholder="NPA ACTIVATION">
+                <input class="form-input" id="npa_activation" placeholder="NPA ACTIVATION" maxlength="3"
+                  oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
               </div>
               <div class="form-row">
                 <label class="form-label">NPA CLOSURE</label>
-                <input class="form-input" id="npa_closure" placeholder="NPA CLOSURE">
+                <input class="form-input" id="npa_closure" placeholder="NPA CLOSURE" maxlength="3"
+                  oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
               </div>
             </div>
           </div>
@@ -357,7 +373,8 @@
               <div>
                 <div class="form-row">
                   <label class="form-label">TOTAL OD ACCOUNTS</label>
-                  <input class="form-input" id="fy_od_acc" placeholder="TOTAL OD ACCOUNTS">
+                  <input class="form-input" id="fy_od_acc" placeholder="TOTAL OD ACCOUNTS" maxlength="3"
+                    oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
                 </div>
                 <div class="form-row">
                   <label class="form-label">COLLECTION PLAN</label>
@@ -367,7 +384,8 @@
               <div>
                 <div class="form-row">
                   <label class="form-label">NON-STARTER ACCOUNTS</label>
-                  <input class="form-input" id="fy_non_start_acc" placeholder="NON-STARTER ACCOUNTS">
+                  <input class="form-input" id="fy_non_start_acc" placeholder="NON-STARTER ACCOUNTS" maxlength="3"
+                    oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
                 </div>
                 <div class="form-row">
                   <label class="form-label">COLLECTION PLAN</label>
@@ -387,25 +405,14 @@
               <input type="checkbox" checked disabled> Disbursement Targets
             </div>
 
-            <div class="target-row">
-              <div class="target-header">
-                <span>Sanction Pending (Accounts)</span>
-              </div>
-              <input class="form-input" id="disb_sanc_pent_acc" placeholder="Enter target...">
-            </div>
 
-            <div class="target-row">
-              <div class="target-header">
-                <span>Sanction Pending (Amount)</span>
-              </div>
-              <input class="form-input" id="disb_sanc_pent_amt" placeholder="Enter target...">
-            </div>
 
             <div class="target-row">
               <div class="target-header">
                 <span>IGL & FIG (Accounts)</span>
               </div>
-              <input class="form-input" id="disb_igl_acc" placeholder="Enter target...">
+              <input class="form-input" id="disb_igl_acc" placeholder="Enter target..." maxlength="3"
+                oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
             </div>
 
             <div class="target-row">
@@ -419,7 +426,8 @@
               <div class="target-header">
                 <span>IL (Accounts)</span>
               </div>
-              <input class="form-input" id="disb_il_acc" placeholder="Enter target...">
+              <input class="form-input" id="disb_il_acc" placeholder="Enter target..." maxlength="3"
+                oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
             </div>
 
             <div class="target-row">
@@ -436,17 +444,20 @@
 
             <div class="form-row">
               <label class="form-label">FIG AND IGL</label>
-              <input class="form-input" id="kyc_fig_igl" placeholder="FIG AND IGL">
+              <input class="form-input" id="kyc_fig_igl" placeholder="FIG AND IGL" maxlength="3"
+                oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
             </div>
 
             <div class="form-row">
               <label class="form-label">IL</label>
-              <input class="form-input" id="kyc_il" placeholder="IL">
+              <input class="form-input" id="kyc_il" placeholder="IL" maxlength="3"
+                oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
             </div>
 
             <div class="form-row">
               <label class="form-label">NPA</label>
-              <input class="form-input" id="kyc_npa" placeholder="NPA">
+              <input class="form-input" id="kyc_npa" placeholder="NPA" maxlength="3"
+                oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);">
             </div>
           </div>
 

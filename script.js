@@ -256,6 +256,18 @@ function updateViewModeUI() {
     }
 }
 
+function updateToggleVisibility() {
+    const toggleContainer = document.getElementById('viewModeToggleContainer');
+    if (toggleContainer) {
+        // Show only if CEO AND on Dashboard tab
+        if (state.role === 'CEO' && state.activeTab === 'dashboard') {
+            toggleContainer.classList.remove('hidden');
+        } else {
+            toggleContainer.classList.add('hidden');
+        }
+    }
+}
+
 function updateHeaderDate(isoDate) {
     const dateObj = new Date(isoDate);
     const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -496,21 +508,21 @@ async function fetchSupabaseDataRange(fromDate, toDate) {
         const aggregatedPlans = aggregateDataByBranch(resPlan.data || []);
         const aggregatedAchievements = aggregateDataByBranch(resAchieve.data || []);
 
-        state.rawData = aggregatedPlans;
-        state.achievementData = aggregatedAchievements;
-
-        // Build branch details (target + achieve)
+        // Create Branch Details Map (overwrite current details with aggregated range data)
         const branchDetails = {};
+
         aggregatedPlans.forEach(row => {
             const br = row.branch_name;
             if (!branchDetails[br]) branchDetails[br] = {};
             branchDetails[br].target = row;
         });
+
         aggregatedAchievements.forEach(row => {
             const br = row.branch_name;
             if (!branchDetails[br]) branchDetails[br] = {};
-            branchDetails[br].achieve = row;
+            branchDetails[br].achievement = row;
         });
+
         state.branchDetails = branchDetails;
 
         setLoading(false);
@@ -708,8 +720,7 @@ async function saveToSupabase(branchName, branchData, table) {
         fy_od_plan: toNum(branchData.fy_od_plan),
         fy_non_start_acc: toNum(branchData.fy_non_start_acc),
         fy_non_start_plan: toNum(branchData.fy_non_start_plan),
-        disb_sanc_pent_acc: toNum(branchData.disb_sanc_pent_acc),
-        disb_sanc_pent_amt: toNum(branchData.disb_sanc_pent_amt),
+
         disb_igl_acc: toNum(branchData.disb_igl_acc),
         disb_igl_amt: toNum(branchData.disb_igl_amt),
         disb_il_acc: toNum(branchData.disb_il_acc),
@@ -882,12 +893,15 @@ function loadAppUI() {
     // Disable Sidebar items for DM
     if (role === 'DM') {
         document.getElementById('nav-dashboard').classList.add('hidden');
+        document.getElementById('nav-reports').classList.add('hidden');
         // Auto switch to hierarchy
         switchTab('hierarchy');
     } else {
         document.getElementById('nav-dashboard').classList.remove('hidden');
+        document.getElementById('nav-reports').classList.remove('hidden');
         renderDashboard();
     }
+    updateToggleVisibility();
 }
 
 function handleLogout() {
@@ -899,13 +913,17 @@ function switchTab(tab) {
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
 
     if (tab === 'dashboard') {
-        document.querySelectorAll(".nav-item")[0].classList.add("active");
+        document.getElementById("nav-dashboard").classList.add("active");
         document.getElementById("breadcrumbs").innerHTML = 'Home / <span>Dashboard</span>';
     }
     if (tab === 'hierarchy') {
-        document.querySelectorAll(".nav-item")[1].classList.add("active");
+        document.getElementById("nav-hierarchy").classList.add("active");
         document.getElementById("breadcrumbs").innerHTML = 'Home / <span>Detailed View</span>';
         state.viewStack = []; // Reset drill-down
+    }
+    if (tab === 'reports') {
+        document.getElementById("nav-reports").classList.add("active");
+        document.getElementById("breadcrumbs").innerHTML = 'Home / <span>Reports</span>';
     }
 
     // Auto-close sidebar on mobile if open
@@ -915,6 +933,7 @@ function switchTab(tab) {
     }
 
     renderDashboard();
+    updateToggleVisibility();
 }
 
 let toastTimeout = null;
@@ -967,205 +986,24 @@ function renderDashboard() {
             if (state.role === 'CEO') {
                 const stats = calculateCEOStats();
 
-                // ============ ROW 1: EXECUTIVE SUMMARY (4 Cards) ============
-                buffer.innerHTML += `
-                            <div class="metric-card clickable-metric" onclick="openDetailModal('completion')">
-                                <div class="metric-header">
-                                    <div class="metric-icon" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white;">
-                                        <svg class="icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                                    </div>
-                                    <div class="metric-badge ${stats.completionRate >= 80 ? 'badge-up' : ''}" style="${stats.completionRate < 80 ? 'background: #FEF3C7; color: #D97706;' : ''}">
-                                        ${stats.completionRate >= 80 ? '✓ On Track' : '⚠ Pending'}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="metric-title">Completion Rate</div>
-                                    <div class="metric-value">${stats.completionRate}%</div>
-                                    <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">${stats.completedBranches} of ${stats.totalBranches} branches · Click for details</div>
-                                </div>
-                            </div>
-
-                            <div class="metric-card clickable-metric" onclick="openDetailModal('branches')">
-                                <div class="metric-header">
-                                    <div class="metric-icon" style="background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); color: white;">
-                                        <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="metric-title">Active Branches</div>
-                                    <div class="metric-value">${stats.totalBranches}</div>
-                                    <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">${Object.keys(stats.regionStats).length} Regions · Click for details</div>
-                                </div>
-                            </div>
-
-                            <div class="metric-card clickable-metric" onclick="openDetailModal('achievement')">
-                                <div class="metric-header">
-                                    <div class="metric-icon" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white;">
-                                        <svg class="icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-                                    </div>
-                                    <div class="metric-badge badge-up">
-                                        <svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline></svg>
-                                        ${stats.avgAchievementPct}% Avg
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="metric-title">Overall Achievement</div>
-                                    <div class="metric-value">${stats.avgAchievementPct}%</div>
-                                    <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Across all metrics · Click for details</div>
-                                </div>
-                            </div>
-
-                            <div class="metric-card clickable-metric" onclick="openDetailModal('collection')">
-                                <div class="metric-header">
-                                    <div class="metric-icon" style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white;">
-                                        <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="metric-title">Today's Collection Plan</div>
-                                    <div class="metric-value">₹${(stats.totalCollectionPlan / 100000).toFixed(1)}L</div>
-                                    <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">FTOD + Slipped + PNPA · Click for details</div>
-                                </div>
-                            </div>
-                        `;
-
-                // ============ ROW 2: COLLECTION PERFORMANCE ============
-                buffer.innerHTML += `
-                            <div class="chart-card grid-full">
-                                <div class="chart-header">
-                                    <div class="chart-title">📊 Collection Performance</div>
-                                    <div style="font-size:11px; color:var(--text-secondary);">Plan vs Achievement</div>
-                                </div>
-                                <div class="collection-grid">
-                                    <div class="clickable-section" onclick="openDetailModal('ftod')">${renderCollectionMetric('FTOD', stats.ftodPlan, stats.ftodAchieve)}</div>
-                                    <div class="clickable-section" onclick="openDetailModal('slipped')">${renderCollectionMetric('Slipped (LIVED)', stats.livedPlan, stats.livedAchieve)}</div>
-                                    <div class="clickable-section" onclick="openDetailModal('pnpa')">${renderCollectionMetric('PNPA', stats.pnpaPlan, stats.pnpaAchieve)}</div>
-                                    <div class="clickable-section" onclick="openDetailModal('npa')">${renderNPAMovement(stats.npaActivation, stats.npaClosure)}</div>
-                                </div>
-                            </div>
-                        `;
-
-                // ============ ROW 3: PORTFOLIO HEALTH + DISBURSEMENT ============
-                buffer.innerHTML += `
-                            <div class="chart-card grid-half clickable-section" onclick="openDetailModal('portfolio')">
-                                <div class="chart-header">
-                                    <div class="chart-title">🏦 Portfolio Health</div>
-                                    <div style="font-size:11px; color:var(--text-secondary);">Click for details</div>
-                                </div>
-                                <div class="bar-chart-container" style="align-items:center; justify-content:center; flex-direction:row;" id="portfolioDonutHook"></div>
-                            </div>
-
-                            <div class="chart-card grid-half">
-                                <div class="chart-header">
-                                    <div class="chart-title">💰 Disbursement Summary</div>
-                                    <div style="font-size:18px; font-weight:700; color:var(--success);">₹${(stats.totalDisbursement / 10000000).toFixed(2)} Cr</div>
-                                </div>
-                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; padding:16px 0;">
-                                    <div class="clickable-section" onclick="openDetailModal('disb_sanction')" style="background:var(--bg-body); padding:16px; border-radius:12px; text-align:center; cursor:pointer;">
-                                        <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Sanction Pending</div>
-                                        <div style="font-size:20px; font-weight:700; color:var(--primary-accent);">${stats.disbSancAcc}</div>
-                                        <div style="font-size:11px; color:var(--text-secondary);">₹${(stats.disbSancAmt / 100000).toFixed(1)}L</div>
-                                    </div>
-                                    <div class="clickable-section" onclick="openDetailModal('disb_igl')" style="background:var(--bg-body); padding:16px; border-radius:12px; text-align:center; cursor:pointer;">
-                                        <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">IGL & FIG</div>
-                                        <div style="font-size:20px; font-weight:700; color:#10B981;">${stats.disbIglAcc}</div>
-                                        <div style="font-size:11px; color:var(--text-secondary);">₹${(stats.disbIglAmt / 100000).toFixed(1)}L</div>
-                                    </div>
-                                    <div class="clickable-section" onclick="openDetailModal('disb_il')" style="background:var(--bg-body); padding:16px; border-radius:12px; text-align:center; cursor:pointer;">
-                                        <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">IL</div>
-                                        <div style="font-size:20px; font-weight:700; color:#F59E0B;">${stats.disbIlAcc}</div>
-                                        <div style="font-size:11px; color:var(--text-secondary);">₹${(stats.disbIlAmt / 100000).toFixed(1)}L</div>
-                                    </div>
-                                    <div class="clickable-section" onclick="openDetailModal('disbursement')" style="background:var(--primary-light); padding:16px; border-radius:12px; text-align:center; cursor:pointer;">
-                                        <div style="font-size:11px; color:var(--primary-accent); margin-bottom:4px;">Total Accounts</div>
-                                        <div style="font-size:20px; font-weight:700; color:var(--primary-accent);">${stats.disbSancAcc + stats.disbIglAcc + stats.disbIlAcc}</div>
-                                        <div style="font-size:11px; color:var(--text-secondary);">Click for all details</div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-
-                // ============ ROW 4: REGIONAL PERFORMANCE ============
-                buffer.innerHTML += `
-                            <div class="table-card grid-full">
-                                <div class="chart-header">
-                                    <div class="chart-title">🌍 Regional Performance</div>
-                                </div>
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Region</th>
-                                            <th>Branches</th>
-                                            <th>Completed</th>
-                                            <th>Avg Achievement</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="regionalTableHook"></tbody>
-                                </table>
-                            </div>
-                        `;
-
-                // ============ ROW 5: QUICK INSIGHTS ============
-                buffer.innerHTML += `
-                            <div class="chart-card grid-half">
-                                <div class="chart-header">
-                                    <div class="chart-title">⚡ Pending Actions</div>
-                                </div>
-                                <div style="display:flex; flex-direction:column; gap:12px; padding:12px 0;">
-                                    <div class="clickable-row" onclick="openDetailModal('pending')" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:${stats.pendingAchievement > 0 ? '#FEF3C7' : 'var(--bg-body)'}; border-radius:10px; cursor:pointer;">
-                                        <div style="display:flex; align-items:center; gap:10px;">
-                                            <span style="font-size:18px;">🎯</span>
-                                            <span style="font-weight:500;">Branches with only Plans</span>
-                                        </div>
-                                        <span style="font-size:18px; font-weight:700; color:${stats.pendingAchievement > 0 ? '#D97706' : 'var(--success)'};">${stats.pendingAchievement} →</span>
-                                    </div>
-                                    <div class="clickable-row" onclick="openDetailModal('nodata')" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:${stats.noDataBranches > 0 ? '#FEE2E2' : 'var(--bg-body)'}; border-radius:10px; cursor:pointer;">
-                                        <div style="display:flex; align-items:center; gap:10px;">
-                                            <span style="font-size:18px;">⏳</span>
-                                            <span style="font-weight:500;">Branches with No Data</span>
-                                        </div>
-                                        <span style="font-size:18px; font-weight:700; color:${stats.noDataBranches > 0 ? '#DC2626' : 'var(--success)'};">${stats.noDataBranches} →</span>
-                                    </div>
-                                    <div class="clickable-row" onclick="openDetailModal('completed')" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:var(--success-light); border-radius:10px; cursor:pointer;">
-                                        <div style="display:flex; align-items:center; gap:10px;">
-                                            <span style="font-size:18px;">✅</span>
-                                            <span style="font-weight:500;">Fully Completed</span>
-                                        </div>
-                                        <span style="font-size:18px; font-weight:700; color:var(--success);">${stats.completedBranches} →</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="chart-card grid-half clickable-section" onclick="openDetailModal('kyc')">
-                                <div class="chart-header">
-                                    <div class="chart-title">📋 KYC Sourcing Summary</div>
-                                    <div style="font-size:14px; font-weight:700; color:var(--primary-accent);">${stats.kycTotal} Total · Click for details</div>
-                                </div>
-                                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; padding:16px 0;">
-                                    <div style="background:linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); padding:20px 16px; border-radius:12px; text-align:center;">
-                                        <div style="font-size:24px; font-weight:700; color:#6366F1;">${stats.kycFigIgl}</div>
-                                        <div style="font-size:11px; color:#4F46E5; margin-top:4px;">FIG & IGL</div>
-                                    </div>
-                                    <div style="background:linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding:20px 16px; border-radius:12px; text-align:center;">
-                                        <div style="font-size:24px; font-weight:700; color:#D97706;">${stats.kycIl}</div>
-                                        <div style="font-size:11px; color:#B45309; margin-top:4px;">IL</div>
-                                    </div>
-                                    <div style="background:linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); padding:20px 16px; border-radius:12px; text-align:center;">
-                                        <div style="font-size:24px; font-weight:700; color:#059669;">${stats.kycNpa}</div>
-                                        <div style="font-size:11px; color:#047857; margin-top:4px;">NPA</div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                if (state.viewMode === 'PLAN') {
+                    renderCEOPlanDashboard(stats, buffer);
+                } else {
+                    renderCEOReviewDashboard(stats, buffer);
+                }
 
                 // --- COMMIT TO DOM ---
                 container.innerHTML = "";
                 container.appendChild(buffer);
 
-                // Render Charts (Must happen after commit)
-                renderPortfolioDonut(stats.portfolioHealth, document.getElementById("portfolioDonutHook"));
-                renderRegionalTable(stats.regionalBreakdown, document.getElementById("regionalTableHook"));
+                // Render Charts (Hooks depend on mode)
+                if (state.viewMode === 'REVIEW') {
+                    renderPortfolioDonut(stats.portfolioHealth, document.getElementById("portfolioDonutHook"));
+                    renderRegionalTable(stats.regionalBreakdown, document.getElementById("regionalTableHook"));
+                } else {
+                    // Plan Mode Charts if any
+                    renderRegionalPlanTable(stats.regionalBreakdown, document.getElementById("regionalPlanTableHook"));
+                }
             } else {
                 const tableCard = document.createElement("div");
                 tableCard.className = "table-card grid-full";
@@ -1186,7 +1024,15 @@ function renderDashboard() {
                 renderDMTable(document.getElementById("dmTableHook"));
             }
         }
+        // 3. REPORTS TAB (CEO Only)
+        else if (state.activeTab === 'reports' && state.role === 'CEO') {
+            renderReports(buffer);
+            container.innerHTML = "";
+            container.appendChild(buffer);
 
+            // Initialize Report Charts/Tables if needed
+            // For now, renderReports handles static content or simple tables
+        }
         // 2. DETAILED VIEW / DRILL DOWN
         else if (state.activeTab === 'hierarchy') {
             const wrapper = document.createElement("div");
@@ -1222,6 +1068,15 @@ function renderDashboard() {
                 }
             }
 
+            // --- HIERARCHY SUMMARY (CEO Only, Non-Leaf) ---
+            let summaryHTML = '';
+            // Only show summary if not at leaf (Branch) level and is CEO
+            if (state.role === 'CEO' && !(currentData instanceof Set)) {
+                const allBranches = getAllBranchesFromNode(currentData);
+                const aggStats = calculateAggregateStatsForBranches(allBranches);
+                summaryHTML = renderHierarchySummaryCard(aggStats, currentTitle);
+            }
+
             // Header with Back Button
             wrapper.innerHTML = `
                         <div class="chart-header" style="justify-content:flex-start; gap:16px;">
@@ -1232,6 +1087,10 @@ function renderDashboard() {
                     : ''}
                             <div class="chart-title">${currentTitle}</div>
                         </div>
+                        
+                        <!-- SUMMARY SECTION -->
+                        ${summaryHTML}
+                        
                         <div id="drillDownGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:16px; padding-top:10px;"></div>
                     `;
 
@@ -1257,6 +1116,769 @@ function renderDashboard() {
         console.error("Render Error:", err);
         showToast("Error rendering dashboard. Please refresh.", "alert");
     }
+}
+
+function renderReports(buffer) {
+    buffer.innerHTML = `
+        <div class="chart-card grid-full">
+            <div class="chart-header">
+                <div class="chart-title">📊 Custom Report Builder</div>
+                <div style="font-size:12px; color:var(--text-secondary);">Select the data points you want to include in your report.</div>
+            </div>
+
+            <!-- 1. DATE SELECTION -->
+            <div style="padding: 16px; border-bottom: 1px solid var(--border-color);">
+                <div style="font-size:14px; font-weight:600; margin-bottom:12px;">1. Select Date Range</div>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-outline" onclick="setReportDate(-1)">Yesterday</button>
+                        <button class="btn btn-primary" onclick="setReportDate(0)">Today</button>
+                        <button class="btn btn-outline" onclick="setReportDate(1)">Tomorrow</button>
+                    </div>
+                    <div style="width:1px; height:24px; background:var(--border-color); margin:0 8px;"></div>
+                    <input type="date" id="reportDateInput" value="${state.systemDate}" 
+                        onchange="state.systemDate = this.value; updateHeaderDate(this.value);"
+                        style="padding:8px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-body); color:var(--text-primary);">
+                </div>
+            </div>
+
+            <!-- 2. DATA SELECTION -->
+            <div style="padding: 16px;">
+                <div style="font-size:14px; font-weight:600; margin-bottom:12px;">2. Select Data Fields</div>
+                
+                <div class="report-options-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:24px;">
+                    
+                    <!-- Basic Info -->
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase;">Basic Info</div>
+                        <label class="checkbox-row"><input type="checkbox" checked disabled> Branch Name</label>
+                        <label class="checkbox-row"><input type="checkbox" checked disabled> Region & District</label>
+                        <label class="checkbox-row"><input type="checkbox" checked disabled> DM Name</label>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_status" checked> Status (Completed/Pending)</label>
+                    </div>
+
+                    <!-- Collections -->
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase;">Collections (FTOD/Lived/PNPA)</div>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_coll_plan" checked> Plan Values</label>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_coll_act" checked> Achievement Values</label>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_coll_pct"> Achievement %</label>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_coll_var"> Variance (Act - Plan)</label>
+                    </div>
+
+                    <!-- Disbursement -->
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase;">Disbursement (IGL/IL)</div>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_disb_plan" checked> Plan Amount</label>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_disb_act" checked> Actual Amount</label>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_disb_counts"> Account Counts</label>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_disb_prod"> Product Wise (IGL vs IL)</label>
+                    </div>
+
+                    <!-- KYC & Others -->
+                    <div>
+                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase;">Other Metrics</div>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_kyc" checked> KYC Sourcing</label>
+                        <label class="checkbox-row"><input type="checkbox" id="chk_npa" checked> NPA Movement</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. ACTIONS -->
+            <div style="padding: 16px; border-top: 1px solid var(--border-color); display:flex; justify-content:flex-end; gap:12px;">
+                <button class="btn btn-primary" onclick="downloadCustomReport()" style="padding:10px 24px; display:flex; align-items:center; gap:8px;">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download Report
+                </button>
+            </div>
+        </div>
+        <style>
+            .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; cursor: pointer; }
+            .checkbox-row input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; }
+        </style>
+    `;
+}
+
+function setReportDate(offset) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    // Adjust for timezone offset to keep date correct
+    const offsetDate = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+    const isoDate = offsetDate.toISOString().split('T')[0];
+
+    // Update global state
+    state.systemDate = isoDate;
+
+    // Update inputs
+    const input = document.getElementById("reportDateInput");
+    if (input) input.value = isoDate;
+
+    // Update header
+    updateHeaderDate(isoDate);
+
+    // Refresh UI to reflect date change (highlight button etc - optional)
+    // Ideally we might want to re-fetch data if it wasn't pre-loaded, but for now we assume data changes with date
+    // Trigger data refresh if needed:
+    fetchSupabaseData(); // Re-fetch for the new date
+}
+
+function downloadCustomReport() {
+    const config = {
+        status: document.getElementById('chk_status').checked,
+        coll_plan: document.getElementById('chk_coll_plan').checked,
+        coll_act: document.getElementById('chk_coll_act').checked,
+        coll_pct: document.getElementById('chk_coll_pct').checked,
+        coll_var: document.getElementById('chk_coll_var').checked,
+        disb_plan: document.getElementById('chk_disb_plan').checked,
+        disb_act: document.getElementById('chk_disb_act').checked,
+        disb_counts: document.getElementById('chk_disb_counts').checked,
+        disb_prod: document.getElementById('chk_disb_prod').checked,
+        kyc: document.getElementById('chk_kyc').checked,
+        npa: document.getElementById('chk_npa').checked,
+    };
+
+    const headers = ['Region', 'District', 'Branch', 'DM Name'];
+    if (config.status) headers.push('Status');
+
+    // Headers Building
+    if (config.coll_plan) headers.push('FTOD Plan', 'Lived Plan', 'PNPA Plan', 'Total Coll Plan');
+    if (config.coll_act) headers.push('FTOD Actual', 'Lived Actual', 'PNPA Actual', 'Total Coll Actual');
+    if (config.coll_pct) headers.push('FTOD %', 'Lived %', 'PNPA %', 'Total Coll %');
+    if (config.coll_var) headers.push('FTOD Var', 'Lived Var', 'PNPA Var');
+
+    if (config.disb_prod) {
+        if (config.disb_plan) headers.push('IGL Plan Amt', 'IL Plan Amt');
+        if (config.disb_act) headers.push('IGL Actual Amt', 'IL Actual Amt');
+        if (config.disb_counts) headers.push('IGL Acc', 'IL Acc');
+    } else {
+        if (config.disb_plan) headers.push('Total Disb Plan');
+        if (config.disb_act) headers.push('Total Disb Actual');
+        if (config.disb_counts) headers.push('Total Disb Accounts');
+    }
+
+    if (config.kyc) {
+        headers.push('KYC Total');
+    }
+    if (config.npa) headers.push('NPA Activated', 'NPA Closed');
+
+    const data = [];
+
+    // Indices
+    const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
+    const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
+    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
+    const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
+
+    state.rawData.rows.forEach(row => {
+        const branch = row[idxBranch];
+        if (!branch) return;
+
+        const entry = state.branchDetails[branch] || {};
+        const t = entry.target || {};
+        const a = entry.achievement || {};
+
+        const rowData = [row[idxRegion], row[idxDistrict], branch, row[idxDM]];
+
+        // Status
+        if (config.status) {
+            let s = 'No Data';
+            if (entry.target && entry.achievement) s = 'Completed';
+            else if (entry.target) s = 'Pending';
+            rowData.push(s);
+        }
+
+        // Helpers
+        const getInt = (v) => parseInt(v) || 0;
+        const getFloat = (v) => parseFloat(v) || 0;
+        const calcPct = (act, pln) => pln > 0 ? Math.round((act / pln) * 100) + '%' : '0%';
+        const calcVar = (act, pln) => (act - pln);
+
+        // Data Prep
+        const ftodP = getInt(t.ftod_plan), ftodA = getInt(a.ftod_actual);
+        const livedP = getInt(t.lived_plan), livedA = getInt(a.lived_actual);
+        const pnpaP = getInt(t.pnpa_plan), pnpaA = getInt(a.pnpa_actual);
+        const totCollP = ftodP + livedP + pnpaP;
+        const totCollA = ftodA + livedA + pnpaA;
+
+        if (config.coll_plan) rowData.push(ftodP, livedP, pnpaP, totCollP);
+        if (config.coll_act) rowData.push(ftodA, livedA, pnpaA, totCollA);
+        if (config.coll_pct) rowData.push(calcPct(ftodA, ftodP), calcPct(livedA, livedP), calcPct(pnpaA, pnpaP), calcPct(totCollA, totCollP));
+        if (config.coll_var) rowData.push(calcVar(ftodA, ftodP), calcVar(livedA, livedP), calcVar(pnpaA, pnpaP));
+
+        // Disbursement Data
+        const iglAmtP = getFloat(t.disb_igl_amt), iglAmtA = getFloat(a.disb_igl_amt);
+        const ilAmtP = getFloat(t.disb_il_amt), ilAmtA = getFloat(a.disb_il_amt);
+        const iglAcc = getInt(a.disb_igl_acc), ilAcc = getInt(a.disb_il_acc); // Using actuals for counts
+
+        if (config.disb_prod) {
+            if (config.disb_plan) rowData.push(iglAmtP, ilAmtP);
+            if (config.disb_act) rowData.push(iglAmtA, ilAmtA);
+            if (config.disb_counts) rowData.push(iglAcc, ilAcc);
+        } else {
+            if (config.disb_plan) rowData.push(iglAmtP + ilAmtP);
+            if (config.disb_act) rowData.push(iglAmtA + ilAmtA);
+            if (config.disb_counts) rowData.push(iglAcc + ilAcc);
+        }
+
+        if (config.kyc) {
+            const kycTot = getInt(a.kyc_fig_igl) + getInt(a.kyc_il) + getInt(a.kyc_npa);
+            rowData.push(kycTot);
+        }
+        if (config.npa) rowData.push(getInt(a.npa_activation), getInt(a.npa_closure));
+
+        data.push(rowData);
+    });
+
+    // Generate CSV
+    const csvContent = [headers.join(',')].concat(data.map(e => e.join(','))).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Master_Report_${state.systemDate}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+// --- NEW RENDERERS ---
+
+function renderCompletionAlert(stats, mode) {
+    const total = stats.totalBranches;
+    let completed = 0;
+    let incomplete = 0;
+    let label = '';
+    let alertColor = 'var(--primary)';
+
+    if (mode === 'PLAN') {
+        completed = total - stats.noDataBranches; // Using logic where 'noData' means no plan in this context roughly? 
+        // Wait, logic in calculateCEOStats: 
+        // if (hasPlan) regionStats[region].plansSet++;
+        // if (hasPlan && !hasAchieve) onlyPlans++;
+        // if (!hasPlan && !hasAchieve) noDataBranches++;
+        // So for Plan Mode, "Completed" = Total - branches_with_no_plan.
+        // Actually stats.plansRate is based on (total - noDataBranches) / total roughly?
+        // Let's look at calculateCEOStats again.
+        // plansRate = Math.round(((totalBranches - noDataBranches) / totalBranches) * 100).
+        // BUT wait, noDataBranches is incremented if (!hasPlan && !hasAchieve).
+        // If I have Plan but no Achieve, it's NOT noDataBranches.
+        // So "Branches with Plan" = Total - "Branches with neither".
+        // Let's rely on stats.plansRate logic for count.
+        completed = stats.onlyPlans + stats.completedBranches; // This covers all who have plans (whether they have achievement or not)
+        // Wait, stats.completedBranches is (hasPlan && hasAchieve).
+        // stats.onlyPlans is (hasPlan && !hasAchieve).
+        // So yes, sum is all with Plans.
+
+        incomplete = total - completed;
+        label = 'Target Planning Status';
+        if (incomplete > 0) alertColor = '#F59E0B'; // Orange if pending
+    } else {
+        // REVIEW MODE
+        completed = stats.completedBranches;
+        incomplete = total - completed;
+        label = 'Daily Reporting Status';
+        if (incomplete > 0) alertColor = '#EF4444'; // Red if pending
+    }
+
+    // Don't show if all good? User specifically asked "show how many completed and how many incomplete". 
+    // So always show it.
+
+    return `
+        <div class="alert-banner" onclick="openDetailModal('completion')" style="grid-column: 1 / -1; background: ${alertColor}15; border: 1px solid ${alertColor}; border-radius: 12px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                 <div style="background: ${alertColor}; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <svg class="icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                 </div>
+                 <div>
+                    <div style="font-weight: 700; color: var(--text-primary); font-size: 15px;">${label}</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">
+                        <span style="font-weight: 600; color: var(--success);">${completed} Completed</span> 
+                        <span style="margin: 0 6px;">•</span>
+                        <span style="font-weight: 600; color: ${incomplete > 0 ? '#EF4444' : 'var(--text-secondary)'};">${incomplete} Pending</span>
+                    </div>
+                 </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 600; color: ${alertColor};">View Details</span>
+                <svg class="icon" viewBox="0 0 24 24" style="width: 16px; height: 16px; color: ${alertColor};"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+        </div>
+    `;
+}
+
+function renderCEOPlanDashboard(stats, buffer) {
+    // ALERT BANNER
+    buffer.innerHTML += renderCompletionAlert(stats, 'PLAN');
+
+    // ROW 1: PLAN METRICS
+    buffer.innerHTML += `
+        <div class="metric-card">
+            <div class="metric-header">
+                <div class="metric-icon" style="background:var(--primary-light); color:var(--primary-accent);">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                </div>
+                <div class="metric-badge ${stats.plansRate >= 100 ? 'badge-up' : ''}" style="${stats.plansRate < 100 ? 'background:#FEF3C7; color:#D97706;' : ''}">
+                    ${stats.plansRate}% Set
+                </div>
+            </div>
+            <div>
+                <div class="metric-title">Plan Compliance</div>
+                <div class="metric-value">${stats.plansRate}%</div>
+                <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">${stats.totalBranches - stats.noDataBranches} of ${stats.totalBranches} Branches</div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-header">
+                <div class="metric-icon" style="background:#EEF2FF; color:#6366F1;">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+            </div>
+            <div>
+                <div class="metric-title">Total Collection Target</div>
+                <div class="metric-value">${stats.totalCollectionPlan.toLocaleString()}</div>
+                <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Accounts (FTOD + Lived + PNPA)</div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-header">
+                <div class="metric-icon" style="background:#D1FAE5; color:#059669;">
+                    <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                </div>
+            </div>
+            <div>
+                <div class="metric-title">Disbursement Target</div>
+                <div class="metric-value">₹${(stats.totalDisbursementPlan / 10000000).toFixed(2)} Cr</div>
+                <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Total Amount Plan</div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-header">
+                <div class="metric-icon" style="background:#FEF3C7; color:#D97706;">
+                   <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+                </div>
+            </div>
+            <div>
+                <div class="metric-title">KYC Sourcing Plan</div>
+                <div class="metric-value">${stats.kycTotal.toLocaleString()}</div>
+                <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Total Accounts Plan</div>
+            </div>
+        </div>
+    `;
+
+    // ROW 2: DETAILED BREAKDOWN
+    buffer.innerHTML += `
+        <div class="chart-card grid-half">
+            <div class="chart-header">
+                <div class="chart-title">🎯 Collection Targets Breakdown</div>
+            </div>
+             <div style="display:flex; flex-direction:column; gap:16px;">
+                ${renderPlanBar('FTOD Accounts', stats.ftodPlan, stats.totalCollectionPlan, '#6366F1')}
+                ${renderPlanBar('Slipped (Lived)', stats.livedPlan, stats.totalCollectionPlan, '#F59E0B')}
+                ${renderPlanBar('PNPA Accounts', stats.pnpaPlan, stats.totalCollectionPlan, '#EF4444')}
+            </div>
+        </div>
+
+        <div class="chart-card grid-half">
+            <div class="chart-header">
+                <div class="chart-title">💰 Disbursement Plan Breakdown</div>
+            </div>
+             <div style="display:flex; flex-direction:column; gap:16px;">
+                ${renderPlanBar('IGL & FIG Amount', stats.disbIglAmtPlan, stats.totalDisbursementPlan, '#10B981', true)}
+                ${renderPlanBar('IL Amount', stats.disbIlAmtPlan, stats.totalDisbursementPlan, '#8B5CF6', true)}
+            </div>
+            <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border-color); display:flex; justify-content:space-between;">
+                <div style="text-align:center;">
+                    <div style="font-size:12px; color:var(--text-secondary);">IGL Accounts</div>
+                    <div style="font-size:18px; font-weight:700;">${stats.disbIglAccPlan.toLocaleString()}</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:12px; color:var(--text-secondary);">IL Accounts</div>
+                    <div style="font-size:18px; font-weight:700;">${stats.disbIlAccPlan.toLocaleString()}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // ROW 3: REGIONAL TABLE
+    buffer.innerHTML += `
+        <div class="table-card grid-full">
+            <div class="chart-header">
+                <div class="chart-title">🌍 Regional Plan Status</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Region</th>
+                        <th>Total Branches</th>
+                        <th>Plans Set</th>
+                        <th>Compliance %</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="regionalPlanTableHook"></tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderCEOReviewDashboard(stats, buffer) {
+    // ALERT BANNER
+    buffer.innerHTML += renderCompletionAlert(stats, 'REVIEW');
+
+    // ============ ROW 1: EXECUTIVE SUMMARY (4 Cards) ============
+    buffer.innerHTML += `
+                <div class="metric-card clickable-metric" onclick="openDetailModal('completion')">
+                    <div class="metric-header">
+                        <div class="metric-icon" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white;">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        </div>
+                        <div class="metric-badge ${stats.completionRate >= 80 ? 'badge-up' : ''}" style="${stats.completionRate < 80 ? 'background: #FEF3C7; color: #D97706;' : ''}">
+                            ${stats.completionRate >= 80 ? '✓ On Track' : '⚠ Pending'}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="metric-title">Report Completion</div>
+                        <div class="metric-value">${stats.completionRate}%</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">${stats.completedBranches} of ${stats.totalBranches} branches</div>
+                    </div>
+                </div>
+
+                <div class="metric-card clickable-metric" onclick="openDetailModal('branches')">
+                    <div class="metric-header">
+                        <div class="metric-icon" style="background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); color: white;">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="metric-title">Active Branches</div>
+                        <div class="metric-value">${stats.totalBranches}</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">${Object.keys(stats.regionStats).length} Regions</div>
+                    </div>
+                </div>
+
+                <div class="metric-card clickable-metric" onclick="openDetailModal('achievement')">
+                    <div class="metric-header">
+                        <div class="metric-icon" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white;">
+                            <svg class="icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                        </div>
+                        <div class="metric-badge badge-up">
+                            <svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline></svg>
+                            ${stats.avgAchievementPct}% Avg
+                        </div>
+                    </div>
+                    <div>
+                        <div class="metric-title">Overall Achievement</div>
+                        <div class="metric-value">${stats.avgAchievementPct}%</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Across all metrics</div>
+                    </div>
+                </div>
+
+                <div class="metric-card clickable-metric" onclick="openDetailModal('collection')">
+                    <div class="metric-header">
+                        <div class="metric-icon" style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white;">
+                            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="metric-title">Collection Achievement</div>
+                        <div class="metric-value">₹${((stats.ftodAchieve + stats.livedAchieve + stats.pnpaAchieve) / 100000).toFixed(1)}L</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">vs Plan: ₹${(stats.totalCollectionPlan / 100000).toFixed(1)}L</div>
+                    </div>
+                </div>
+            `;
+
+    // ============ ROW 2: COLLECTION PERFORMANCE ============
+    buffer.innerHTML += `
+                <div class="chart-card grid-full">
+                    <div class="chart-header">
+                        <div class="chart-title">📊 Collection Performance</div>
+                        <div style="font-size:11px; color:var(--text-secondary);">Plan vs Achievement</div>
+                    </div>
+                    <div class="collection-grid">
+                        <div class="clickable-section" onclick="openDetailModal('ftod')">${renderCollectionMetric('FTOD', stats.ftodPlan, stats.ftodAchieve)}</div>
+                        <div class="clickable-section" onclick="openDetailModal('slipped')">${renderCollectionMetric('Slipped (LIVED)', stats.livedPlan, stats.livedAchieve)}</div>
+                        <div class="clickable-section" onclick="openDetailModal('pnpa')">${renderCollectionMetric('PNPA', stats.pnpaPlan, stats.pnpaAchieve)}</div>
+                        <div class="clickable-section" onclick="openDetailModal('npa')">${renderNPAMovement(stats.npaActivation, stats.npaClosure)}</div>
+                    </div>
+                </div>
+            `;
+
+    // ============ ROW 3: PORTFOLIO HEALTH + DISBURSEMENT ============
+    buffer.innerHTML += `
+                <div class="chart-card grid-half clickable-section" onclick="openDetailModal('portfolio')">
+                    <div class="chart-header">
+                        <div class="chart-title">🏦 Portfolio Health</div>
+                        <div style="font-size:11px; color:var(--text-secondary);">Click for details</div>
+                    </div>
+                    <div class="bar-chart-container" style="align-items:center; justify-content:center; flex-direction:row;" id="portfolioDonutHook"></div>
+                </div>
+
+                <div class="chart-card grid-half">
+                    <div class="chart-header">
+                        <div class="chart-title">💰 Disbursement Summary</div>
+                        <div style="font-size:18px; font-weight:700; color:var(--success);">₹${(stats.totalDisbursementAchieve / 10000000).toFixed(2)} Cr</div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; padding:16px 0;">
+                        
+                        <div class="clickable-section" onclick="openDetailModal('disb_igl')" style="background:var(--bg-body); padding:16px; border-radius:12px; text-align:center; cursor:pointer;">
+                            <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">IGL & FIG</div>
+                            <div style="font-size:20px; font-weight:700; color:#10B981;">${stats.disbIglAccAchieve}</div>
+                            <div style="font-size:11px; color:var(--text-secondary);">₹${(stats.disbIglAmtAchieve / 100000).toFixed(1)}L</div>
+                             <div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">Plan: ₹${(stats.disbIglAmtPlan / 100000).toFixed(1)}L</div>
+                        </div>
+                        <div class="clickable-section" onclick="openDetailModal('disb_il')" style="background:var(--bg-body); padding:16px; border-radius:12px; text-align:center; cursor:pointer;">
+                            <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">IL</div>
+                            <div style="font-size:20px; font-weight:700; color:#F59E0B;">${stats.disbIlAccAchieve}</div>
+                            <div style="font-size:11px; color:var(--text-secondary);">₹${(stats.disbIlAmtAchieve / 100000).toFixed(1)}L</div>
+                             <div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">Plan: ₹${(stats.disbIlAmtPlan / 100000).toFixed(1)}L</div>
+                        </div>
+                        <div class="clickable-section" onclick="openDetailModal('disbursement')" style="background:var(--primary-light); padding:16px; border-radius:12px; text-align:center; cursor:pointer; grid-column: span 2;">
+                            <div style="font-size:11px; color:var(--primary-accent); margin-bottom:4px;">Total Accounts</div>
+                            <div style="font-size:20px; font-weight:700; color:var(--primary-accent);">${stats.disbIglAccAchieve + stats.disbIlAccAchieve}</div>
+                            <div style="font-size:11px; color:var(--text-secondary);">Plan: ${stats.disbIglAccPlan + stats.disbIlAccPlan}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+    // ============ ROW 4: REGIONAL PERFORMANCE ============
+    buffer.innerHTML += `
+                <div class="table-card grid-full">
+                    <div class="chart-header">
+                        <div class="chart-title">🌍 Regional Performance</div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Region</th>
+                                <th>Branches</th>
+                                <th>Completed</th>
+                                <th>Avg Achievement</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="regionalTableHook"></tbody>
+                    </table>
+                </div>
+            `;
+
+    // ============ ROW 5: QUICK INSIGHTS (Review Only) ============
+    buffer.innerHTML += `
+                <div class="chart-card grid-half">
+                    <div class="chart-header">
+                        <div class="chart-title">⚡ Pending Actions</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:12px; padding:12px 0;">
+                        <div class="clickable-row" onclick="openDetailModal('pending')" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:${stats.onlyPlans > 0 ? '#FEF3C7' : 'var(--bg-body)'}; border-radius:10px; cursor:pointer;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span style="font-size:18px;">🎯</span>
+                                <span style="font-weight:500;">Branches with only Plans</span>
+                            </div>
+                            <span style="font-size:18px; font-weight:700; color:${stats.onlyPlans > 0 ? '#D97706' : 'var(--success)'};">${stats.onlyPlans} →</span>
+                        </div>
+                        <div class="clickable-row" onclick="openDetailModal('nodata')" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:${stats.noDataBranches > 0 ? '#FEE2E2' : 'var(--bg-body)'}; border-radius:10px; cursor:pointer;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span style="font-size:18px;">⏳</span>
+                                <span style="font-weight:500;">Branches with No Data</span>
+                            </div>
+                            <span style="font-size:18px; font-weight:700; color:${stats.noDataBranches > 0 ? '#DC2626' : 'var(--success)'};">${stats.noDataBranches} →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card grid-half clickable-section" onclick="openDetailModal('kyc')">
+                    <div class="chart-header">
+                        <div class="chart-title">📋 KYC Sourcing Summary</div>
+                        <div style="font-size:14px; font-weight:700; color:var(--primary-accent);">${stats.kycTotal} Total · Click for details</div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; padding:16px 0;">
+                        <div style="background:linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); padding:20px 16px; border-radius:12px; text-align:center;">
+                            <div style="font-size:24px; font-weight:700; color:#6366F1;">${stats.kycFigIgl}</div>
+                            <div style="font-size:11px; color:#4F46E5; margin-top:4px;">FIG & IGL</div>
+                        </div>
+                        <div style="background:linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding:20px 16px; border-radius:12px; text-align:center;">
+                            <div style="font-size:24px; font-weight:700; color:#D97706;">${stats.kycIl}</div>
+                            <div style="font-size:11px; color:#B45309; margin-top:4px;">IL</div>
+                        </div>
+                        <div style="background:linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); padding:20px 16px; border-radius:12px; text-align:center;">
+                            <div style="font-size:24px; font-weight:700; color:#059669;">${stats.kycNpa}</div>
+                            <div style="font-size:11px; color:#047857; margin-top:4px;">NPA</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+}
+
+function renderPlanBar(label, value, total, color, isMoney = false) {
+    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+    const displayValue = isMoney ? `₹${(value / 100000).toFixed(1)}L` : value.toLocaleString();
+
+    return `
+        <div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:500; color:var(--text-primary); margin-bottom:6px;">
+                <span>${label}</span>
+                <span>${displayValue}</span>
+            </div>
+            <div style="height:8px; background:var(--bg-body); border-radius:4px; overflow:hidden;">
+                <div style="height:100%; width:${pct}%; background:${color}; border-radius:4px;"></div>
+            </div>
+            <div style="text-align:right; font-size:10px; color:${color}; margin-top:2px; font-weight:600;">${pct}%</div>
+        </div>
+    `;
+}
+
+function renderRegionalPlanTable(data, tbody) {
+    if (!tbody || !data) return;
+
+    Object.keys(data).sort().forEach(region => {
+        const r = data[region];
+        const pct = Math.round((r.plansSet / r.branches) * 100) || 0;
+
+        let statusColor = '#10B981';
+        let statusText = 'Completed';
+        if (pct < 100) { statusColor = '#F59E0B'; statusText = 'Pending'; }
+        if (pct < 50) { statusColor = '#EF4444'; statusText = 'Lagging'; }
+
+        tbody.innerHTML += `
+            <tr class="clickable-row">
+                <td><span style="font-weight:600;">${region}</span></td>
+                <td>${r.branches}</td>
+                <td>${r.plansSet}</td>
+                <td>
+                    <span style="font-weight:600; color:${statusColor};">${pct}%</span>
+                </td>
+                <td><span class="status-pill" style="background:${statusColor}20; color:${statusColor};">${statusText}</span></td>
+            </tr>`;
+    });
+}
+
+// --- HIERARCHY SUMMARY HELPERS ---
+
+function getAllBranchesFromNode(node) {
+    let branches = [];
+    if (node instanceof Set) {
+        node.forEach(b => branches.push(b));
+    } else {
+        Object.values(node).forEach(child => {
+            branches = branches.concat(getAllBranchesFromNode(child));
+        });
+    }
+    return branches;
+}
+
+function calculateAggregateStatsForBranches(branchNames) {
+    let stats = {
+        branches: 0,
+        plansSet: 0,
+        completed: 0,
+        ftodPlan: 0, ftodAchieve: 0,
+        collPlan: 0, collAchieve: 0,
+        disbPlan: 0, disbAchieve: 0,
+        kyc: 0
+    };
+
+    const safeInt = (v) => parseInt(v) || 0;
+    const safeFloat = (v) => parseFloat(v) || 0;
+
+    branchNames.forEach(br => {
+        stats.branches++;
+        const entry = state.branchDetails[br];
+        if (!entry) return;
+
+        const hasPlan = !!entry.target;
+        const hasAchieve = !!entry.achievement;
+
+        if (hasPlan) stats.plansSet++;
+        if (hasPlan && hasAchieve) stats.completed++;
+
+        // Plan Data
+        if (hasPlan) {
+            const t = entry.target;
+            const ftod = safeInt(t.ftod_plan);
+            const lived = safeInt(t.lived_plan);
+            const pnpa = safeInt(t.pnpa_plan);
+
+            stats.ftodPlan += ftod;
+            stats.collPlan += (ftod + lived + pnpa);
+
+            stats.disbPlan += (safeFloat(t.disb_igl_amt) + safeFloat(t.disb_il_amt));
+        }
+
+        // Achievement Data
+        if (hasAchieve) {
+            const a = entry.achievement;
+            const ftod = safeInt(a.ftod_actual);
+            const lived = safeInt(a.lived_actual);
+            const pnpa = safeInt(a.pnpa_actual);
+
+            stats.ftodAchieve += ftod;
+            stats.collAchieve += (ftod + lived + pnpa);
+
+            stats.disbAchieve += (safeFloat(a.disb_igl_amt) + safeFloat(a.disb_il_amt));
+
+            stats.kyc += (safeInt(a.kyc_fig_igl) + safeInt(a.kyc_il) + safeInt(a.kyc_npa));
+        }
+    });
+
+    return stats;
+}
+
+function renderHierarchySummaryCard(stats, title) {
+    const collPct = stats.collPlan > 0 ? Math.round((stats.collAchieve / stats.collPlan) * 100) : 0;
+    const disbPct = stats.disbPlan > 0 ? Math.round((stats.disbAchieve / stats.disbPlan) * 100) : 0;
+    const disbPlanCr = (stats.disbPlan / 10000000).toFixed(2);
+    const disbAchieveCr = (stats.disbAchieve / 10000000).toFixed(2);
+
+    return `
+        <div style="background:var(--bg-body); border:1px solid var(--border-color); border-radius:12px; padding:16px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+                <div style="font-weight:700; color:var(--text-primary); font-size:14px;">SUMMARY: ${title}</div>
+                <div style="font-size:12px; color:var(--text-secondary);">
+                    <span style="font-weight:600; color:var(--primary);">${stats.completed}</span> / ${stats.branches} Completed
+                </div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px;">
+                <!-- Collection -->
+                <div>
+                    <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">TOTAL COLLECTION</div>
+                    <div style="display:flex; align-items:baseline; gap:6px;">
+                        <span style="font-weight:700; font-size:16px;">${stats.collAchieve.toLocaleString()}</span>
+                        <span style="font-size:11px; color:var(--text-secondary);">/ ${stats.collPlan.toLocaleString()}</span>
+                    </div>
+                    <div style="height:4px; background:var(--border-color); border-radius:2px; margin-top:6px; overflow:hidden;">
+                        <div style="height:100%; width:${collPct}%; background:${collPct >= 100 ? '#10B981' : '#F59E0B'};"></div>
+                    </div>
+                    <div style="text-align:right; font-size:10px; font-weight:600; margin-top:2px; color:${collPct >= 100 ? '#10B981' : '#F59E0B'};">${collPct}%</div>
+                </div>
+
+                <!-- Disbursement -->
+                 <div>
+                    <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">TOTAL DISBURSEMENT</div>
+                    <div style="display:flex; align-items:baseline; gap:6px;">
+                        <span style="font-weight:700; font-size:16px;">₹${disbAchieveCr}Cr</span>
+                        <span style="font-size:11px; color:var(--text-secondary);">/ ${disbPlanCr}Cr</span>
+                    </div>
+                    <div style="height:4px; background:var(--border-color); border-radius:2px; margin-top:6px; overflow:hidden;">
+                        <div style="height:100%; width:${disbPct}%; background:${disbPct >= 100 ? '#10B981' : '#8B5CF6'};"></div>
+                    </div>
+                    <div style="text-align:right; font-size:10px; font-weight:600; margin-top:2px; color:${disbPct >= 100 ? '#10B981' : '#8B5CF6'};">${disbPct}%</div>
+                </div>
+
+                <!-- KYC -->
+                <div>
+                     <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">TOTAL KYC</div>
+                     <div style="font-weight:700; font-size:16px;">${stats.kyc.toLocaleString()}</div>
+                     <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Sourcing Generated</div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // --- COMPONENTS ---
@@ -1458,8 +2080,7 @@ function createViewSummary(targetData, achieveData) {
     )}
                             
                             ${section('Disbursement',
-        metricRow('Sanction Pending (Acc)', 'disb_sanc_pent_acc') +
-        metricRow('Sanction Pending (Amt)', 'disb_sanc_pent_amt') +
+
         metricRow('IGL & FIG (Acc)', 'disb_igl_acc') +
         metricRow('IGL & FIG (Amt)', 'disb_igl_amt') +
         metricRow('IL (Acc)', 'disb_il_acc') +
@@ -1509,7 +2130,7 @@ function openBranchModal(branchName) {
     const achieveFields = [
         'ftod_actual', 'lived_actual', 'pnpa_actual', 'npa_activation', 'npa_closure',
         'fy_od_acc', 'fy_non_start_acc',
-        'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
+        'disb_igl_acc', 'disb_igl_amt',
         'disb_il_acc', 'disb_il_amt',
         'kyc_fig_igl', 'kyc_il', 'kyc_npa'
     ];
@@ -1672,7 +2293,7 @@ async function saveBranchDetails(andNext) {
         'ftod_actual', 'ftod_plan', 'lived_actual', 'lived_plan',
         'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
         'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
-        'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
+        'disb_igl_acc', 'disb_igl_amt',
         'disb_il_acc', 'disb_il_amt',
         'kyc_fig_igl', 'kyc_il', 'kyc_npa'
     ];
@@ -2178,7 +2799,7 @@ function calculateBranchAveragePercentage(branchName) {
         'ftod_actual', 'ftod_plan', 'lived_actual', 'lived_plan',
         'pnpa_actual', 'pnpa_plan', 'npa_activation', 'npa_closure',
         'fy_od_acc', 'fy_od_plan', 'fy_non_start_acc', 'fy_non_start_plan',
-        'disb_sanc_pent_acc', 'disb_sanc_pent_amt', 'disb_igl_acc', 'disb_igl_amt',
+        'disb_igl_acc', 'disb_igl_amt',
         'disb_il_acc', 'disb_il_amt', 'kyc_fig_igl', 'kyc_il', 'kyc_npa'
     ];
 
@@ -2271,6 +2892,7 @@ function calculateCEOStats() {
     let totalBranches = 0;
     let completedBranches = 0;
     let pendingAchievement = 0;
+    let onlyPlans = 0; // Branches with only plans
     let noDataBranches = 0;
 
     // Collection Metrics
@@ -2280,9 +2902,13 @@ function calculateCEOStats() {
     let npaActivation = 0, npaClosure = 0;
 
     // Disbursement
-    let disbSancAcc = 0, disbSancAmt = 0;
-    let disbIglAcc = 0, disbIglAmt = 0;
-    let disbIlAcc = 0, disbIlAmt = 0;
+    let disbIglAccPlan = 0, disbIglAmtPlan = 0; // Plans from daily_reports
+    let disbIlAccPlan = 0, disbIlAmtPlan = 0;
+
+    let disbIglAccAchieve = 0, disbIglAmtAchieve = 0; // Actuals from daily_reports_achievements
+    let disbIlAccAchieve = 0, disbIlAmtAchieve = 0;
+
+    let disbSancAcc = 0, disbSancAmt = 0; // Sanction Pending (if applicable)
 
     // KYC
     let kycFigIgl = 0, kycIl = 0, kycNpa = 0;
@@ -2298,6 +2924,7 @@ function calculateCEOStats() {
     let allAchievementPcts = [];
 
     const safeInt = (v) => parseInt(v) || 0;
+    const safeFloat = (v) => parseFloat(v) || 0;
 
     state.rawData.rows.forEach(row => {
         const branch = row[0];
@@ -2307,59 +2934,69 @@ function calculateCEOStats() {
             totalBranches++;
 
             // Initialize region
-            if (!regionStats[region]) regionStats[region] = { branches: 0, completed: 0, totalPct: 0, count: 0 };
+            if (!regionStats[region]) regionStats[region] = { branches: 0, completed: 0, plansSet: 0, totalPct: 0, count: 0 };
             regionStats[region].branches++;
 
             const branchEntry = state.branchDetails[branch];
             const hasPlan = branchEntry && branchEntry.target;
             const hasAchieve = branchEntry && branchEntry.achievement;
 
-            if (hasPlan && hasAchieve) {
-                completedBranches++;
-                regionStats[region].completed++;
+            if (hasPlan && hasAchieve) completedBranches++;
+            if (hasPlan) regionStats[region].plansSet++;
+            if (hasPlan && !hasAchieve) onlyPlans++;
+            if (hasPlan && hasAchieve) regionStats[region].completed++;
+            if (!hasPlan && !hasAchieve) noDataBranches++;
 
+
+            // --- AGGREGATE PLAN DATA ---
+            if (hasPlan) {
                 const t = branchEntry.target;
+                ftodPlan += safeInt(t.ftod_plan);
+                livedPlan += safeInt(t.lived_plan);
+                pnpaPlan += safeInt(t.pnpa_plan);
+
+                // Disbursement Plans (from daily_reports)
+                disbIglAccPlan += safeInt(t.disb_igl_acc);
+                disbIglAmtPlan += safeFloat(t.disb_igl_amt);
+                disbIlAccPlan += safeInt(t.disb_il_acc);
+                disbIlAmtPlan += safeFloat(t.disb_il_amt);
+            }
+
+            // --- AGGREGATE ACHIEVEMENT DATA ---
+            if (hasAchieve) {
                 const a = branchEntry.achievement;
 
-                // Collection
-                ftodPlan += safeInt(t.ftod_plan);
                 ftodAchieve += safeInt(a.ftod_actual);
-                livedPlan += safeInt(t.lived_plan);
                 livedAchieve += safeInt(a.lived_actual);
-                pnpaPlan += safeInt(t.pnpa_plan);
                 pnpaAchieve += safeInt(a.pnpa_actual);
                 npaActivation += safeInt(a.npa_activation);
                 npaClosure += safeInt(a.npa_closure);
 
-                // Disbursement
-                disbSancAcc += safeInt(a.disb_sanc_pent_acc);
-                disbSancAmt += safeInt(a.disb_sanc_pent_amt);
-                disbIglAcc += safeInt(a.disb_igl_acc);
-                disbIglAmt += safeInt(a.disb_igl_amt);
-                disbIlAcc += safeInt(a.disb_il_acc);
-                disbIlAmt += safeInt(a.disb_il_amt);
+                // Disbursement Actuals
+                disbIglAccAchieve += safeInt(a.disb_igl_acc);
+                disbIglAmtAchieve += safeFloat(a.disb_igl_amt);
+                disbIlAccAchieve += safeInt(a.disb_il_acc);
+                disbIlAmtAchieve += safeFloat(a.disb_il_amt);
 
                 // KYC
                 kycFigIgl += safeInt(a.kyc_fig_igl);
                 kycIl += safeInt(a.kyc_il);
                 kycNpa += safeInt(a.kyc_npa);
 
-                // Portfolio Health
+                // Portfolio Health (Actuals)
                 portfolioHealth.healthy += safeInt(a.ftod_actual);
                 portfolioHealth.slipped += safeInt(a.lived_actual);
                 portfolioHealth.npa += safeInt(a.pnpa_actual);
+            }
 
-                // Calculate branch average achievement %
+            // --- CALCULATE PERCENTAGES (Only if both exist) ---
+            if (hasPlan && hasAchieve) {
                 const branchPct = calculateBranchAveragePercentage(branch);
                 if (branchPct !== null && branchPct > 0) {
                     allAchievementPcts.push(branchPct);
                     regionStats[region].totalPct += branchPct;
                     regionStats[region].count++;
                 }
-            } else if (hasPlan && !hasAchieve) {
-                pendingAchievement++;
-            } else {
-                noDataBranches++;
             }
         }
     });
@@ -2369,6 +3006,7 @@ function calculateCEOStats() {
         const r = regionStats[region];
         regionalBreakdown[region] = {
             branches: r.branches,
+            plansSet: r.plansSet,
             completed: r.completed,
             avgPct: r.count > 0 ? Math.round(r.totalPct / r.count) : 0
         };
@@ -2376,20 +3014,27 @@ function calculateCEOStats() {
 
     // Calculate overall averages
     const completionRate = totalBranches > 0 ? Math.round((completedBranches / totalBranches) * 100) : 0;
+    const plansRate = totalBranches > 0 ? Math.round(((totalBranches - noDataBranches) / totalBranches) * 100) : 0;
+
     const avgAchievementPct = allAchievementPcts.length > 0
         ? Math.round(allAchievementPcts.reduce((a, b) => a + b, 0) / allAchievementPcts.length)
         : 0;
 
     const totalCollectionPlan = ftodPlan + livedPlan + pnpaPlan;
-    const totalDisbursement = disbSancAmt + disbIglAmt + disbIlAmt;
+
+    // Disbursement Totals
+    const totalDisbursementPlan = disbIglAmtPlan + disbIlAmtPlan;
+    const totalDisbursementAchieve = disbIglAmtAchieve + disbIlAmtAchieve;
+
     const kycTotal = kycFigIgl + kycIl + kycNpa;
 
     return {
         totalBranches,
         completedBranches,
-        pendingAchievement,
+        onlyPlans,
         noDataBranches,
         completionRate,
+        plansRate,
         avgAchievementPct,
         totalCollectionPlan,
 
@@ -2400,10 +3045,11 @@ function calculateCEOStats() {
         npaActivation, npaClosure,
 
         // Disbursement
-        totalDisbursement,
-        disbSancAcc, disbSancAmt,
-        disbIglAcc, disbIglAmt,
-        disbIlAcc, disbIlAmt,
+        totalDisbursementPlan, totalDisbursementAchieve,
+        disbIglAccPlan, disbIglAmtPlan,
+        disbIlAccPlan, disbIlAmtPlan,
+        disbIglAccAchieve, disbIglAmtAchieve,
+        disbIlAccAchieve, disbIlAmtAchieve,
 
         // KYC
         kycFigIgl, kycIl, kycNpa, kycTotal,
@@ -2448,7 +3094,6 @@ function openDetailModal(type, data = null) {
         'npa': { icon: '🔴', title: 'NPA Movement Details', subtitle: 'Activation vs Closure' },
         'portfolio': { icon: '📉', title: 'Portfolio Health Details', subtitle: 'Account distribution' },
         'disbursement': { icon: '💳', title: 'Disbursement Details', subtitle: 'Product-wise breakdown' },
-        'disb_sanction': { icon: '📝', title: 'Sanction Pending Details', subtitle: 'Pending approvals' },
         'disb_igl': { icon: '🌱', title: 'IGL & FIG Details', subtitle: 'Individual/Group loans' },
         'disb_il': { icon: '🏠', title: 'IL Details', subtitle: 'Individual loans' },
         'region': { icon: '🌍', title: `Region: ${data || 'All'}`, subtitle: 'Regional performance' },
@@ -2867,11 +3512,6 @@ function renderPortfolioDetailView(category, stats) {
 function renderDisbursementDetailView(stats) {
     return `
                 <div class="detail-summary-row">
-                    <div class="detail-stat-card clickable-section" onclick="openDetailModal('disb_sanction')">
-                        <div class="detail-stat-value" style="color:#6366F1;">${stats.disbSancAcc}</div>
-                        <div class="detail-stat-label">Sanction Pending</div>
-                        <div style="font-size:12px; color:var(--text-secondary);">₹${(stats.disbSancAmt / 100000).toFixed(1)}L</div>
-                    </div>
                     <div class="detail-stat-card clickable-section" onclick="openDetailModal('disb_igl')">
                         <div class="detail-stat-value" style="color:#10B981;">${stats.disbIglAcc}</div>
                         <div class="detail-stat-label">IGL & FIG</div>
@@ -2895,7 +3535,6 @@ function renderDisbursementDetailView(stats) {
 // --- Disbursement Product Detail ---
 function renderDisbProductDetail(product, stats) {
     const config = {
-        'sanction': { accField: 'disb_sanc_pent_acc', amtField: 'disb_sanc_pent_amt', label: 'Sanction Pending' },
         'igl': { accField: 'disb_igl_acc', amtField: 'disb_igl_amt', label: 'IGL & FIG' },
         'il': { accField: 'disb_il_acc', amtField: 'disb_il_amt', label: 'IL' }
     };
@@ -3352,12 +3991,11 @@ function renderDisbursementBranchTable(stats) {
         const entry = state.branchDetails[name];
         if (entry && entry.achievement) {
             const a = entry.achievement;
-            const total = (parseInt(a.disb_sanc_pent_amt) || 0) + (parseInt(a.disb_igl_amt) || 0) + (parseInt(a.disb_il_amt) || 0);
+            const total = (parseInt(a.disb_igl_amt) || 0) + (parseInt(a.disb_il_amt) || 0);
             if (total > 0) {
                 data.push({
                     name,
                     region,
-                    sanction: (parseInt(a.disb_sanc_pent_amt) || 0),
                     igl: (parseInt(a.disb_igl_amt) || 0),
                     il: (parseInt(a.disb_il_amt) || 0),
                     total
@@ -3370,20 +4008,18 @@ function renderDisbursementBranchTable(stats) {
 
     return `
                 <div class="detail-branch-list">
-                    <div class="detail-branch-header" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
+                    <div class="detail-branch-header" style="grid-template-columns: 2fr 1fr 1fr 1fr;">
                         <div>Branch</div>
-                        <div>Sanction (₹L)</div>
                         <div>IGL (₹L)</div>
                         <div>IL (₹L)</div>
                         <div>Total (₹L)</div>
                     </div>
                     ${data.map(b => `
-                        <div class="detail-branch-row" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
+                        <div class="detail-branch-row" style="grid-template-columns: 2fr 1fr 1fr 1fr;">
                             <div>
                                 <div class="detail-branch-name">${b.name}</div>
                                 <div class="detail-branch-region">${b.region}</div>
                             </div>
-                            <div>${(b.sanction / 100000).toFixed(1)}</div>
                             <div>${(b.igl / 100000).toFixed(1)}</div>
                             <div>${(b.il / 100000).toFixed(1)}</div>
                             <div style="font-weight:700; color:var(--primary-accent);">${(b.total / 100000).toFixed(1)}</div>
