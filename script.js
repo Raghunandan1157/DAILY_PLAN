@@ -1238,15 +1238,15 @@ function downloadPlanReport() {
             .txt-left { text-align: left; }
             .txt-center { text-align: center; }
             /* Header Colors */
-            .bg-header { background: ${cHeader}; color: white; font-weight: bold; }
-            .bg-peach { background: ${cPeach}; color: black; }
-            .bg-green { background: ${cGreen}; color: black; }
-            .bg-blue { background: ${cBlue}; color: black; }
-            .bg-pink { background: ${cPink}; color: black; }
-            .bg-yellow { background: ${cYellow}; color: black; }
-            .bg-cyan { background: ${cCyan}; color: black; }
-            .bg-orange { background: ${cOrange}; color: black; }
-            .bg-white { background: ${cWhite}; color: black; }
+            .bg-header { background: ${cHeader}; color: white; font-weight: bold; text-align: center; }
+            .bg-peach { background: ${cPeach}; color: black; text-align: center; }
+            .bg-green { background: ${cGreen}; color: black; text-align: center; }
+            .bg-blue { background: ${cBlue}; color: black; text-align: center; }
+            .bg-pink { background: ${cPink}; color: black; text-align: center; }
+            .bg-yellow { background: ${cYellow}; color: black; text-align: center; }
+            .bg-cyan { background: ${cCyan}; color: black; text-align: center; }
+            .bg-orange { background: ${cOrange}; color: black; text-align: center; }
+            .bg-white { background: ${cWhite}; color: black; text-align: center; }
             .title-row { text-align: center; font-size: 14pt; font-weight: bold; background: #FFFFFF; color: #000000; height: 30px; }
         </style>
     </head>
@@ -1313,6 +1313,22 @@ function downloadPlanReport() {
         return isNaN(n) ? 0 : n;
     };
 
+    // Helper to format number in Indian system (1,00,00,000)
+    const formatIndian = (num) => {
+        if (num === 0) return '-';
+        return num.toLocaleString('en-IN');
+    };
+
+    // Grand totals
+    let totals = {
+        ftodAct: 0, ftodPlan: 0, slipDem: 0, slipColl: 0,
+        pnpaAct: 0, pnpaPlan: 0, npaAct: 0, npaClose: 0,
+        odAcc: 0, odPlan: 0, nsAcc: 0, nsPlan: 0,
+        sancAcc: 0, sancAmt: 0,
+        disbIglAcc: 0, disbIglAmt: 0, disbIlAcc: 0, disbIlAmt: 0,
+        kycFig: 0, kycIl: 0, kycNpa: 0
+    };
+
     const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
     const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
     const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
@@ -1352,6 +1368,18 @@ function downloadPlanReport() {
         const kycIl = getInt(t.kyc_il);
         const kycNpa = getInt(t.kyc_npa);
 
+        // Accumulate totals
+        totals.ftodAct += ftodAct; totals.ftodPlan += ftodPlan;
+        totals.slipDem += slipDem; totals.slipColl += slipColl;
+        totals.pnpaAct += pnpaAct; totals.pnpaPlan += pnpaPlan;
+        totals.npaAct += npaAct; totals.npaClose += npaClose;
+        totals.odAcc += odAcc; totals.odPlan += odPlan;
+        totals.nsAcc += nsAcc; totals.nsPlan += nsPlan;
+        totals.sancAcc += sancAcc; totals.sancAmt += sancAmt;
+        totals.disbIglAcc += disbIglAcc; totals.disbIglAmt += disbIglAmt;
+        totals.disbIlAcc += disbIlAcc; totals.disbIlAmt += disbIlAmt;
+        totals.kycFig += kycFig; totals.kycIl += kycIl; totals.kycNpa += kycNpa;
+
         table += `
         <tr>
             <td class="txt-center bg-white">${idCounter++}</td>
@@ -1360,16 +1388,30 @@ function downloadPlanReport() {
             <td class="txt-left bg-white">${region}</td>
             <td class="txt-left bg-white">${district}</td>
             <td class="txt-left bg-white">${dm}</td>
-            <td class="bg-blue">${ftodAct}</td><td class="bg-blue">${ftodPlan}</td>
-            <td class="bg-green">${slipDem}</td><td class="bg-green">${slipColl}</td>
-            <td class="bg-pink">${pnpaAct}</td><td class="bg-pink">${pnpaPlan}</td>
-            <td class="bg-yellow">${npaAct}</td><td class="bg-yellow">${npaClose}</td>
-            <td class="bg-cyan">${odAcc}</td><td class="bg-cyan">${odPlan}</td><td class="bg-cyan">${nsAcc}</td><td class="bg-cyan">${nsPlan}</td>
-            <td class="bg-peach">${sancAcc}</td><td class="bg-peach">${sancAmt}</td>
-            <td class="bg-orange">${disbIglAcc}</td><td class="bg-orange">${disbIglAmt}</td><td class="bg-orange">${disbIlAcc}</td><td class="bg-orange">${disbIlAmt}</td>
-            <td class="bg-blue">${kycFig}</td><td class="bg-blue">${kycIl}</td><td class="bg-blue">${kycNpa}</td>
+            <td class="bg-blue">${formatIndian(ftodAct)}</td><td class="bg-blue">${formatIndian(ftodPlan)}</td>
+            <td class="bg-green">${formatIndian(slipDem)}</td><td class="bg-green">${formatIndian(slipColl)}</td>
+            <td class="bg-pink">${formatIndian(pnpaAct)}</td><td class="bg-pink">${formatIndian(pnpaPlan)}</td>
+            <td class="bg-yellow">${formatIndian(npaAct)}</td><td class="bg-yellow">${formatIndian(npaClose)}</td>
+            <td class="bg-cyan">${formatIndian(odAcc)}</td><td class="bg-cyan">${formatIndian(odPlan)}</td><td class="bg-cyan">${formatIndian(nsAcc)}</td><td class="bg-cyan">${formatIndian(nsPlan)}</td>
+            <td class="bg-peach">${formatIndian(sancAcc)}</td><td class="bg-peach">${formatIndian(sancAmt)}</td>
+            <td class="bg-orange">${formatIndian(disbIglAcc)}</td><td class="bg-orange">${formatIndian(disbIglAmt)}</td><td class="bg-orange">${formatIndian(disbIlAcc)}</td><td class="bg-orange">${formatIndian(disbIlAmt)}</td>
+            <td class="bg-blue">${formatIndian(kycFig)}</td><td class="bg-blue">${formatIndian(kycIl)}</td><td class="bg-blue">${formatIndian(kycNpa)}</td>
         </tr>`;
     });
+
+    // Grand Total Row
+    table += `
+        <tr style="font-weight: bold; background: #D1D5DB;">
+            <td class="txt-center" colspan="6" style="background: #D1D5DB; font-weight: bold;">GRAND TOTAL</td>
+            <td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.ftodAct)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.ftodPlan)}</td>
+            <td class="bg-green" style="font-weight: bold;">${formatIndian(totals.slipDem)}</td><td class="bg-green" style="font-weight: bold;">${formatIndian(totals.slipColl)}</td>
+            <td class="bg-pink" style="font-weight: bold;">${formatIndian(totals.pnpaAct)}</td><td class="bg-pink" style="font-weight: bold;">${formatIndian(totals.pnpaPlan)}</td>
+            <td class="bg-yellow" style="font-weight: bold;">${formatIndian(totals.npaAct)}</td><td class="bg-yellow" style="font-weight: bold;">${formatIndian(totals.npaClose)}</td>
+            <td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.odAcc)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.odPlan)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.nsAcc)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.nsPlan)}</td>
+            <td class="bg-peach" style="font-weight: bold;">${formatIndian(totals.sancAcc)}</td><td class="bg-peach" style="font-weight: bold;">${formatIndian(totals.sancAmt)}</td>
+            <td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIglAcc)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIglAmt)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIlAcc)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIlAmt)}</td>
+            <td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycFig)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycIl)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycNpa)}</td>
+        </tr>`;
 
     table += `</table></body></html>`;
 
@@ -1423,15 +1465,15 @@ function downloadAchievementPlanReport() {
             .txt-left { text-align: left; }
             .txt-center { text-align: center; }
             /* Header Colors */
-            .bg-header { background: ${cHeader}; color: white; font-weight: bold; }
-            .bg-peach { background: ${cPeach}; color: black; }
-            .bg-green { background: ${cGreen}; color: black; }
-            .bg-blue { background: ${cBlue}; color: black; }
-            .bg-pink { background: ${cPink}; color: black; }
-            .bg-yellow { background: ${cYellow}; color: black; }
-            .bg-cyan { background: ${cCyan}; color: black; }
-            .bg-orange { background: ${cOrange}; color: black; }
-            .bg-white { background: ${cWhite}; color: black; }
+            .bg-header { background: ${cHeader}; color: white; font-weight: bold; text-align: center; }
+            .bg-peach { background: ${cPeach}; color: black; text-align: center; }
+            .bg-green { background: ${cGreen}; color: black; text-align: center; }
+            .bg-blue { background: ${cBlue}; color: black; text-align: center; }
+            .bg-pink { background: ${cPink}; color: black; text-align: center; }
+            .bg-yellow { background: ${cYellow}; color: black; text-align: center; }
+            .bg-cyan { background: ${cCyan}; color: black; text-align: center; }
+            .bg-orange { background: ${cOrange}; color: black; text-align: center; }
+            .bg-white { background: ${cWhite}; color: black; text-align: center; }
             .title-row { text-align: center; font-size: 14pt; font-weight: bold; background: #FFFFFF; color: #000000; height: 30px; }
         </style>
     </head>
@@ -1498,6 +1540,22 @@ function downloadAchievementPlanReport() {
         return isNaN(n) ? 0 : n;
     };
 
+    // Helper to format number in Indian system (1,00,00,000)
+    const formatIndian = (num) => {
+        if (num === 0) return '-';
+        return num.toLocaleString('en-IN');
+    };
+
+    // Grand totals
+    let totals = {
+        ftodAct: 0, ftodPlan: 0, slipDem: 0, slipColl: 0,
+        pnpaAct: 0, pnpaPlan: 0, npaAct: 0, npaClose: 0,
+        odAcc: 0, odPlan: 0, nsAcc: 0, nsPlan: 0,
+        sancAcc: 0, sancAmt: 0,
+        disbIglAcc: 0, disbIglAmt: 0, disbIlAcc: 0, disbIlAmt: 0,
+        kycFig: 0, kycIl: 0, kycNpa: 0
+    };
+
     const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
     const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
     const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
@@ -1540,19 +1598,17 @@ function downloadAchievementPlanReport() {
         const kycIl = getInt(a.kyc_il);
         const kycNpa = getInt(a.kyc_npa);
 
-        // Calculate colors for each achievement cell
-        const colorFtodPlan = getCellColor(ftodAct, ftodPlan);
-        const colorSlipColl = getCellColor(slipDem, slipColl);
-        const colorPnpaPlan = getCellColor(pnpaAct, pnpaPlan);
-        const colorOdPlan = getCellColor(odAcc, odPlan);
-        const colorNsPlan = getCellColor(nsAcc, nsPlan);
-        const colorDisbIglAcc = getCellColor(disbIglAcc, getInt(t.disb_igl_acc));
-        const colorDisbIglAmt = getCellColor(disbIglAmt, getInt(t.disb_igl_amt));
-        const colorDisbIlAcc = getCellColor(disbIlAcc, getInt(t.disb_il_acc));
-        const colorDisbIlAmt = getCellColor(disbIlAmt, getInt(t.disb_il_amt));
-        const colorKycFig = getCellColor(kycFig, getInt(t.kyc_fig_igl));
-        const colorKycIl = getCellColor(kycIl, getInt(t.kyc_il));
-        const colorKycNpa = getCellColor(kycNpa, getInt(t.kyc_npa));
+        // Accumulate totals
+        totals.ftodAct += ftodAct; totals.ftodPlan += ftodPlan;
+        totals.slipDem += slipDem; totals.slipColl += slipColl;
+        totals.pnpaAct += pnpaAct; totals.pnpaPlan += pnpaPlan;
+        totals.npaAct += npaAct; totals.npaClose += npaClose;
+        totals.odAcc += odAcc; totals.odPlan += odPlan;
+        totals.nsAcc += nsAcc; totals.nsPlan += nsPlan;
+        totals.sancAcc += sancAcc; totals.sancAmt += sancAmt;
+        totals.disbIglAcc += disbIglAcc; totals.disbIglAmt += disbIglAmt;
+        totals.disbIlAcc += disbIlAcc; totals.disbIlAmt += disbIlAmt;
+        totals.kycFig += kycFig; totals.kycIl += kycIl; totals.kycNpa += kycNpa;
 
         table += `
         <tr>
@@ -1562,16 +1618,30 @@ function downloadAchievementPlanReport() {
             <td class="txt-left bg-white">${region}</td>
             <td class="txt-left bg-white">${district}</td>
             <td class="txt-left bg-white">${dm}</td>
-            <td class="bg-blue">${ftodAct}</td><td style="background:${colorFtodPlan};">${ftodPlan}</td>
-            <td class="bg-green">${slipDem}</td><td style="background:${colorSlipColl};">${slipColl}</td>
-            <td class="bg-pink">${pnpaAct}</td><td style="background:${colorPnpaPlan};">${pnpaPlan}</td>
-            <td class="bg-yellow">${npaAct}</td><td class="bg-yellow">${npaClose}</td>
-            <td class="bg-cyan">${odAcc}</td><td style="background:${colorOdPlan};">${odPlan}</td><td class="bg-cyan">${nsAcc}</td><td style="background:${colorNsPlan};">${nsPlan}</td>
-            <td class="bg-peach">${sancAcc}</td><td class="bg-peach">${sancAmt}</td>
-            <td style="background:${colorDisbIglAcc};">${disbIglAcc}</td><td style="background:${colorDisbIglAmt};">${disbIglAmt}</td><td style="background:${colorDisbIlAcc};">${disbIlAcc}</td><td style="background:${colorDisbIlAmt};">${disbIlAmt}</td>
-            <td style="background:${colorKycFig};">${kycFig}</td><td style="background:${colorKycIl};">${kycIl}</td><td style="background:${colorKycNpa};">${kycNpa}</td>
+            <td class="bg-blue">${formatIndian(ftodAct)}</td><td class="bg-blue">${formatIndian(ftodPlan)}</td>
+            <td class="bg-green">${formatIndian(slipDem)}</td><td class="bg-green">${formatIndian(slipColl)}</td>
+            <td class="bg-pink">${formatIndian(pnpaAct)}</td><td class="bg-pink">${formatIndian(pnpaPlan)}</td>
+            <td class="bg-yellow">${formatIndian(npaAct)}</td><td class="bg-yellow">${formatIndian(npaClose)}</td>
+            <td class="bg-cyan">${formatIndian(odAcc)}</td><td class="bg-cyan">${formatIndian(odPlan)}</td><td class="bg-cyan">${formatIndian(nsAcc)}</td><td class="bg-cyan">${formatIndian(nsPlan)}</td>
+            <td class="bg-peach">${formatIndian(sancAcc)}</td><td class="bg-peach">${formatIndian(sancAmt)}</td>
+            <td class="bg-orange">${formatIndian(disbIglAcc)}</td><td class="bg-orange">${formatIndian(disbIglAmt)}</td><td class="bg-orange">${formatIndian(disbIlAcc)}</td><td class="bg-orange">${formatIndian(disbIlAmt)}</td>
+            <td class="bg-blue">${formatIndian(kycFig)}</td><td class="bg-blue">${formatIndian(kycIl)}</td><td class="bg-blue">${formatIndian(kycNpa)}</td>
         </tr>`;
     });
+
+    // Grand Total Row
+    table += `
+        <tr style="font-weight: bold; background: #D1D5DB;">
+            <td class="txt-center" colspan="6" style="background: #D1D5DB; font-weight: bold;">GRAND TOTAL</td>
+            <td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.ftodAct)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.ftodPlan)}</td>
+            <td class="bg-green" style="font-weight: bold;">${formatIndian(totals.slipDem)}</td><td class="bg-green" style="font-weight: bold;">${formatIndian(totals.slipColl)}</td>
+            <td class="bg-pink" style="font-weight: bold;">${formatIndian(totals.pnpaAct)}</td><td class="bg-pink" style="font-weight: bold;">${formatIndian(totals.pnpaPlan)}</td>
+            <td class="bg-yellow" style="font-weight: bold;">${formatIndian(totals.npaAct)}</td><td class="bg-yellow" style="font-weight: bold;">${formatIndian(totals.npaClose)}</td>
+            <td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.odAcc)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.odPlan)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.nsAcc)}</td><td class="bg-cyan" style="font-weight: bold;">${formatIndian(totals.nsPlan)}</td>
+            <td class="bg-peach" style="font-weight: bold;">${formatIndian(totals.sancAcc)}</td><td class="bg-peach" style="font-weight: bold;">${formatIndian(totals.sancAmt)}</td>
+            <td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIglAcc)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIglAmt)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIlAcc)}</td><td class="bg-orange" style="font-weight: bold;">${formatIndian(totals.disbIlAmt)}</td>
+            <td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycFig)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycIl)}</td><td class="bg-blue" style="font-weight: bold;">${formatIndian(totals.kycNpa)}</td>
+        </tr>`;
 
     table += `</table></body></html>`;
 
