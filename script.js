@@ -1247,10 +1247,15 @@ function downloadPlanReport() {
             .bg-cyan { background: ${cCyan}; color: black; }
             .bg-orange { background: ${cOrange}; color: black; }
             .bg-white { background: ${cWhite}; color: black; }
+            .title-row { text-align: center; font-size: 14pt; font-weight: bold; background: #FFFFFF; color: #000000; height: 30px; }
         </style>
     </head>
     <body>
         <table>
+            <!-- Title Row -->
+            <tr>
+                <th colspan="27" class="title-row">Plan Report - ${state.systemDate}</th>
+            </tr>
             <!-- Row 1: Group Headers -->
             <tr>
                 <th rowspan="2" class="bg-white">ID</th>
@@ -1349,20 +1354,20 @@ function downloadPlanReport() {
 
         table += `
         <tr>
-            <td class="txt-center">${idCounter++}</td>
-            <td class="txt-center">${dateStr}</td>
-            <td class="txt-left">${branchName}</td>
-            <td class="txt-left">${region}</td>
-            <td class="txt-left">${district}</td>
-            <td class="txt-left">${dm}</td>
-            <td>${ftodAct}</td><td>${ftodPlan}</td>
-            <td>${slipDem}</td><td>${slipColl}</td>
-            <td>${pnpaAct}</td><td>${pnpaPlan}</td>
-            <td>${npaAct}</td><td>${npaClose}</td>
-            <td>${odAcc}</td><td>${odPlan}</td><td>${nsAcc}</td><td>${nsPlan}</td>
-            <td>${sancAcc}</td><td>${sancAmt}</td>
-            <td>${disbIglAcc}</td><td>${disbIglAmt}</td><td>${disbIlAcc}</td><td>${disbIlAmt}</td>
-            <td>${kycFig}</td><td>${kycIl}</td><td>${kycNpa}</td>
+            <td class="txt-center bg-white">${idCounter++}</td>
+            <td class="txt-center bg-white">${dateStr}</td>
+            <td class="txt-left bg-white">${branchName}</td>
+            <td class="txt-left bg-white">${region}</td>
+            <td class="txt-left bg-white">${district}</td>
+            <td class="txt-left bg-white">${dm}</td>
+            <td class="bg-blue">${ftodAct}</td><td class="bg-blue">${ftodPlan}</td>
+            <td class="bg-green">${slipDem}</td><td class="bg-green">${slipColl}</td>
+            <td class="bg-pink">${pnpaAct}</td><td class="bg-pink">${pnpaPlan}</td>
+            <td class="bg-yellow">${npaAct}</td><td class="bg-yellow">${npaClose}</td>
+            <td class="bg-cyan">${odAcc}</td><td class="bg-cyan">${odPlan}</td><td class="bg-cyan">${nsAcc}</td><td class="bg-cyan">${nsPlan}</td>
+            <td class="bg-peach">${sancAcc}</td><td class="bg-peach">${sancAmt}</td>
+            <td class="bg-orange">${disbIglAcc}</td><td class="bg-orange">${disbIglAmt}</td><td class="bg-orange">${disbIlAcc}</td><td class="bg-orange">${disbIlAmt}</td>
+            <td class="bg-blue">${kycFig}</td><td class="bg-blue">${kycIl}</td><td class="bg-blue">${kycNpa}</td>
         </tr>`;
     });
 
@@ -1427,10 +1432,15 @@ function downloadAchievementPlanReport() {
             .bg-cyan { background: ${cCyan}; color: black; }
             .bg-orange { background: ${cOrange}; color: black; }
             .bg-white { background: ${cWhite}; color: black; }
+            .title-row { text-align: center; font-size: 14pt; font-weight: bold; background: #FFFFFF; color: #000000; height: 30px; }
         </style>
     </head>
     <body>
         <table>
+            <!-- Title Row -->
+            <tr>
+                <th colspan="27" class="title-row">Achievement Plan Report - ${state.systemDate}</th>
+            </tr>
             <!-- Row 1: Group Headers -->
             <tr>
                 <th rowspan="2" class="bg-white">ID</th>
@@ -1546,18 +1556,18 @@ function downloadAchievementPlanReport() {
 
         table += `
         <tr>
-            <td class="txt-center">${idCounter++}</td>
-            <td class="txt-center">${dateStr}</td>
-            <td class="txt-left">${branchName}</td>
-            <td class="txt-left">${region}</td>
-            <td class="txt-left">${district}</td>
-            <td class="txt-left">${dm}</td>
-            <td>${ftodAct}</td><td style="background:${colorFtodPlan};">${ftodPlan}</td>
-            <td>${slipDem}</td><td style="background:${colorSlipColl};">${slipColl}</td>
-            <td>${pnpaAct}</td><td style="background:${colorPnpaPlan};">${pnpaPlan}</td>
-            <td>${npaAct}</td><td>${npaClose}</td>
-            <td>${odAcc}</td><td style="background:${colorOdPlan};">${odPlan}</td><td>${nsAcc}</td><td style="background:${colorNsPlan};">${nsPlan}</td>
-            <td>${sancAcc}</td><td>${sancAmt}</td>
+            <td class="txt-center bg-white">${idCounter++}</td>
+            <td class="txt-center bg-white">${dateStr}</td>
+            <td class="txt-left bg-white">${branchName}</td>
+            <td class="txt-left bg-white">${region}</td>
+            <td class="txt-left bg-white">${district}</td>
+            <td class="txt-left bg-white">${dm}</td>
+            <td class="bg-blue">${ftodAct}</td><td style="background:${colorFtodPlan};">${ftodPlan}</td>
+            <td class="bg-green">${slipDem}</td><td style="background:${colorSlipColl};">${slipColl}</td>
+            <td class="bg-pink">${pnpaAct}</td><td style="background:${colorPnpaPlan};">${pnpaPlan}</td>
+            <td class="bg-yellow">${npaAct}</td><td class="bg-yellow">${npaClose}</td>
+            <td class="bg-cyan">${odAcc}</td><td style="background:${colorOdPlan};">${odPlan}</td><td class="bg-cyan">${nsAcc}</td><td style="background:${colorNsPlan};">${nsPlan}</td>
+            <td class="bg-peach">${sancAcc}</td><td class="bg-peach">${sancAmt}</td>
             <td style="background:${colorDisbIglAcc};">${disbIglAcc}</td><td style="background:${colorDisbIglAmt};">${disbIglAmt}</td><td style="background:${colorDisbIlAcc};">${disbIlAcc}</td><td style="background:${colorDisbIlAmt};">${disbIlAmt}</td>
             <td style="background:${colorKycFig};">${kycFig}</td><td style="background:${colorKycIl};">${kycIl}</td><td style="background:${colorKycNpa};">${kycNpa}</td>
         </tr>`;
