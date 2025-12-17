@@ -224,7 +224,7 @@
       <p class="login-subtitle">Enter your credentials to access the portal.</p>
 
       <div style="text-align:left; margin-bottom: 24px;">
-        <button class="btn btn-primary" onclick="handleLogin('CEO')" style="margin-bottom: 16px;">
+        <button id="login-btn-ceo" class="btn btn-primary" onclick="handleLogin('CEO')" style="margin-bottom: 16px;">
           <svg class="icon" viewBox="0 0 24 24">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
@@ -243,7 +243,7 @@
           <!-- Injected Options -->
         </select>
 
-        <button class="btn btn-outline" onclick="handleLogin('DM')">
+        <button id="login-btn-dm" class="btn btn-outline" onclick="handleLogin('DM')">
           Login as District Manager
         </button>
       </div>

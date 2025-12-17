@@ -1,7 +1,7 @@
 // --- SUPABASE CONFIG ---
 const SUPABASE_URL = 'https://zovnmmdfthpbubrorsgh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpvdm5tbWRmdGhwYnVicm9yc2doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NzE3ODgsImV4cCI6MjA3NzE0Nzc4OH0.92BH2sjUOgkw6iSRj1_4gt0p3eThg3QT4VK-Q4EdmBE';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- DATA & STATE ---
 // --- DATA & STATE ---
@@ -496,8 +496,8 @@ async function applyDateRangeInternal(fromDate, toDate, label) {
 async function fetchSupabaseDataRange(fromDate, toDate) {
 
     try {
-        const p1 = supabase.from('daily_reports').select('*').gte('date', fromDate).lte('date', toDate);
-        const p2 = supabase.from('daily_reports_achievements').select('*').gte('date', fromDate).lte('date', toDate);
+        const p1 = supabaseClient.from('daily_reports').select('*').gte('date', fromDate).lte('date', toDate);
+        const p2 = supabaseClient.from('daily_reports_achievements').select('*').gte('date', fromDate).lte('date', toDate);
 
         const [resPlan, resAchieve] = await Promise.all([p1, p2]);
 
@@ -566,22 +566,30 @@ function aggregateDataByBranch(rows) {
 // --- SUPABASE ACTIONS ---
 async function fetchSupabaseData() {
     const targetDate = state.systemDate;
+    console.log("fetchSupabaseData: Starting for date " + targetDate);
 
     setLoading(true, 'Loading data...');
 
     try {
         // Parallel Fetch with timeout for reliability
+        let timeoutId;
         const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Request timeout')), 15000)
+            timeoutId = setTimeout(() => {
+                console.error("fetchSupabaseData: Timeout triggered");
+                reject(new Error('Request timeout'));
+            }, 15000)
         );
 
-        const p1 = supabase.from('daily_reports').select('*').eq('date', targetDate);
-        const p2 = supabase.from('daily_reports_achievements').select('*').eq('date', targetDate);
+        const p1 = supabaseClient.from('daily_reports').select('*').eq('date', targetDate);
+        const p2 = supabaseClient.from('daily_reports_achievements').select('*').eq('date', targetDate);
 
+        console.log("fetchSupabaseData: Awaiting Promise.race");
         const [resPlan, resAchieve] = await Promise.race([
             Promise.all([p1, p2]),
             timeout
         ]);
+        clearTimeout(timeoutId); // Clear timeout on success
+        console.log("fetchSupabaseData: Promise.race resolved", { resPlan, resAchieve });
 
         if (resPlan.error || resAchieve.error) {
             const errorMsg = resPlan.error?.message || resAchieve.error?.message || 'Unknown error';
@@ -607,15 +615,19 @@ async function fetchSupabaseData() {
 
         const targetCount = resPlan.data?.length || 0;
         const achieveCount = resAchieve.data?.length || 0;
+        console.log(`fetchSupabaseData: Processed ${targetCount} plans, ${achieveCount} achievements`);
 
         renderDashboard();
+        console.log("fetchSupabaseData: renderDashboard completed");
     } catch (err) {
         console.error("Fetch Error:", err);
         showToast('Connection error. Please check your network.', 'alert');
     } finally {
+        console.log("fetchSupabaseData: Entering finally, calling setLoading(false)");
         setLoading(false);
     }
 }
+
 
 // --- REALTIME SUBSCRIPTION ---
 // Throttled render to prevent UI thrashing during rapid updates
@@ -629,7 +641,7 @@ function cleanupRealtimeSubscriptions() {
     // Unsubscribe from all existing channels
     state.realtimeChannels.forEach(channel => {
         try {
-            supabase.removeChannel(channel);
+            supabaseClient.removeChannel(channel);
         } catch (err) {
             console.warn('Channel cleanup warning:', err);
         }
@@ -644,7 +656,7 @@ function setupRealtime() {
     const dateFilter = state.systemDate;
 
     // Channel for Plans
-    const targetChannel = supabase
+    const targetChannel = supabaseClient
         .channel('public:daily_reports')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_reports' }, payload => {
             const newData = payload.new;
@@ -664,7 +676,7 @@ function setupRealtime() {
     state.realtimeChannels.push(targetChannel);
 
     // Channel for Achievements
-    const achievementChannel = supabase
+    const achievementChannel = supabaseClient
         .channel('public:daily_reports_achievements')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_reports_achievements' }, payload => {
             const newData = payload.new;
@@ -732,7 +744,7 @@ async function saveToSupabase(branchName, branchData, table) {
     };
 
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from(table)
         .upsert(payload, { onConflict: 'date,branch_name' })
         .select();
@@ -763,6 +775,8 @@ function toggleSidebar() {
 function handleLogin(role) {
     let user = "";
     if (role === 'CEO') {
+        const btn = document.getElementById("login-btn-ceo");
+        if (btn) btn.innerHTML = 'Logging in...';
         user = "CEO";
         state.role = 'CEO';
     } else {
@@ -797,6 +811,7 @@ function handleLogin(role) {
 
 // CEO Quick Login - Auto-select today's date
 async function autoLoginCEO() {
+    console.log("autoLoginCEO: Started");
     const loginOverlay = document.getElementById("login-overlay");
 
     // Hide login overlay immediately
@@ -808,16 +823,26 @@ async function autoLoginCEO() {
     const offsetDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
     const isoDate = offsetDate.toISOString().split('T')[0];
     state.systemDate = isoDate;
+    console.log("autoLoginCEO: Date set to " + isoDate);
 
     // Fetch Data for today
-    await fetchSupabaseData();
+    try {
+        console.log("autoLoginCEO: Calling fetchSupabaseData");
+        await fetchSupabaseData();
+        console.log("autoLoginCEO: fetchSupabaseData returned");
+    } catch (e) {
+        console.error("autoLoginCEO: fetchSupabaseData threw", e);
+    }
 
     // Update Header Display
     updateHeaderDate(isoDate);
 
     // Load App UI
+    console.log("autoLoginCEO: Calling loadAppUI");
     loadAppUI();
+    console.log("autoLoginCEO: loadAppUI returned");
 }
+
 
 let clockInterval;
 function startOverlayClock() {
@@ -2906,7 +2931,7 @@ async function saveBranchDetails(andNext) {
 
 async function testSupabaseConnection() {
     showToast("Testing connection...", "info");
-    const { data, error } = await supabase.from('daily_reports').select('*').limit(1);
+    const { data, error } = await supabaseClient.from('daily_reports').select('*').limit(1);
     if (error) {
         showToast("Connection Failed: " + error.message, "alert");
         console.error("Supabase Test Error:", error);
