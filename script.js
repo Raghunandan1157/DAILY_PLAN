@@ -492,6 +492,29 @@ async function applyDateRangeInternal(fromDate, toDate, label) {
     }
 }
 
+// Set Target for Tomorrow (DM Action)
+function setTargetForTomorrow() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const isoDate = tomorrow.toISOString().split('T')[0];
+    const label = tomorrow.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // helper to pad
+    const pad = n => n < 10 ? '0' + n : n;
+    // ensure formatted iso
+    const y = tomorrow.getFullYear();
+    const m = pad(tomorrow.getMonth() + 1);
+    const d = pad(tomorrow.getDate());
+    const iso = `${y}-${m}-${d}`;
+
+    applyDateRangeInternal(iso, iso, label);
+
+    setTimeout(() => {
+        showToast(`🚀 Target Date set to Tomorrow (${label})`);
+    }, 600);
+}
+
 // Fetch data for a date range (aggregates multiple days)
 // Core fetch and aggregate logic - Reusable
 async function fetchAndAggregateData(fromDate, toDate) {
@@ -1040,7 +1063,10 @@ function renderDashboard() {
                 tableCard.innerHTML = `
                             <div class="chart-header">
                                 <div class="chart-title">Branch Performance Plans</div>
-                                <button class="btn btn-primary" onclick="savePlans()" style="width:auto; padding:8px 16px;">Save Changes</button>
+                                <div style="display:flex; gap:10px;">
+                                    <button class="btn btn-outline" onclick="setTargetForTomorrow()" style="width:auto; padding:8px 16px;">Set Target for Tomorrow</button>
+                                    <button class="btn btn-primary" onclick="savePlans()" style="width:auto; padding:8px 16px;">Save Changes</button>
+                                </div>
                             </div>
                             <table>
                                 <thead><tr><th>District</th><th>Branch</th><th>Plan Input</th><th>Status</th></tr></thead>
