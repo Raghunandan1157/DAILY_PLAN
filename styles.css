@@ -1478,14 +1478,45 @@
             }
 
             .dashboard-grid {
-                grid-template-columns: 1fr;
-                /* Stack everything */
-                gap: 16px;
+                grid-template-columns: repeat(2, 1fr);
+                /* 2 Columns on mobile */
+                gap: 12px;
+                /* Reduce gap */
             }
 
-            .grid-full,
+            .grid-full {
+                grid-column: span 2;
+            }
+
             .grid-half {
                 grid-column: span 1;
+            }
+
+            /* Compact Cards for Mobile */
+            .metric-card {
+                padding: 16px;
+                gap: 8px;
+            }
+
+            .metric-value {
+                font-size: 20px;
+            }
+
+            .metric-title {
+                font-size: 11px;
+            }
+
+            .metric-icon {
+                width: 32px;
+                height: 32px;
+            }
+
+            /* Ensure tables/charts still take full width if needed */
+            .table-card,
+            .chart-card {
+                grid-column: span 2;
+                padding: 16px;
+                /* Compact padding for these too */
             }
 
             /* User Profile */
@@ -2039,379 +2070,396 @@
             }
 
             .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
+                grid-template-columns: repeat(2, 1fr);
+                /* Force 2 columns */
+                gap: 8px;
+                /* Tighter gap */
             }
 
-            /* Metric cards */
+            .grid-full {
+                grid-column: span 2;
+            }
+
+            /* Metric cards - Super Compact */
             .metric-card {
-                padding: 16px;
-                gap: 8px;
+                padding: 12px;
+                gap: 6px;
                 border-radius: 12px;
             }
 
             .metric-title {
-                font-size: 12px;
+                font-size: 10px;
+                /* Smaller title */
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .metric-value {
-                font-size: 20px;
+                font-size: 18px;
+                /* Smaller value */
             }
 
             .metric-badge {
-                font-size: 10px;
-                padding: 3px 6px;
+                font-size: 9px;
+                padding: 2px 5px;
             }
 
             .metric-icon {
-                width: 36px;
-                height: 36px;
-                border-radius: 10px;
-            }
-
-            /* Chart cards */
-            .chart-card {
-                padding: 16px;
-                min-height: 250px;
-                border-radius: 12px;
-            }
-
-            .chart-title {
-                font-size: 14px;
-            }
-
-            /* Table cards */
-            .table-card {
-                padding: 12px;
-                border-radius: 12px;
-            }
-
-            th {
-                padding: 10px 8px;
-                font-size: 10px;
-            }
-
-            td {
-                padding: 10px 8px;
-                font-size: 12px;
-            }
-
-            /* Date dropdown full width */
-            .date-dropdown {
-                position: fixed;
-                top: 60px;
-                left: 8px;
-                right: 8px;
-                width: auto;
-                max-height: calc(100vh - 80px);
-                overflow-y: auto;
-                border-radius: 16px;
-            }
-
-            .date-quick-buttons {
-                flex-wrap: wrap;
-            }
-
-            .date-quick-btn {
-                flex: 1 1 30%;
-                padding: 10px 6px;
-                font-size: 10px;
-            }
-
-            .date-quick-btn .btn-icon {
-                font-size: 16px;
-            }
-
-            .calendar-day {
-                font-size: 11px;
-            }
-
-            /* Login overlay */
-            .login-box {
-                width: 100%;
-                max-width: none;
-                margin: 0 12px;
-                padding: 24px 20px;
-                border-radius: 20px;
-            }
-
-            .login-title {
-                font-size: 20px;
-            }
-
-            .login-subtitle {
-                font-size: 13px;
-            }
-
-            .btn {
-                padding: 14px;
-                font-size: 14px;
-                min-height: 48px;
-            }
-
-            select {
-                padding: 14px 12px;
-                font-size: 16px;
-                min-height: 48px;
-            }
-
-            /* Daily overlay */
-            .overlay-time,
-            #overlay-time {
-                font-size: 48px !important;
-            }
-
-            .overlay-date,
-            #overlay-date {
-                font-size: 18px !important;
-                margin-bottom: 40px !important;
-            }
-
-            .date-btn {
-                min-width: 100%;
-                max-width: 280px;
-                padding: 16px 12px;
-                border-radius: 12px;
-            }
-
-            .db-label {
-                font-size: 12px;
-            }
-
-            .db-date {
-                font-size: 14px;
-            }
-
-            .date-buttons-container {
-                flex-direction: column !important;
-                gap: 12px !important;
-                align-items: center;
-                width: 100%;
-                max-width: 300px;
-                margin: 0 auto;
-            }
-
-            .overlay-hint {
-                font-size: 11px;
-                margin-top: 20px;
-            }
-
-            /* Modals - full screen on mobile */
-            .modal-container {
-                width: 100%;
-                height: 100%;
-                max-height: 100%;
-                border-radius: 0;
-            }
-
-            .modal-header {
-                padding: 14px 16px;
-                position: sticky;
-                top: 0;
-                z-index: 10;
-            }
-
-            .modal-title {
-                font-size: 16px;
-            }
-
-            .modal-body {
-                padding: 16px;
-                flex: 1;
-                overflow-y: auto;
-            }
-
-            .form-section {
-                padding: 16px;
-                margin-bottom: 16px;
-                border-radius: 10px;
-            }
-
-            .form-section-title {
-                font-size: 12px;
-                margin-bottom: 14px;
-            }
-
-            .form-row {
-                flex-direction: column;
-                gap: 6px;
-                margin-bottom: 12px;
-            }
-
-            .form-label {
-                font-size: 12px;
-                flex: none;
-            }
-
-            .form-input {
-                padding: 12px;
-                font-size: 16px;
-                min-height: 44px;
+                width: 28px;
+                height: 28px;
                 border-radius: 8px;
             }
 
-            .grid-2-col {
-                grid-template-columns: 1fr;
-                gap: 12px;
+            .metric-icon .icon {
+                width: 16px;
+                height: 16px;
             }
+        }
 
-            .target-row {
-                margin-bottom: 12px;
-            }
+        /* Chart cards */
+        .chart-card {
+            padding: 16px;
+            min-height: 250px;
+            border-radius: 12px;
+        }
 
-            .target-header {
-                font-size: 10px;
-            }
+        .chart-title {
+            font-size: 14px;
+        }
 
-            .modal-footer {
-                padding: 14px 16px;
-                position: sticky;
-                bottom: 0;
-                gap: 10px;
-                flex-wrap: wrap;
-            }
+        /* Table cards */
+        .table-card {
+            padding: 12px;
+            border-radius: 12px;
+        }
 
-            .modal-footer button {
-                flex: 1 1 100%;
-                min-height: 44px;
-                font-size: 13px;
-            }
+        th {
+            padding: 10px 8px;
+            font-size: 10px;
+        }
 
-            /* Detail modal */
-            .detail-modal-container {
-                width: 100%;
-                height: 100%;
-                border-radius: 0;
-            }
+        td {
+            padding: 10px 8px;
+            font-size: 12px;
+        }
 
-            .detail-modal-header {
-                padding: 12px 16px;
-                flex-wrap: wrap;
-                gap: 8px;
-            }
+        /* Date dropdown full width */
+        .date-dropdown {
+            position: fixed;
+            top: 60px;
+            left: 8px;
+            right: 8px;
+            width: auto;
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+            border-radius: 16px;
+        }
 
-            .detail-modal-back {
-                padding: 8px 12px;
-                font-size: 12px;
-            }
+        .date-quick-buttons {
+            flex-wrap: wrap;
+        }
 
-            .detail-modal-title {
-                font-size: 16px;
-                order: 2;
-                width: 100%;
-                margin-top: 8px;
-            }
+        .date-quick-btn {
+            flex: 1 1 30%;
+            padding: 10px 6px;
+            font-size: 10px;
+        }
 
-            .detail-modal-subtitle {
-                font-size: 11px;
-            }
+        .date-quick-btn .btn-icon {
+            font-size: 16px;
+        }
 
-            .detail-modal-close {
-                width: 32px;
-                height: 32px;
-            }
+        .calendar-day {
+            font-size: 11px;
+        }
 
-            .detail-modal-body {
-                padding: 12px;
-            }
+        /* Login overlay */
+        .login-box {
+            width: 100%;
+            max-width: none;
+            margin: 0 12px;
+            padding: 24px 20px;
+            border-radius: 20px;
+        }
 
-            .detail-summary-row {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-            }
+        .login-title {
+            font-size: 20px;
+        }
 
-            .detail-stat-card {
-                padding: 14px;
-                border-radius: 12px;
-            }
+        .login-subtitle {
+            font-size: 13px;
+        }
 
-            .detail-stat-value {
-                font-size: 22px;
-            }
+        .btn {
+            padding: 14px;
+            font-size: 14px;
+            min-height: 48px;
+        }
 
-            .detail-stat-label {
-                font-size: 10px;
-            }
+        select {
+            padding: 14px 12px;
+            font-size: 16px;
+            min-height: 48px;
+        }
 
-            .detail-filter-bar {
-                gap: 8px;
-                margin-bottom: 14px;
-            }
+        /* Daily overlay */
+        .overlay-time,
+        #overlay-time {
+            font-size: 48px !important;
+        }
 
-            .detail-filter-btn {
-                padding: 8px 12px;
-                font-size: 11px;
-            }
+        .overlay-date,
+        #overlay-date {
+            font-size: 18px !important;
+            margin-bottom: 40px !important;
+        }
 
-            .detail-branch-list {
-                border-radius: 12px;
-            }
+        .date-btn {
+            min-width: 100%;
+            max-width: 280px;
+            padding: 16px 12px;
+            border-radius: 12px;
+        }
 
-            .detail-branch-header,
-            .detail-branch-row {
-                grid-template-columns: 1fr 1fr;
-                padding: 10px 12px;
-                font-size: 11px;
-            }
+        .db-label {
+            font-size: 12px;
+        }
 
-            .detail-branch-header>*:nth-child(n+3),
-            .detail-branch-row>*:nth-child(n+3) {
-                display: none;
-            }
+        .db-date {
+            font-size: 14px;
+        }
 
-            .detail-pct-badge {
-                padding: 3px 8px;
-                font-size: 10px;
-            }
+        .date-buttons-container {
+            flex-direction: column !important;
+            gap: 12px !important;
+            align-items: center;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
 
-            /* Drill down grid */
-            #drillDownGrid {
-                grid-template-columns: 1fr !important;
-                gap: 10px !important;
-            }
+        .overlay-hint {
+            font-size: 11px;
+            margin-top: 20px;
+        }
 
-            /* Support card in sidebar */
-            .support-card {
-                padding: 16px;
-                border-radius: 12px;
-            }
+        /* Modals - full screen on mobile */
+        .modal-container {
+            width: 100%;
+            height: 100%;
+            max-height: 100%;
+            border-radius: 0;
+        }
 
-            .support-title {
-                font-size: 13px;
-            }
+        .modal-header {
+            padding: 14px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
 
-            .support-text {
-                font-size: 11px;
-            }
+        .modal-title {
+            font-size: 16px;
+        }
 
-            .btn-support {
-                padding: 10px 16px;
-                font-size: 12px;
-            }
+        .modal-body {
+            padding: 16px;
+            flex: 1;
+            overflow-y: auto;
+        }
 
-            /* Toast */
-            #toast {
-                left: 12px;
-                right: 12px;
-                transform: translateY(100px);
-                padding: 12px 16px;
-                font-size: 13px;
-                border-radius: 12px;
-            }
+        .form-section {
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 10px;
+        }
 
-            #toast.visible {
-                transform: translateY(0);
-            }
+        .form-section-title {
+            font-size: 12px;
+            margin-bottom: 14px;
+        }
 
-            /* Loader */
-            .loader-spinner {
-                width: 40px;
-                height: 40px;
-            }
+        .form-row {
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
 
-            .loader-text {
-                font-size: 13px;
-            }
+        .form-label {
+            font-size: 12px;
+            flex: none;
+        }
+
+        .form-input {
+            padding: 12px;
+            font-size: 16px;
+            min-height: 44px;
+            border-radius: 8px;
+        }
+
+        .grid-2-col {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .target-row {
+            margin-bottom: 12px;
+        }
+
+        .target-header {
+            font-size: 10px;
+        }
+
+        .modal-footer {
+            padding: 14px 16px;
+            position: sticky;
+            bottom: 0;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .modal-footer button {
+            flex: 1 1 100%;
+            min-height: 44px;
+            font-size: 13px;
+        }
+
+        /* Detail modal */
+        .detail-modal-container {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+
+        .detail-modal-header {
+            padding: 12px 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .detail-modal-back {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .detail-modal-title {
+            font-size: 16px;
+            order: 2;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .detail-modal-subtitle {
+            font-size: 11px;
+        }
+
+        .detail-modal-close {
+            width: 32px;
+            height: 32px;
+        }
+
+        .detail-modal-body {
+            padding: 12px;
+        }
+
+        .detail-summary-row {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .detail-stat-card {
+            padding: 14px;
+            border-radius: 12px;
+        }
+
+        .detail-stat-value {
+            font-size: 22px;
+        }
+
+        .detail-stat-label {
+            font-size: 10px;
+        }
+
+        .detail-filter-bar {
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .detail-filter-btn {
+            padding: 8px 12px;
+            font-size: 11px;
+        }
+
+        .detail-branch-list {
+            border-radius: 12px;
+        }
+
+        .detail-branch-header,
+        .detail-branch-row {
+            grid-template-columns: 1fr 1fr;
+            padding: 10px 12px;
+            font-size: 11px;
+        }
+
+        .detail-branch-header>*:nth-child(n+3),
+        .detail-branch-row>*:nth-child(n+3) {
+            display: none;
+        }
+
+        .detail-pct-badge {
+            padding: 3px 8px;
+            font-size: 10px;
+        }
+
+        /* Drill down grid */
+        #drillDownGrid {
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+        }
+
+        /* Support card in sidebar */
+        .support-card {
+            padding: 16px;
+            border-radius: 12px;
+        }
+
+        .support-title {
+            font-size: 13px;
+        }
+
+        .support-text {
+            font-size: 11px;
+        }
+
+        .btn-support {
+            padding: 10px 16px;
+            font-size: 12px;
+        }
+
+        /* Toast */
+        #toast {
+            left: 12px;
+            right: 12px;
+            transform: translateY(100px);
+            padding: 12px 16px;
+            font-size: 13px;
+            border-radius: 12px;
+        }
+
+        #toast.visible {
+            transform: translateY(0);
+        }
+
+        /* Loader */
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+        }
+
+        .loader-text {
+            font-size: 13px;
+        }
         }
 
         /* --- SMALL SCREENS (481px - 640px) --- */
@@ -2979,7 +3027,6 @@
             padding: 6px 16px;
             border-radius: 20px;
             font-size: 12px;
-            ```css
         }
 
         .profile-card-content {
