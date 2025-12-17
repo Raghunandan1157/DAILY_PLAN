@@ -196,13 +196,13 @@
           </svg>
         </button>
 
-        <div class="user-profile">
+        <button class="user-profile" onclick="toggleProfileModal()" aria-label="Open Profile">
           <div class="avatar" id="headerAvatar">C</div>
           <div class="user-info">
             <span class="user-name" id="headerName">CEO User</span>
             <span class="user-role" id="headerRole">Administrator</span>
           </div>
-        </div>
+        </button>
       </div>
     </header>
 
@@ -499,7 +499,93 @@
         </button>
       </div>
       <div class="detail-modal-body" id="detailModalBody">
-        <!-- Dynamic content injected here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- PREMIUM PROFILE MODAL -->
+  <div class="modal-overlay" id="profileModal" style="backdrop-filter: blur(8px); background: rgba(0,0,0,0.5);">
+    <div class="premium-modal-container">
+      <button class="premium-close-btn" onclick="toggleProfileModal()">
+        <svg class="icon" viewBox="0 0 24 24" style="stroke-width: 2.5;">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="profile-card-content">
+        <!-- Identity Section -->
+        <div class="profile-identity">
+          <div class="premium-avatar-ring">
+            <div class="avatar" id="modalAvatar">C</div>
+          </div>
+          <h2 class="premium-user-name" id="modalName">CEO User</h2>
+          <div class="premium-user-role-badge" id="modalRole">Administrator</div>
+        </div>
+
+        <div class="profile-details-container">
+          <!-- Grid for details -->
+          <div class="detail-grid">
+            <!-- Phone -->
+            <div class="detail-item">
+              <div class="detail-icon-box">
+                <svg class="icon" viewBox="0 0 24 24">
+                  <path
+                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                  </path>
+                </svg>
+              </div>
+              <div class="detail-text-group">
+                <label>Phone Number</label>
+                <span id="modalPhone">--</span>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="detail-item">
+              <div class="detail-icon-box">
+                <svg class="icon" viewBox="0 0 24 24">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+              </div>
+              <div class="detail-text-group">
+                <label>Email Address</label>
+                <span>ceo@example.com</span>
+              </div>
+            </div>
+
+            <!-- Location -->
+            <div class="detail-item">
+              <div class="detail-icon-box">
+                <svg class="icon" viewBox="0 0 24 24">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+              </div>
+              <div class="detail-text-group">
+                <label>Location</label>
+                <span>Headquarters</span>
+              </div>
+            </div>
+
+            <!-- ID -->
+            <div class="detail-item">
+              <div class="detail-icon-box">
+                <svg class="icon" viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </div>
+              <div class="detail-text-group">
+                <label>Employee ID</label>
+                <span>EMP-001</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -4,134 +4,135 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- DATA & STATE ---
-const defaultTSVData = `Branch	District	DM name	Region	
-KADIRI	KADAPA	PUTTA PRASAD	ANDRA PRADESH	
-DHARMAVARAM	KADAPA	PUTTA PRASAD	ANDRA PRADESH	
-BUDWAL	KADAPA	PUTTA PRASAD	ANDRA PRADESH	
-KADAPA	KADAPA	PUTTA PRASAD	ANDRA PRADESH	
-KUDLIGI	KUDLIGI	A B MANJUNATHA	DHARWAD 	
-KHANAHOSAHALLI	KUDLIGI	A B MANJUNATHA	DHARWAD 	
-HARAPANAHALLI	KUDLIGI	A B MANJUNATHA	DHARWAD 	
-KOTTURU	KUDLIGI	A B MANJUNATHA	DHARWAD 	
- SANDURU 	BALLARI	BAIRAPPA	DHARWAD 	
-SIRUGUPPA	BALLARI	BAIRAPPA	DHARWAD 	
-BALLARI	BALLARI	BAIRAPPA	DHARWAD 	
-KUDATHINI	BALLARI	BAIRAPPA	DHARWAD 	
-NARAGUNDA	BADAMI	BASAVARAJAPPA	DHARWAD 	
-BADAMI	BADAMI	BASAVARAJAPPA	DHARWAD 	
-GAJENDRAGAD	BADAMI	BASAVARAJAPPA	DHARWAD 	
-RAMDURGA	BADAMI	BASAVARAJAPPA	DHARWAD 	
-GADAG	GADAG	CHANDRAGOUD PATIL	DHARWAD 	
-LAXMESHWAR	GADAG	CHANDRAGOUD PATIL	DHARWAD 	
-MUNDARAGI	GADAG	CHANDRAGOUD PATIL	DHARWAD 	
-HARIHARA	DAVANAGERE	DAMODHARA	DHARWAD 	
-SANTHEBENNURU	DAVANAGERE	DAMODHARA	DHARWAD 	
-HONNALI	DAVANAGERE	DAMODHARA	DHARWAD 	
-DAVANAGERE	DAVANAGERE	DAMODHARA	DHARWAD 	
-DHARWAD	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	
-KALGHATGI	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	
-HUBLI-2	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	
-HUBLI	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	
-GOKAK	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
-KITTUR	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
-BAILHONGAL	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
-BELAGAVI	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
-YARAGATTI	BELAGAVI	HAJIALI TIGADI	DHARWAD 	
-HAGARIBOMMANAHALLI	VIJAYANAGARA	PAVANKUMAR SHERKHANE	DHARWAD 	
-HUVENAHADAGALLI	VIJAYANAGARA	PAVANKUMAR SHERKHANE	DHARWAD 	
-HOSPET	VIJAYANAGARA	PAVANKUMAR SHERKHANE	DHARWAD 	
-CHIKKODI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	
-NIPPANI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	
-MUDALAGI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	
-ATHANI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	
-LOKAPUR	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	
-JAMAKHANDI	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	
-BILAGI	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	
-BAGALKOT	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	
-TALIKOTI	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
-SINDAGI	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
-MUDDEBIHAL	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
-TIKOTA	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
-VIJAYAPUR	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	
-HUMNABAD	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	
-KAMALAPURA	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	
-HULSOOR	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	
-BASAVAKALYAN	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	
-BHALKI	BIDAR	MANOHAR	KALBURGI 	
-AURAD	BIDAR	MANOHAR	KALBURGI 	
-BIDAR-2	BIDAR	MANOHAR	KALBURGI 	
-BIDAR	BIDAR	MANOHAR	KALBURGI 	
-SIRWAR	LINGSUGUR	PANDARIGONDA	KALBURGI 	
-LINGSUGUR	LINGSUGUR	PANDARIGONDA	KALBURGI 	
-MANVI	LINGSUGUR	PANDARIGONDA	KALBURGI 	
-RAICHUR	LINGSUGUR	PANDARIGONDA	KALBURGI 	
-SINDHNUR	LINGSUGUR	PANDARIGONDA	KALBURGI 
-DEVADURGA	SHAHAPUR	PANDARIGONDA 	KALBURGI 	
-SHAHAPUR	SHAHAPUR	PHILIP	KALBURGI 
-SEDAM	SEDAM	PHILIP	KALBURGI 	
-CHINCHOLI	SEDAM	PHILIP	KALBURGI 	
-YADGIR	SEDAM	PHILIP	KALBURGI 	
-KALAGI	SEDAM	PHILIP	KALBURGI 	
-JEVARGI	KALBURGI	PRASHANTH	KALBURGI 	
-KALABURAGI	KALBURGI	PRASHANTH	KALBURGI 	
-ALAND	KALBURGI	PRASHANTH	KALBURGI 	
-KALBURGI-2	KALBURGI	PRASHANTH	KALBURGI 	
-CHADCHAN	INDI	RAJKUMAR PAWAR	KALBURGI 	
-ALMEL	INDI	RAJKUMAR PAWAR	KALBURGI 	
-AFZALPUR	INDI	RAJKUMAR PAWAR	KALBURGI 	
-INDI	INDI	RAJKUMAR PAWAR	KALBURGI 		
-KOPPAL	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	
-HUNGUND	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	
-GANGAVATHI	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	
-KUSHTAGI	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	
-TANDUR	MAHABOOBNAGAR	MADHU	TELANGANA	
-MARIKAL	MAHABOOBNAGAR	MADHU	TELANGANA	
-MAHABUB NAGAR	MAHABOOBNAGAR	MADHU	TELANGANA	
-GADWAL	MAHABOOBNAGAR	MADHU	TELANGANA	
-KODANGAL	SANGAREDDY	SAMPATH KUMAR	TELANGANA	
-NARAYANKHED	SANGAREDDY	SAMPATH KUMAR	TELANGANA	
-SANGAREDDY	SANGAREDDY	SAMPATH KUMAR	TELANGANA	
-ZAHEERABAD	SANGAREDDY	SAMPATH KUMAR	TELANGANA	
-NR PURA	CHIKKAMAGALURU	AJITH KUMAR S A	TUMKUR	
-MUDIGERE	CHIKKAMAGALURU	AJITH KUMAR S A	TUMKUR	
-CHIKKAMAGALURU	CHIKKAMAGALURU	AJITH KUMAR S A	TUMKUR	
-PANCHANHALLI	KADUR	ARUN KUMAR K H	TUMKUR	
-TARIKERE	KADUR	ARUN KUMAR K H	TUMKUR	
-AJJAMPURA	KADUR	ARUN KUMAR K H	TUMKUR	
-KADUR	KADUR	ARUN KUMAR K H	TUMKUR	
-SIRA	TUMKUR	DINESH D	TUMKUR	
-KUNIGAL	TUMKUR	DINESH D	TUMKUR	
-MADHUGIRI	TUMKUR	DINESH D	TUMKUR	
-TUMKUR	TUMKUR	DINESH D	TUMKUR	
-KORATAGERE	TUMKUR	DINESH D	TUMKUR	
-HOLAKERE	HOLALKERE	KUMAR R	TUMKUR	
-CHANNAGIRI	HOLALKERE	KUMAR R	TUMKUR	
-HOSADURGA	HOLALKERE	KUMAR R	TUMKUR	
-JAGALORE	CHITRADURGA	MANOJ NAIK B	TUMKUR	
-CHITRADURGA	CHITRADURGA	MANOJ NAIK B	TUMKUR	
-CHALLAKERE	CHITRADURGA	MANOJ NAIK B	TUMKUR	
-HIRIYUR	CHITRADURGA	MANOJ NAIK B	TUMKUR	
-J P NAGAR	BENGALORE -URBAN	MUBARAK S	TUMKUR	
-HEBBAL	BENGALORE -URBAN	MUBARAK S	TUMKUR	
-CHANDAPURA	BENGALORE -URBAN	MUBARAK S	TUMKUR	
-KENGERI	BENGALORE -URBAN	MUBARAK S	TUMKUR	
-CHINTAMANI	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
-SRINIVASPURA	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
-DEVANAHALLI	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
-CHIKBALLAPURA	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
-BAGEPALLI	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	
-CHIKKANAYAKANAHALLI	TIPTUR	P T VENKATESH	TUMKUR	
-HULIYAR	TIPTUR	P T VENKATESH	TUMKUR	
-GUBBI	TIPTUR	P T VENKATESH	TUMKUR	
-TIPTUR	TIPTUR	P T VENKATESH	TUMKUR	
-TUREVEKERE	TIPTUR	P T VENKATESH	TUMKUR	
-BETHAMANGALA	KOLAR	SHIVARAJA N	TUMKUR	
-KOLAR	KOLAR	SHIVARAJA N	TUMKUR	
-BANGARPET	KOLAR	SHIVARAJA N	TUMKUR	
-MALUR	KOLAR	SHIVARAJA N	TUMKUR	
-DODDABALLAPURA	BENGALORE -RURAL 	VINAY V L	TUMKUR	
-DABUSPET	BENGALORE -RURAL 	VINAY V L	TUMKUR	
-GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	`;
+// --- DATA & STATE ---
+const defaultTSVData = `Branch	District	DM name	Region	Phone
+KADIRI	KADAPA	PUTTA PRASAD	ANDRA PRADESH	9019508255
+DHARMAVARAM	KADAPA	PUTTA PRASAD	ANDRA PRADESH	9019508255
+BUDWAL	KADAPA	PUTTA PRASAD	ANDRA PRADESH	9019508255
+KADAPA	KADAPA	PUTTA PRASAD	ANDRA PRADESH	9019508255
+KUDLIGI	KUDLIGI	A B MANJUNATHA	DHARWAD 	7899203940
+KHANAHOSAHALLI	KUDLIGI	A B MANJUNATHA	DHARWAD 	7899203940
+HARAPANAHALLI	KUDLIGI	A B MANJUNATHA	DHARWAD 	7899203940
+KOTTURU	KUDLIGI	A B MANJUNATHA	DHARWAD 	7899203940
+ SANDURU 	BALLARI	BAIRAPPA	DHARWAD 	9113997208
+SIRUGUPPA	BALLARI	BAIRAPPA	DHARWAD 	9113997208
+BALLARI	BALLARI	BAIRAPPA	DHARWAD 	9113997208
+KUDATHINI	BALLARI	BAIRAPPA	DHARWAD 	9113997208
+NARAGUNDA	BADAMI	BASAVARAJAPPA	DHARWAD 	9900944547
+BADAMI	BADAMI	BASAVARAJAPPA	DHARWAD 	9900944547
+GAJENDRAGAD	BADAMI	BASAVARAJAPPA	DHARWAD 	9900944547
+RAMDURGA	BADAMI	BASAVARAJAPPA	DHARWAD 	9900944547
+GADAG	GADAG	CHANDRAGOUD PATIL	DHARWAD 	9742752397
+LAXMESHWAR	GADAG	CHANDRAGOUD PATIL	DHARWAD 	9742752397
+MUNDARAGI	GADAG	CHANDRAGOUD PATIL	DHARWAD 	9742752397
+HARIHARA	DAVANAGERE	DAMODHARA	DHARWAD 	8971893606
+SANTHEBENNURU	DAVANAGERE	DAMODHARA	DHARWAD 	8971893606
+HONNALI	DAVANAGERE	DAMODHARA	DHARWAD 	8971893606
+DAVANAGERE	DAVANAGERE	DAMODHARA	DHARWAD 	8971893606
+DHARWAD	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	9480133080
+KALGHATGI	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	9480133080
+HUBLI-2	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	9480133080
+HUBLI	DHARWAD	GANAPATI FAKKIRAPPA BAVUKAR	DHARWAD 	9480133080
+GOKAK	BELAGAVI	HAJIALI TIGADI	DHARWAD 	6363932225
+KITTUR	BELAGAVI	HAJIALI TIGADI	DHARWAD 	6363932225
+BAILHONGAL	BELAGAVI	HAJIALI TIGADI	DHARWAD 	6363932225
+BELAGAVI	BELAGAVI	HAJIALI TIGADI	DHARWAD 	6363932225
+YARAGATTI	BELAGAVI	HAJIALI TIGADI	DHARWAD 	6363932225
+HAGARIBOMMANAHALLI	VIJAYANAGARA	PAVANKUMAR SHERKHANE	DHARWAD 	8296345478
+HUVENAHADAGALLI	VIJAYANAGARA	PAVANKUMAR SHERKHANE	DHARWAD 	8296345478
+HOSPET	VIJAYANAGARA	PAVANKUMAR SHERKHANE	DHARWAD 	8296345478
+CHIKKODI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	9611611360
+NIPPANI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	9611611360
+MUDALAGI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	9611611360
+ATHANI	CHIKKODI	SUNIL KUBER MALAGE	DHARWAD 	9611611360
+LOKAPUR	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	6362453551
+JAMAKHANDI	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	6362453551
+BILAGI	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	6362453551
+BAGALKOT	BAGALKOTE	DODDAADIVEPPA BASETEPPA NAVALGUND	KALBURGI 	6362453551
+TALIKOTI	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	9844373668
+SINDAGI	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	9844373668
+MUDDEBIHAL	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	9844373668
+TIKOTA	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	9844373668
+VIJAYAPUR	VIJAYAPURA	GOVIND BADIGER	KALBURGI 	9844373668
+HUMNABAD	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	9880665242
+KAMALAPURA	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	9880665242
+HULSOOR	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	9880665242
+BASAVAKALYAN	HUMNABAD	MALLIKARJUN WAGHRAJ	KALBURGI 	9880665242
+BHALKI	BIDAR	MANOHAR	KALBURGI 	9880616764
+AURAD	BIDAR	MANOHAR	KALBURGI 	9880616764
+BIDAR-2	BIDAR	MANOHAR	KALBURGI 	9880616764
+BIDAR	BIDAR	MANOHAR	KALBURGI 	9880616764
+SIRWAR	LINGSUGUR	PANDARIGONDA	KALBURGI 	7353349112
+LINGSUGUR	LINGSUGUR	PANDARIGONDA	KALBURGI 	7353349112
+MANVI	LINGSUGUR	PANDARIGONDA	KALBURGI 	7353349112
+RAICHUR	LINGSUGUR	PANDARIGONDA	KALBURGI 	7353349112
+SINDHNUR	LINGSUGUR	PANDARIGONDA	KALBURGI 	7353349112
+DEVADURGA	SHAHAPUR	PANDARIGONDA 	KALBURGI 	7353349112
+SHAHAPUR	SHAHAPUR	PHILIP	KALBURGI 	9008952362
+SEDAM	SEDAM	PHILIP	KALBURGI 	9008952362
+CHINCHOLI	SEDAM	PHILIP	KALBURGI 	9008952362
+YADGIR	SEDAM	PHILIP	KALBURGI 	9008952362
+KALAGI	SEDAM	PHILIP	KALBURGI 	9008952362
+JEVARGI	KALBURGI	PRASHANTH	KALBURGI 	6362995350
+KALABURAGI	KALBURGI	PRASHANTH	KALBURGI 	6362995350
+ALAND	KALBURGI	PRASHANTH	KALBURGI 	6362995350
+KALBURGI-2	KALBURGI	PRASHANTH	KALBURGI 	6362995350
+CHADCHAN	INDI	RAJKUMAR PAWAR	KALBURGI 	8748095355
+ALMEL	INDI	RAJKUMAR PAWAR	KALBURGI 	8748095355
+AFZALPUR	INDI	RAJKUMAR PAWAR	KALBURGI 	8748095355
+INDI	INDI	RAJKUMAR PAWAR	KALBURGI 		8748095355
+KOPPAL	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	8618815639
+HUNGUND	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	8618815639
+GANGAVATHI	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	8618815639
+KUSHTAGI	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI 	8618815639
+TANDUR	MAHABOOBNAGAR	MADHU	TELANGANA	9959075668
+MARIKAL	MAHABOOBNAGAR	MADHU	TELANGANA	9959075668
+MAHABUB NAGAR	MAHABOOBNAGAR	MADHU	TELANGANA	9959075668
+GADWAL	MAHABOOBNAGAR	MADHU	TELANGANA	9959075668
+KODANGAL	SANGAREDDY	SAMPATH KUMAR	TELANGANA	7411444442
+NARAYANKHED	SANGAREDDY	SAMPATH KUMAR	TELANGANA	7411444442
+SANGAREDDY	SANGAREDDY	SAMPATH KUMAR	TELANGANA	7411444442
+ZAHEERABAD	SANGAREDDY	SAMPATH KUMAR	TELANGANA	7411444442
+NR PURA	CHIKKAMAGALURU	AJITH KUMAR S A	TUMKUR	8553146555
+MUDIGERE	CHIKKAMAGALURU	AJITH KUMAR S A	TUMKUR	8553146555
+CHIKKAMAGALURU	CHIKKAMAGALURU	AJITH KUMAR S A	TUMKUR	8553146555
+PANCHANHALLI	KADUR	ARUN KUMAR K H	TUMKUR	9686957801
+TARIKERE	KADUR	ARUN KUMAR K H	TUMKUR	9686957801
+AJJAMPURA	KADUR	ARUN KUMAR K H	TUMKUR	9686957801
+KADUR	KADUR	ARUN KUMAR K H	TUMKUR	9686957801
+SIRA	TUMKUR	DINESH D	TUMKUR	9036609193
+KUNIGAL	TUMKUR	DINESH D	TUMKUR	9036609193
+MADHUGIRI	TUMKUR	DINESH D	TUMKUR	9036609193
+TUMKUR	TUMKUR	DINESH D	TUMKUR	9036609193
+KORATAGERE	TUMKUR	DINESH D	TUMKUR	9036609193
+HOLAKERE	HOLALKERE	KUMAR R	TUMKUR	7353247322
+CHANNAGIRI	HOLALKERE	KUMAR R	TUMKUR	7353247322
+HOSADURGA	HOLALKERE	KUMAR R	TUMKUR	7353247322
+JAGALORE	CHITRADURGA	MANOJ NAIK B	TUMKUR	7795913130
+CHITRADURGA	CHITRADURGA	MANOJ NAIK B	TUMKUR	7795913130
+CHALLAKERE	CHITRADURGA	MANOJ NAIK B	TUMKUR	7795913130
+HIRIYUR	CHITRADURGA	MANOJ NAIK B	TUMKUR	7795913130
+J P NAGAR	BENGALORE -URBAN	MUBARAK S	TUMKUR	7619599302
+HEBBAL	BENGALORE -URBAN	MUBARAK S	TUMKUR	7619599302
+CHANDAPURA	BENGALORE -URBAN	MUBARAK S	TUMKUR	7619599302
+KENGERI	BENGALORE -URBAN	MUBARAK S	TUMKUR	7619599302
+CHINTAMANI	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	8095597926
+SRINIVASPURA	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	8095597926
+DEVANAHALLI	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	8095597926
+CHIKBALLAPURA	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	8095597926
+BAGEPALLI	CHIKKABALLAPUR	MUNIRAJU P V	TUMKUR	8095597926
+CHIKKANAYAKANAHALLI	TIPTUR	P T VENKATESH	TUMKUR	9901681543
+HULIYAR	TIPTUR	P T VENKATESH	TUMKUR	9901681543
+GUBBI	TIPTUR	P T VENKATESH	TUMKUR	9901681543
+TIPTUR	TIPTUR	P T VENKATESH	TUMKUR	9901681543
+TUREVEKERE	TIPTUR	P T VENKATESH	TUMKUR	9901681543
+BETHAMANGALA	KOLAR	SHIVARAJA N	TUMKUR	9741704694
+KOLAR	KOLAR	SHIVARAJA N	TUMKUR	9741704694
+BANGARPET	KOLAR	SHIVARAJA N	TUMKUR	9741704694
+MALUR	KOLAR	SHIVARAJA N	TUMKUR	9741704694
+DODDABALLAPURA	BENGALORE -RURAL 	VINAY V L	TUMKUR	7892654451
+DABUSPET	BENGALORE -RURAL 	VINAY V L	TUMKUR	7892654451
+GOWRIBIDANUR	BENGALORE -RURAL 	VINAY V L	TUMKUR	7892654451`;
 
 let state = {
     currentUser: null,
@@ -1075,6 +1076,22 @@ function renderDashboard() {
                 const allBranches = getAllBranchesFromNode(currentData);
                 const aggStats = calculateAggregateStatsForBranches(allBranches);
                 summaryHTML = renderHierarchySummaryCard(aggStats, currentTitle);
+            }
+
+            // --- DM SUMMARY (District Level) ---
+            if (state.role === 'DM' && state.viewStack.length === 1 && currentData instanceof Set) {
+                // We are in District View (showing list of branches)
+                const branchList = Array.from(currentData);
+                const dmStats = calculateDMSummaryStats(branchList);
+                summaryHTML = renderDMSummaryCards(dmStats);
+            }
+            // --- DM ROOT SUMMARY (All Districts) ---
+            if (state.role === 'DM' && state.viewStack.length === 0) {
+                // We are in Root View (showing list of Districts)
+                // Need to aggregate ALL branches from these districts
+                const allBranches = getAllBranchesFromNode(currentData);
+                const dmStats = calculateDMSummaryStats(allBranches);
+                summaryHTML = renderDMSummaryCards(dmStats);
             }
 
             // Header with Back Button
@@ -2123,6 +2140,153 @@ function calculateAggregateStatsForBranches(branchNames) {
     });
 
     return stats;
+}
+
+// --- DM SUMMARY STATS ---
+function calculateDMSummaryStats(branchNames) {
+    let stats = {
+        disbAcc: 0, disbAmt: 0,
+        ftodPlan: 0, ftodAchieve: 0,
+        slipPlan: 0, slipAchieve: 0,
+        npaClosePlan: 0, npaCloseAchieve: 0,
+        pnpaPlan: 0, pnpaAchieve: 0
+    };
+
+    const safeInt = (v) => parseInt(v) || 0;
+    const safeFloat = (v) => parseFloat(v) || 0;
+
+    branchNames.forEach(br => {
+        const entry = state.branchDetails[br];
+        if (!entry) return;
+
+        // Plan Data
+        if (entry.target) {
+            const t = entry.target;
+            stats.disbAcc += (safeInt(t.disb_igl_acc) + safeInt(t.disb_il_acc));
+            stats.disbAmt += (safeFloat(t.disb_igl_amt) + safeFloat(t.disb_il_amt));
+
+            stats.ftodPlan += safeInt(t.ftod_plan);
+            stats.slipPlan += safeInt(t.nov_25_Slipped_Accounts_Plan);
+            stats.npaClosePlan += safeInt(t.npa_closure);
+            stats.pnpaPlan += safeInt(t.pnpa_plan);
+        }
+
+        // Achievement Data
+        if (entry.achievement) {
+            const a = entry.achievement;
+            // NOTE: Using Plan for Disbursement Acc/Amt in "Db done" as per request usually asks for achievement but defaulting to plan if actual not reliable, 
+            // BUT standard is usually Achievement. Let's check if achievement has these fields. 
+            // Looking at `downloadPlanReport` mappings (lines 1358+ for plan), `renderCEOPlanDashboard` uses `disbIglAmtPlan`.
+            // Let's assume "Db done" means Achievement if available, else Plan? Or usually "Total Db done" implies actual closed business.
+            // Let's use ACHIEVEMENT for "Db done" if we want "Db Done". 
+            // Re-reading User Request: "total Db done {a/c and amount}"
+            // I will sum Actuals.
+
+            stats.disbAcc = (stats.disbAcc - (safeInt(entry.target?.disb_igl_acc) + safeInt(entry.target?.disb_il_acc))) + (safeInt(a.disb_igl_acc) + safeInt(a.disb_il_acc)); // Replacing Plan with Actual? No, let's just count Actuals if we assume "Done" = Actual. 
+            // Actually, safe way: Accumulate Actuals separately if needed. 
+            // Let's stick to the previous pattern: use Achievement for "Done".
+            // Wait, I accumulated Plan above. Let me correct logic: 
+            // We want "Done" -> Actual.
+        }
+    });
+
+    // RESET and RE-LOOP to be clean
+    stats = {
+        disbAcc: 0, disbAmt: 0,
+        ftodPlan: 0, ftodAchieve: 0,
+        slipPlan: 0, slipAchieve: 0,
+        npaClosePlan: 0, npaCloseAchieve: 0,
+        pnpaPlan: 0, pnpaAchieve: 0
+    };
+
+    branchNames.forEach(br => {
+        const entry = state.branchDetails[br];
+        if (!entry) return;
+
+        // TARGETS
+        if (entry.target) {
+            const t = entry.target;
+            stats.ftodPlan += safeInt(t.ftod_plan);
+            stats.slipPlan += safeInt(t.nov_25_Slipped_Accounts_Plan);
+            stats.npaClosePlan += safeInt(t.npa_closure);
+            stats.pnpaPlan += safeInt(t.pnpa_plan);
+        }
+
+        // ACTUALS
+        if (entry.achievement) {
+            const a = entry.achievement;
+            stats.disbAcc += (safeInt(a.disb_igl_acc) + safeInt(a.disb_il_acc));
+            stats.disbAmt += (safeFloat(a.disb_igl_amt) + safeFloat(a.disb_il_amt));
+
+            stats.ftodAchieve += safeInt(a.ftod_actual);
+            stats.slipAchieve += safeInt(a.nov_25_Slipped_Accounts_Actual);
+            stats.npaCloseAchieve += safeInt(a.npa_closure);
+            stats.pnpaAchieve += safeInt(a.pnpa_actual);
+        }
+    });
+
+    return stats;
+}
+
+function renderDMSummaryCards(stats) {
+    // 1. Db Done
+    const dbVal = `${stats.disbAcc} A/c | ₹${(stats.disbAmt / 100000).toFixed(2)}L`;
+
+    // 2. Regular Collection % (FTOD + Slipped)
+    const regPlan = stats.ftodPlan + stats.slipPlan;
+    const regAct = stats.ftodAchieve + stats.slipAchieve;
+    const regPct = regPlan > 0 ? Math.round((regAct / regPlan) * 100) : 0;
+
+    // 3. NPA Collection % (Closure)
+    const npaPct = stats.npaClosePlan > 0 ? Math.round((stats.npaCloseAchieve / stats.npaClosePlan) * 100) : 0;
+
+    // 4. PNPA Collection %
+    const pnpaPct = stats.pnpaPlan > 0 ? Math.round((stats.pnpaAchieve / stats.pnpaPlan) * 100) : 0;
+
+    // BOLD COLORS configuration
+    const cards = [
+        {
+            label: "Total Db Done",
+            value: dbVal,
+            bg: "linear-gradient(135deg, #10B981 0%, #059669 100%)", // Green Gradient
+            icon: `<svg class="icon" viewBox="0 0 24 24" style="color:white;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`
+        },
+        {
+            label: "Regular Collection",
+            value: `${regPct}%`,
+            bg: "linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)", // Indigo Gradient
+            icon: `<svg class="icon" viewBox="0 0 24 24" style="color:white;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`
+        },
+        {
+            label: "NPA Collection",
+            value: `${npaPct}%`,
+            bg: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)", // Amber Gradient
+            icon: `<svg class="icon" viewBox="0 0 24 24" style="color:white;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+        },
+        {
+            label: "PNPA Collection",
+            value: `${pnpaPct}%`,
+            bg: "linear-gradient(135deg, #EC4899 0%, #DB2777 100%)", // Pink Gradient
+            icon: `<svg class="icon" viewBox="0 0 24 24" style="color:white;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`
+        }
+    ];
+
+    return `
+        <div class="dashboard-grid fade-enter" style="margin-bottom: 24px;">
+            ${cards.map(c => `
+                <div class="metric-card" onclick="showToast('We do not have the data to show yet', 'info')" 
+                     style="cursor: pointer; background: ${c.bg}; color: white;">
+                    <div class="metric-header">
+                        <div class="metric-icon" style="background: rgba(255,255,255,0.2); color: white;">
+                            ${c.icon}
+                        </div>
+                    </div>
+                    <div class="metric-value" style="font-size: 20px; color: white;">${c.value}</div>
+                    <div class="metric-title" style="color: rgba(255,255,255,0.9);">${c.label}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
 }
 
 function renderHierarchySummaryCard(stats, title) {
@@ -4450,3 +4614,62 @@ function setupInputValidators() {
 document.addEventListener('DOMContentLoaded', setupInputValidators);
 // Also call immediately in case DOM is already loaded (script is at end of body)
 setupInputValidators();
+// --- PROFILE MODAL ---
+function toggleProfileModal() {
+    const modal = document.getElementById('profileModal');
+    if (!modal) return;
+
+    // Toggle visibility
+    if (modal.classList.contains('visible')) {
+        modal.classList.remove('visible');
+    } else {
+        modal.classList.add('visible');
+
+        // Update content dynamically
+        // Note: state.role and state.currentUser are set during login
+        const role = state.role === 'CEO' ? 'Administrator' : 'District Manager';
+        // Use currentUser if available, or fallback to 'User'
+        const name = state.currentUser === 'CEO' ? 'CEO User' : (state.currentUser || 'User');
+
+        const modalName = document.getElementById('modalName');
+        const modalRole = document.getElementById('modalRole');
+        const headerAvatar = document.getElementById('headerAvatar');
+        const modalAvatar = document.getElementById('modalAvatar');
+        const modalPhone = document.getElementById('modalPhone');
+
+        if (modalName) modalName.textContent = name;
+        if (modalRole) modalRole.textContent = role;
+        // Copy the avatar text (initials) from the header to the modal
+        if (modalAvatar && headerAvatar) modalAvatar.textContent = headerAvatar.textContent;
+
+        // Phone number logic
+        if (modalPhone) {
+            if (state.role === 'CEO') {
+                modalPhone.textContent = "8792320623"; // Default for CEO/Support
+            } else {
+                // Find user in rawData
+                // [0]=Branch, [1]=District, [2]=DM Name, [3]=Region, [4]=Phone
+                const dmRow = state.rawData.rows.find(row => row[2] === name);
+                const phone = (dmRow && dmRow[4]) ? dmRow[4] : "Not Available";
+                modalPhone.textContent = phone;
+            }
+        }
+    }
+}
+
+// Close profile modal on outside click
+window.addEventListener('click', function (e) {
+    const modal = document.getElementById('profileModal');
+    const profileBtn = document.querySelector('.user-profile');
+
+    // If click is outside modal container AND not on the toggle button
+    if (modal && modal.classList.contains('visible')) {
+        const modalContainer = modal.querySelector('.modal-container');
+        // Ensure we are clicking on the overlay (modal itself) or outside the container
+        // Actually, the structure is overlay > container. 
+        // If we click on overlay (which has id profileModal), it means we are outside container.
+        if (e.target === modal) {
+            modal.classList.remove('visible');
+        }
+    }
+});
