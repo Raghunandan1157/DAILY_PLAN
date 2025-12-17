@@ -294,7 +294,12 @@ function toggleDateDropdown() {
 
     // If opening, render calendar
     if (wasHidden) {
-        calendarDate = new Date(); // Reset to current month
+        // Sync calendar view with current selected system date
+        if (state.systemDate) {
+            calendarDate = new Date(state.systemDate);
+        } else {
+            calendarDate = new Date(); // Fallback
+        }
         renderCalendar();
     }
 
@@ -513,6 +518,28 @@ function setTargetForTomorrow() {
     setTimeout(() => {
         showToast(`🚀 Target Date set to Tomorrow (${label})`);
     }, 600);
+}
+
+// Navigate Date Picker by Day (Arrow Buttons)
+function navigateDatePicker(delta) {
+    // Get current date from state
+    const currentDate = state.systemDate ? new Date(state.systemDate) : new Date();
+
+    // Add delta days
+    currentDate.setDate(currentDate.getDate() + delta);
+
+    // Format ISO date
+    const pad = n => n < 10 ? '0' + n : n;
+    const y = currentDate.getFullYear();
+    const m = pad(currentDate.getMonth() + 1);
+    const d = pad(currentDate.getDate());
+    const isoDate = `${y}-${m}-${d}`;
+
+    // Format label
+    const label = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Apply the new date
+    applyDateRangeInternal(isoDate, isoDate, label);
 }
 
 // Fetch data for a date range (aggregates multiple days)
