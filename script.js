@@ -493,41 +493,45 @@ async function applyDateRangeInternal(fromDate, toDate, label) {
 }
 
 // Fetch data for a date range (aggregates multiple days)
+// Core fetch and aggregate logic - Reusable
+async function fetchAndAggregateData(fromDate, toDate) {
+    const p1 = supabaseClient.from('daily_reports').select('*').gte('date', fromDate).lte('date', toDate);
+    const p2 = supabaseClient.from('daily_reports_achievements').select('*').gte('date', fromDate).lte('date', toDate);
+
+    const [resPlan, resAchieve] = await Promise.all([p1, p2]);
+
+    if (resPlan.error || resAchieve.error) {
+        throw new Error(resPlan.error?.message || resAchieve.error?.message);
+    }
+
+    // Aggregate data by branch
+    const aggregatedPlans = aggregateDataByBranch(resPlan.data || []);
+    const aggregatedAchievements = aggregateDataByBranch(resAchieve.data || []);
+
+    // Create Branch Details Map
+    const branchDetails = {};
+
+    aggregatedPlans.forEach(row => {
+        const br = row.branch_name;
+        if (!branchDetails[br]) branchDetails[br] = {};
+        branchDetails[br].target = row;
+    });
+
+    aggregatedAchievements.forEach(row => {
+        const br = row.branch_name;
+        if (!branchDetails[br]) branchDetails[br] = {};
+        branchDetails[br].achievement = row;
+    });
+
+    return branchDetails;
+}
+
+// Fetch data for a date range (aggregates multiple days)
 async function fetchSupabaseDataRange(fromDate, toDate) {
-
     try {
-        const p1 = supabaseClient.from('daily_reports').select('*').gte('date', fromDate).lte('date', toDate);
-        const p2 = supabaseClient.from('daily_reports_achievements').select('*').gte('date', fromDate).lte('date', toDate);
-
-        const [resPlan, resAchieve] = await Promise.all([p1, p2]);
-
-        if (resPlan.error || resAchieve.error) {
-            throw new Error(resPlan.error?.message || resAchieve.error?.message);
-        }
-
-        // Aggregate data by branch (sum numeric, keep latest for branch details)
-        const aggregatedPlans = aggregateDataByBranch(resPlan.data || []);
-        const aggregatedAchievements = aggregateDataByBranch(resAchieve.data || []);
-
-        // Create Branch Details Map (overwrite current details with aggregated range data)
-        const branchDetails = {};
-
-        aggregatedPlans.forEach(row => {
-            const br = row.branch_name;
-            if (!branchDetails[br]) branchDetails[br] = {};
-            branchDetails[br].target = row;
-        });
-
-        aggregatedAchievements.forEach(row => {
-            const br = row.branch_name;
-            if (!branchDetails[br]) branchDetails[br] = {};
-            branchDetails[br].achievement = row;
-        });
-
+        const branchDetails = await fetchAndAggregateData(fromDate, toDate);
         state.branchDetails = branchDetails;
-
         setLoading(false);
-
     } catch (error) {
         console.error('Fetch range error:', error);
         setLoading(false);
@@ -1195,7 +1199,7 @@ function renderReports(buffer) {
                     <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     Download Plan Report
                 </button>
-                <button class="btn btn-primary" onclick="downloadAchievementPlanReport()" style="padding:10px 24px;">
+                <button class="btn btn-primary" onclick="openDownloadReportModal()" style="padding:10px 24px;">
                     <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     Download Achievement Plan Report
                 </button>
@@ -1461,7 +1465,57 @@ function downloadPlanReport() {
 }
 
 // --- DOWNLOAD ACHIEVEMENT PLAN REPORT (With Comparison & Colors) ---
-function downloadAchievementPlanReport() {
+// --- REPORT DOWNLOAD HANDLERS ---
+function openDownloadReportModal() {
+    const modal = document.getElementById('downloadReportModal');
+    if (modal) {
+        modal.classList.add('visible');
+        // Set default dates (current system date)
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('reportDateFrom').value = today;
+        document.getElementById('reportDateTo').value = today;
+    }
+}
+
+function closeDownloadReportModal() {
+    const modal = document.getElementById('downloadReportModal');
+    if (modal) {
+        modal.classList.remove('visible');
+    }
+}
+
+async function handleReportDownload() {
+    const fromDate = document.getElementById('reportDateFrom').value;
+    const toDate = document.getElementById('reportDateTo').value;
+
+    if (!fromDate || !toDate) {
+        showToast('Please select both From and To dates', true);
+        return;
+    }
+
+    if (fromDate > toDate) {
+        showToast('From date cannot be after To date', true);
+        return;
+    }
+
+    // Close modal and show loading
+    closeDownloadReportModal();
+    setLoading(true, 'Generating Report...');
+
+    try {
+        // Fetch aggregated data for report
+        const reportData = await fetchAndAggregateData(fromDate, toDate);
+        await generateAndDownloadReport(reportData, fromDate, toDate);
+        setLoading(false);
+        showToast('Report Downloaded Successfully');
+    } catch (error) {
+        console.error("Report Generation Error:", error);
+        setLoading(false);
+        showToast('Failed to generate report', true);
+    }
+}
+
+function generateAndDownloadReport(branchDetails, fromDate, toDate) {
     // Colors
     const cPeach = '#FFDAB9';
     const cGreen = '#D1FAE5';
@@ -1515,7 +1569,7 @@ function downloadAchievementPlanReport() {
         <table>
             <!-- Title Row -->
             <tr>
-                <th colspan="25" class="title-row">Achievement Plan Report - ${state.systemDate}</th>
+                <th colspan="27" class="title-row">Achievement Plan Report - ${fromDate === toDate ? fromDate : fromDate + ' to ' + toDate}</th>
             </tr>
             <!-- Row 1: Group Headers -->
             <tr>
@@ -1540,6 +1594,8 @@ function downloadAchievementPlanReport() {
                 <th colspan="4" class="bg-orange">Disbursement Plan</th>
                 <!-- KYC -->
                 <th colspan="3" class="bg-blue">KYC Sourcing</th>
+                <!-- Achievement % -->
+                <th rowspan="2" class="bg-white">Achievement %</th>
             </tr>
             
             <!-- Row 2: Sub Headers -->
@@ -1561,7 +1617,7 @@ function downloadAchievementPlanReport() {
             </tr>
     `;
 
-    const dateStr = state.systemDate;
+    const dateStr = fromDate === toDate ? fromDate : 'Aggregated';
     let idCounter = 1;
 
     // Helper to get int
@@ -1574,6 +1630,16 @@ function downloadAchievementPlanReport() {
     const formatIndian = (num) => {
         if (num === 0) return '-';
         return num.toLocaleString('en-IN');
+    };
+
+    // Helper to calculate percentage
+    const calcPct = (achieve, target) => {
+        if (!target || target === 0) return 0;
+        return (achieve / target) * 100;
+    };
+
+    const formatFloat = (num) => {
+        return num.toFixed(2);
     };
 
     // Grand totals
@@ -1590,6 +1656,9 @@ function downloadAchievementPlanReport() {
     const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
     const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
 
+    // Use passed data source
+    const sourceData = branchDetails || state.branchDetails;
+
     state.rawData.rows.forEach(row => {
         const branchName = row[idxBranch];
         if (!branchName) return;
@@ -1598,7 +1667,7 @@ function downloadAchievementPlanReport() {
         const district = row[idxDistrict] || "";
         const dm = row[idxDM] || "";
 
-        const entry = state.branchDetails[branchName];
+        const entry = sourceData[branchName];
 
         // Separate achievement and target data for comparison
         const a = entry && entry.achievement ? entry.achievement : {};
@@ -1624,6 +1693,11 @@ function downloadAchievementPlanReport() {
         const kycFig = getInt(a.kyc_fig_igl);
         const kycIl = getInt(a.kyc_il);
         const kycNpa = getInt(a.kyc_npa);
+
+        // Calculate Row Percentage (Total Collection Plan vs Total Collection Actual)
+        const rowTarget = ftodPlan + slipColl + pnpaPlan + odPlan + nsPlan;
+        const rowAchieve = ftodAct + slipDem + pnpaAct + odAcc + nsAcc;
+        const rowPct = calcPct(rowAchieve, rowTarget);
 
         // Accumulate totals
         totals.ftodAct += ftodAct; totals.ftodPlan += ftodPlan;
@@ -1651,10 +1725,15 @@ function downloadAchievementPlanReport() {
             <td class="bg-cyan">${formatIndian(odAcc)}</td><td class="bg-cyan">${formatIndian(odPlan)}</td><td class="bg-cyan">${formatIndian(nsAcc)}</td><td class="bg-cyan">${formatIndian(nsPlan)}</td>
             <td class="bg-orange">${formatIndian(disbIglAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIglAmt)}</td><td class="bg-orange">${formatIndian(disbIlAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIlAmt)}</td>
             <td class="bg-blue">${formatIndian(kycFig)}</td><td class="bg-blue">${formatIndian(kycIl)}</td><td class="bg-blue">${formatIndian(kycNpa)}</td>
+            <td class="bg-white" style="font-weight:bold;">${formatFloat(rowPct)}%</td>
         </tr>`;
     });
 
     // Grand Total Row
+    const totalPlan = totals.ftodPlan + totals.slipColl + totals.pnpaPlan + totals.odPlan + totals.nsPlan;
+    const totalAchieve = totals.ftodAct + totals.slipDem + totals.pnpaAct + totals.odAcc + totals.nsAcc;
+    const totalPct = calcPct(totalAchieve, totalPlan);
+
     table += `
         <tr style="font-weight: bold; background: #FFFF00;">
             <td class="txt-center" colspan="6" style="background: #FFFF00; font-weight: bold;">GRAND TOTAL</td>
@@ -1665,6 +1744,7 @@ function downloadAchievementPlanReport() {
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odPlan)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsPlan)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIglAmt)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIlAmt)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycFig)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycIl)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycNpa)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatFloat(totalPct)}%</td>
         </tr>`;
 
     table += `</table></body></html>`;
@@ -1673,7 +1753,7 @@ function downloadAchievementPlanReport() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `Achievement_Plan_Report_${state.systemDate}.xls`);
+    link.setAttribute("download", `Achievement_Plan_Report_${fromDate}_to_${toDate}.xls`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
