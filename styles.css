@@ -561,8 +561,24 @@
             border-color: var(--primary-accent);
         }
 
+        .calendar-day.range-start {
+            border-top-left-radius: 50%;
+            border-bottom-left-radius: 50%;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .calendar-day.range-end {
+            border-top-right-radius: 50%;
+            border-bottom-right-radius: 50%;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
         .calendar-day.in-range {
             background: var(--primary-light);
+            color: var(--primary-accent);
+            border-radius: 0;
         }
 
         /* Updated Quick Button Styles */
