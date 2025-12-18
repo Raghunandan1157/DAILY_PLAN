@@ -1818,7 +1818,9 @@ function generateAndDownloadReport(branchDetails, fromDate, toDate) {
                 <th colspan="4" class="bg-orange">Disbursement Plan</th>
                 <!-- KYC -->
                 <th colspan="3" class="bg-blue">KYC Sourcing</th>
-                <!-- Achievement % -->
+                <!-- Achievement Comparison -->
+                <th rowspan="2" class="bg-white">Total Target</th>
+                <th rowspan="2" class="bg-white">Total Achievement</th>
                 <th rowspan="2" class="bg-white">Achievement %</th>
             </tr>
             
@@ -1949,6 +1951,8 @@ function generateAndDownloadReport(branchDetails, fromDate, toDate) {
             <td class="bg-cyan">${formatIndian(odAcc)}</td><td class="bg-cyan">${formatIndian(odPlan)}</td><td class="bg-cyan">${formatIndian(nsAcc)}</td><td class="bg-cyan">${formatIndian(nsPlan)}</td>
             <td class="bg-orange">${formatIndian(disbIglAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIglAmt)}</td><td class="bg-orange">${formatIndian(disbIlAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIlAmt)}</td>
             <td class="bg-blue">${formatIndian(kycFig)}</td><td class="bg-blue">${formatIndian(kycIl)}</td><td class="bg-blue">${formatIndian(kycNpa)}</td>
+            <td class="bg-white" style="font-weight:bold;">${formatIndian(rowTarget)}</td>
+            <td class="bg-white" style="font-weight:bold;">${formatIndian(rowAchieve)}</td>
             <td class="bg-white" style="font-weight:bold;">${formatFloat(rowPct)}%</td>
         </tr>`;
     });
@@ -1968,6 +1972,8 @@ function generateAndDownloadReport(branchDetails, fromDate, toDate) {
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odPlan)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsPlan)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIglAmt)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIlAmt)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycFig)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycIl)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycNpa)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totalPlan)}</td>
+            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totalAchieve)}</td>
             <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatFloat(totalPct)}%</td>
         </tr>`;
 
