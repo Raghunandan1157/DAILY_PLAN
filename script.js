@@ -748,6 +748,9 @@ async function fetchAndAggregateData(fromDate, toDate) {
         branchDetails[br].achievement = row;
     });
 
+    // Backfill missing achievement values with plan data when needed
+    mergeAchievementsWithPlan(branchDetails);
+
     return branchDetails;
 }
 
@@ -767,31 +770,28 @@ async function fetchSupabaseDataRange(fromDate, toDate) {
 // Helper to aggregate data by branch (sum numeric fields)
 function aggregateDataByBranch(rows) {
     const byBranch = {};
+    const metaKeys = new Set(['id', 'branch_name', 'date', 'region', 'district', 'dm_name', 'created_at']);
 
     rows.forEach(row => {
         const branchName = row.branch_name;
+        if (!branchName) return;
+
         if (!byBranch[branchName]) {
             byBranch[branchName] = { ...row };
-            // Ensure initial numeric values are actually numbers
-            Object.keys(byBranch[branchName]).forEach(key => {
-                if (key !== 'id' && key !== 'branch_name' && key !== 'date' && key !== 'region' && key !== 'district' && key !== 'dm_name') {
-                    const val = Number(byBranch[branchName][key]);
-                    if (!isNaN(val)) {
-                        byBranch[branchName][key] = val;
-                    }
-                }
-            });
         } else {
-            // Sum numeric fields
             Object.keys(row).forEach(key => {
-                // Check if key is one of our numeric metrics
-                // Or just try to parse it
-                if (key !== 'id' && key !== 'branch_name' && key !== 'date' && key !== 'region' && key !== 'district' && key !== 'dm_name' && key !== 'created_at') {
-                    const rowVal = Number(row[key]);
-                    if (!isNaN(rowVal)) {
-                        const existingVal = Number(byBranch[branchName][key]) || 0;
-                        byBranch[branchName][key] = existingVal + rowVal;
-                    }
+                if (metaKeys.has(key)) return;
+
+                const incomingVal = row[key];
+                const numericVal = incomingVal === null || incomingVal === undefined || incomingVal === '' ? null : Number(incomingVal);
+
+                // Sum only when the value is numeric; keep nulls as-is so we can detect missing data later
+                if (numericVal !== null && !isNaN(numericVal)) {
+                    const existing = byBranch[branchName][key];
+                    const existingNum = existing === null || existing === undefined || existing === '' ? 0 : Number(existing) || 0;
+                    byBranch[branchName][key] = existingNum + numericVal;
+                } else if (!(key in byBranch[branchName])) {
+                    byBranch[branchName][key] = incomingVal ?? null;
                 }
             });
             // Keep non-numeric fields from latest date
@@ -804,7 +804,72 @@ function aggregateDataByBranch(rows) {
         }
     });
 
+    // Normalize numeric-looking values to numbers, leave null/undefined intact
+    Object.values(byBranch).forEach(row => {
+        Object.keys(row).forEach(key => {
+            if (metaKeys.has(key)) return;
+            const val = row[key];
+            if (val === null || val === undefined || val === '') {
+                row[key] = null;
+                return;
+            }
+            if (!isNaN(Number(val))) {
+                row[key] = Number(val);
+            }
+        });
+    });
+
     return Object.values(byBranch);
+}
+
+// Merge achievement data with plan data when Supabase achievement rows miss values
+function mergeAchievementsWithPlan(branchDetails) {
+    const achievementFields = [
+        'ftod_actual',
+        'nov_25_Slipped_Accounts_Actual',
+        'pnpa_actual',
+        'npa_activation',
+        'npa_closure',
+        'fy_od_acc',
+        'fy_non_start_acc',
+        'disb_igl_acc',
+        'disb_igl_amt',
+        'disb_il_acc',
+        'disb_il_amt',
+        'kyc_fig_igl',
+        'kyc_il',
+        'kyc_npa'
+    ];
+
+    Object.keys(branchDetails).forEach(branchName => {
+        const entry = branchDetails[branchName] || {};
+        const plan = entry.target || {};
+        const achievement = entry.achievement || {};
+        const merged = { ...achievement };
+
+        achievementFields.forEach(field => {
+            const achVal = achievement ? achievement[field] : null;
+            const hasAchVal = achVal !== null && achVal !== undefined && achVal !== '';
+            if (!hasAchVal) {
+                const planVal = plan ? plan[field] : null;
+                if (planVal !== null && planVal !== undefined && planVal !== '') {
+                    merged[field] = planVal;
+                }
+            } else if (typeof achVal === 'string' && achVal.trim() !== '' && !isNaN(Number(achVal))) {
+                merged[field] = Number(achVal);
+            }
+        });
+
+        // Carry forward metadata so report rows remain populated
+        merged.branch_name = achievement.branch_name || plan.branch_name || branchName;
+        merged.region = achievement.region || plan.region || '';
+        merged.district = achievement.district || plan.district || '';
+        merged.dm_name = achievement.dm_name || achievement.dm || plan.dm_name || plan.dm || '';
+        merged.date = achievement.date || plan.date;
+
+        entry.achievement = merged;
+        branchDetails[branchName] = entry;
+    });
 }
 
 // --- SUPABASE ACTIONS ---
@@ -856,6 +921,9 @@ async function fetchSupabaseData() {
             if (!state.branchDetails[row.branch_name]) state.branchDetails[row.branch_name] = {};
             state.branchDetails[row.branch_name].achievement = row;
         });
+
+        // Ensure achievement data is filled even if Supabase achievement rows are sparse
+        mergeAchievementsWithPlan(state.branchDetails);
 
         const targetCount = resPlan.data?.length || 0;
         const achieveCount = resAchieve.data?.length || 0;
@@ -1437,15 +1505,32 @@ function renderReports(buffer) {
              </div>
 
             <!-- 3. ACTIONS -->
-            <div style="padding: 16px; border-top: 1px solid var(--border-color); display:flex; justify-content:flex-end; gap:12px;">
-                <button class="btn btn-outline" onclick="downloadPlanReport()" style="padding:10px 24px;">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    Download Plan Report
-                </button>
-                <button class="btn btn-primary" onclick="downloadAchievementPlanReportDirectly()" style="padding:10px 24px;">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    Download Achievement Plan Report
-                </button>
+            <div style="padding: 16px; border-top: 1px solid var(--border-color);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <!-- Excel Downloads -->
+                    <div style="display:flex; gap:12px;">
+                        <button class="btn btn-outline" onclick="downloadPlanReport()" style="padding:10px 24px;">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Download Plan Report
+                        </button>
+                        <button class="btn btn-primary" onclick="downloadAchievementPlanReportDirectly()" style="padding:10px 24px;">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Download Achievement Plan Report
+                        </button>
+                    </div>
+                    
+                    <!-- PNG Downloads -->
+                    <div style="display:flex; gap:12px;">
+                        <button class="btn btn-outline" onclick="downloadPlanPNG()" style="padding:10px 24px; background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; border: none;">
+                            <svg class="icon" viewBox="0 0 24 24" style="stroke: white;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            Plan PNG
+                        </button>
+                        <button class="btn btn-primary" onclick="downloadAchievementPNG()" style="padding:10px 24px; background: linear-gradient(135deg, #10B981, #059669); color: white; border: none;">
+                            <svg class="icon" viewBox="0 0 24 24" style="stroke: white;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            Achievement PNG
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         <style>
@@ -1711,6 +1796,350 @@ function downloadPlanReport() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// --- PNG EXPORT FUNCTIONS ---
+
+// Generate Plan PNG (Daily PLAN REPORT table as image)
+async function downloadPlanPNG() {
+    showToast("Generating Plan PNG...", "info");
+
+    const dateStr = formatDateForDisplay(state.systemDate);
+    const tableHTML = generatePlanTableHTML('PLAN', dateStr);
+
+    await convertTableToPNG(tableHTML, `Daily_PLAN_Report_${state.systemDate}.png`);
+    showToast("✅ Plan PNG Downloaded!", "check");
+}
+
+// Generate Achievement PNG (Plan table + Achievement table below)
+async function downloadAchievementPNG() {
+    showToast("Generating Achievement PNG...", "info");
+
+    const dateStr = formatDateForDisplay(state.systemDate);
+
+    // Generate Plan table
+    const planTableHTML = generatePlanTableHTML('PLAN', dateStr);
+
+    // Generate Achievement table (2 rows gap)
+    const achieveTableHTML = generatePlanTableHTML('ACHIEVEMENT', dateStr);
+
+    // Combine with spacing
+    const combinedHTML = `
+        ${planTableHTML}
+        <div style="height: 40px;"></div>
+        ${achieveTableHTML}
+    `;
+
+    await convertTableToPNG(combinedHTML, `Daily_Achievement_Report_${state.systemDate}.png`);
+    showToast("✅ Achievement PNG Downloaded!", "check");
+}
+
+// Format date for display (DD-MM-YYYY)
+function formatDateForDisplay(dateStr) {
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+}
+
+// Generate table HTML for PNG export
+function generatePlanTableHTML(type, dateStr) {
+    const isPlan = type === 'PLAN';
+    const title = isPlan ? `Daily PLAN REPORT for the Date ${dateStr}` : `Daily ACHIEVEMENT REPORT for the Date ${dateStr}`;
+
+    // Colors matching the uploaded image
+    const colors = {
+        title: '#000000',
+        ftod: '#87CEEB',      // Light blue
+        slipped: '#90EE90',   // Light green  
+        pnpa: '#FFB6C1',      // Light pink
+        npa: '#FFFACD',       // Light yellow
+        fy2526: '#E0E0E0',    // Light gray
+        disb: '#FFDAB9',      // Peach
+        kyc: '#DDA0DD',       // Light purple
+        white: '#FFFFFF',
+        header: '#4682B4'     // Steel blue for main header
+    };
+
+    // Build rows data
+    const rows = [];
+    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
+    const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
+
+    // Group by region for organization
+    const regionMap = {};
+
+    state.rawData.rows.forEach(row => {
+        const branchName = row[idxBranch];
+        if (!branchName) return;
+
+        const region = row[idxRegion] || "Unknown";
+        const entry = state.branchDetails[branchName];
+        const data = isPlan ? (entry?.target || {}) : (entry?.achievement || {});
+
+        if (!regionMap[region]) regionMap[region] = [];
+
+        regionMap[region].push({
+            region,
+            ftodActual: parseInt(data.ftod_actual) || 0,
+            ftodPlan: parseInt(data.ftod_plan) || 0,
+            nov25Demand: parseInt(data.nov_25_Slipped_Accounts_Actual) || 0,
+            nov25Coll: parseInt(data.nov_25_Slipped_Accounts_Plan) || 0,
+            pnpaActual: parseInt(data.pnpa_actual) || 0,
+            pnpaPlan: parseInt(data.pnpa_plan) || 0,
+            npaActivation: parseInt(data.npa_activation) || 0,
+            npaClosure: parseInt(data.npa_closure) || 0,
+            fyOdAcc: parseInt(data.fy_od_acc) || 0,
+            fyOdPlan: parseInt(data.fy_od_plan) || 0,
+            fyNsAcc: parseInt(data.fy_non_start_acc) || 0,
+            fyNsPlan: parseInt(data.fy_non_start_plan) || 0,
+            disbIglAcc: parseInt(data.disb_igl_acc) || 0,
+            disbIglAmt: parseInt(data.disb_igl_amt) || 0,
+            disbIlAcc: parseInt(data.disb_il_acc) || 0,
+            disbIlAmt: parseInt(data.disb_il_amt) || 0,
+            kycFig: parseInt(data.kyc_fig_igl) || 0,
+            kycIl: parseInt(data.kyc_il) || 0,
+            kycNpa: parseInt(data.kyc_npa) || 0
+        });
+    });
+
+    // Aggregate by region
+    const regionData = {};
+    Object.keys(regionMap).forEach(region => {
+        const branches = regionMap[region];
+        regionData[region] = {
+            region,
+            ftodActual: branches.reduce((s, b) => s + b.ftodActual, 0),
+            ftodPlan: branches.reduce((s, b) => s + b.ftodPlan, 0),
+            nov25Demand: branches.reduce((s, b) => s + b.nov25Demand, 0),
+            nov25Coll: branches.reduce((s, b) => s + b.nov25Coll, 0),
+            pnpaActual: branches.reduce((s, b) => s + b.pnpaActual, 0),
+            pnpaPlan: branches.reduce((s, b) => s + b.pnpaPlan, 0),
+            npaActivation: branches.reduce((s, b) => s + b.npaActivation, 0),
+            npaClosure: branches.reduce((s, b) => s + b.npaClosure, 0),
+            fyOdAcc: branches.reduce((s, b) => s + b.fyOdAcc, 0),
+            fyOdPlan: branches.reduce((s, b) => s + b.fyOdPlan, 0),
+            fyNsAcc: branches.reduce((s, b) => s + b.fyNsAcc, 0),
+            fyNsPlan: branches.reduce((s, b) => s + b.fyNsPlan, 0),
+            disbIglAcc: branches.reduce((s, b) => s + b.disbIglAcc, 0),
+            disbIglAmt: branches.reduce((s, b) => s + b.disbIglAmt, 0),
+            disbIlAcc: branches.reduce((s, b) => s + b.disbIlAcc, 0),
+            disbIlAmt: branches.reduce((s, b) => s + b.disbIlAmt, 0),
+            kycFig: branches.reduce((s, b) => s + b.kycFig, 0),
+            kycIl: branches.reduce((s, b) => s + b.kycIl, 0),
+            kycNpa: branches.reduce((s, b) => s + b.kycNpa, 0)
+        };
+    });
+
+    // Grand totals
+    const totals = {
+        ftodActual: 0, ftodPlan: 0, nov25Demand: 0, nov25Coll: 0,
+        pnpaActual: 0, pnpaPlan: 0, npaActivation: 0, npaClosure: 0,
+        fyOdAcc: 0, fyOdPlan: 0, fyNsAcc: 0, fyNsPlan: 0,
+        disbIglAcc: 0, disbIglAmt: 0, disbIlAcc: 0, disbIlAmt: 0,
+        kycFig: 0, kycIl: 0, kycNpa: 0
+    };
+
+    Object.values(regionData).forEach(r => {
+        Object.keys(totals).forEach(k => totals[k] += r[k]);
+    });
+
+    // Format number
+    const fmt = n => n === 0 ? '-' : n.toLocaleString('en-IN');
+
+    // Build HTML table
+    let html = `
+        <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: auto;">
+            <!-- Title -->
+            <tr>
+                <td colspan="18" style="text-align: center; font-weight: bold; font-size: 14px; padding: 8px; background: ${colors.white}; border: 1px solid #000;">
+                    ${title}
+                </td>
+            </tr>
+            <!-- Header Row 1 -->
+            <tr style="font-weight: bold; font-size: 10px;">
+                <td rowspan="2" style="background: ${colors.white}; border: 1px solid #000; padding: 4px 8px; text-align: center;">REGION</td>
+                <td colspan="2" style="background: ${colors.ftod}; border: 1px solid #000; padding: 4px 8px; text-align: center;">FTOD</td>
+                <td colspan="2" style="background: ${colors.slipped}; border: 1px solid #000; padding: 4px 8px; text-align: center;">Nov Slipped</td>
+                <td colspan="2" style="background: ${colors.pnpa}; border: 1px solid #000; padding: 4px 8px; text-align: center;">PNPA</td>
+                <td colspan="2" style="background: ${colors.npa}; border: 1px solid #000; padding: 4px 8px; text-align: center;">NPA</td>
+                <td colspan="4" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center;">FY 25-26</td>
+                <td colspan="4" style="background: ${colors.disb}; border: 1px solid #000; padding: 4px 8px; text-align: center;">Disbursement Plan</td>
+                <td colspan="3" style="background: ${colors.kyc}; border: 1px solid #000; padding: 4px 8px; text-align: center;">KYC Sourcing</td>
+            </tr>
+            <!-- Header Row 2 -->
+            <tr style="font-weight: bold; font-size: 9px;">
+                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">FTOD Actual</td>
+                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">FTOD Plan</td>
+                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Nov-25 Demand</td>
+                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Nov-25 Collections</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Actual</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Plan</td>
+                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Activation</td>
+                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Closure</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Actual OD Acc</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">OD Plan</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Non starter Acc</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Non starter Plan</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IGL Acc</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IGL Amt</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IL Acc</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IL Amt</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IGL&FIG</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IL</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">NPA</td>
+            </tr>
+    `;
+
+    // Data rows by region
+    Object.keys(regionData).sort().forEach(region => {
+        const r = regionData[region];
+        html += `
+            <tr style="font-size: 10px;">
+                <td style="background: ${colors.white}; border: 1px solid #000; padding: 3px 6px; text-align: left; font-weight: 600;">${region}</td>
+                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.ftodActual)}</td>
+                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.ftodPlan)}</td>
+                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.nov25Demand)}</td>
+                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.nov25Coll)}</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.pnpaActual)}</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.pnpaPlan)}</td>
+                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.npaActivation)}</td>
+                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.npaClosure)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.fyOdAcc)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.fyOdPlan)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.fyNsAcc)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.fyNsPlan)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.disbIglAcc)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: right;">${fmt(r.disbIglAmt)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.disbIlAcc)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: right;">${fmt(r.disbIlAmt)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.kycFig)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.kycIl)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.kycNpa)}</td>
+            </tr>
+        `;
+    });
+
+    // Grand Total row
+    html += `
+        <tr style="font-weight: bold; font-size: 10px; background: #FFFF00;">
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: left;">Grand Total</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.ftodActual)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.ftodPlan)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.nov25Demand)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.nov25Coll)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.pnpaActual)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.pnpaPlan)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.npaActivation)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.npaClosure)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.fyOdAcc)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.fyOdPlan)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.fyNsAcc)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.fyNsPlan)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.disbIglAcc)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: right;">${fmt(totals.disbIglAmt)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.disbIlAcc)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: right;">${fmt(totals.disbIlAmt)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.kycFig)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.kycIl)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.kycNpa)}</td>
+        </tr>
+    </table>
+    `;
+
+    return html;
+}
+
+// Convert HTML table to PNG and download
+async function convertTableToPNG(tableHTML, filename) {
+    // Create a hidden container
+    const container = document.createElement('div');
+    container.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        background: white;
+        padding: 20px;
+    `;
+    container.innerHTML = tableHTML;
+    document.body.appendChild(container);
+
+    // Wait for rendering
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Get dimensions
+    const tableEl = container.querySelector('table');
+    const width = tableEl.offsetWidth + 40;
+    const height = container.offsetHeight + 20;
+
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    const scale = 2; // Higher resolution
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, width, height);
+
+    // Use html2canvas-like approach with foreignObject
+    const svgData = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+            <foreignObject width="100%" height="100%">
+                <div xmlns="http://www.w3.org/1999/xhtml" style="background: white; padding: 10px;">
+                    ${tableHTML}
+                </div>
+            </foreignObject>
+        </svg>
+    `;
+
+    const img = new Image();
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    return new Promise((resolve, reject) => {
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0);
+            URL.revokeObjectURL(url);
+            document.body.removeChild(container);
+
+            // Download
+            canvas.toBlob(blob => {
+                const downloadUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = filename;
+                link.click();
+                URL.revokeObjectURL(downloadUrl);
+                resolve();
+            }, 'image/png');
+        };
+
+        img.onerror = (e) => {
+            // Fallback: create a simple data URL download
+            document.body.removeChild(container);
+
+            // Use a simpler approach - create blob from HTML
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head><style>body { margin: 0; padding: 10px; background: white; }</style></head>
+                <body>${tableHTML}</body>
+                </html>
+            `;
+            const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+            const htmlUrl = URL.createObjectURL(htmlBlob);
+
+            // Open in new tab for user to screenshot/print
+            window.open(htmlUrl, '_blank');
+            showToast("Table opened in new tab - use Print/Save as PDF", "info");
+            resolve();
+        };
+
+        img.src = url;
+    });
 }
 
 // --- DOWNLOAD ACHIEVEMENT PLAN REPORT (With Comparison & Colors) ---
@@ -3299,28 +3728,235 @@ async function testSupabaseConnection() {
 }
 
 function loadNextBranch() {
-    // Flatten hierarchy to find next branch
-    // Filter by DM if Role is DM
-    let allBranches = [];
+    // Get DM's branches only
+    let dmBranches = [];
 
     if (state.role === 'DM') {
         const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === "dm name");
-        // Get rows for this DM
+        // Get rows for this DM ONLY
         const dmRows = state.rawData.rows.filter(r => (r[idxDM] || "").trim() === state.currentUser);
         // Extract branch names and sort
-        allBranches = dmRows.map(r => r[0]).filter(Boolean).sort();
+        dmBranches = dmRows.map(r => r[0]).filter(Boolean).sort();
     } else {
         // CEO sees all
-        allBranches = state.rawData.rows.map(r => r[0]).filter(Boolean).sort();
+        dmBranches = state.rawData.rows.map(r => r[0]).filter(Boolean).sort();
     }
 
-    const idx = allBranches.indexOf(currentEditingBranch);
-    if (idx !== -1 && idx < allBranches.length - 1) {
-        const nextBranch = allBranches[idx + 1];
+    // Check completion status for DM's branches
+    const checkCompletionStatus = () => {
+        let branchesWithoutTarget = [];
+        let branchesWithoutAchievement = [];
+
+        dmBranches.forEach(branch => {
+            const branchEntry = state.branchDetails[branch] || {};
+            if (!branchEntry.target) {
+                branchesWithoutTarget.push(branch);
+            } else if (!branchEntry.achievement) {
+                branchesWithoutAchievement.push(branch);
+            }
+        });
+
+        return { branchesWithoutTarget, branchesWithoutAchievement };
+    };
+
+    const { branchesWithoutTarget, branchesWithoutAchievement } = checkCompletionStatus();
+
+    // Determine what we were just saving
+    const justSavedMode = currentModalState;
+
+    // Find the next branch based on what we just saved
+    if (justSavedMode === 'TARGET') {
+        // We just saved a target - find next branch without target
+        if (branchesWithoutTarget.length > 0) {
+            // Find next branch after current one that needs target
+            const currentIdx = dmBranches.indexOf(currentEditingBranch);
+            let nextBranch = null;
+
+            // Look for next branch without target after current position
+            for (let i = currentIdx + 1; i < dmBranches.length; i++) {
+                if (branchesWithoutTarget.includes(dmBranches[i])) {
+                    nextBranch = dmBranches[i];
+                    break;
+                }
+            }
+
+            // If not found, wrap around to beginning
+            if (!nextBranch) {
+                for (let i = 0; i < currentIdx; i++) {
+                    if (branchesWithoutTarget.includes(dmBranches[i])) {
+                        nextBranch = dmBranches[i];
+                        break;
+                    }
+                }
+            }
+
+            if (nextBranch) {
+                openBranchModal(nextBranch);
+                return;
+            }
+        }
+
+        // All targets are done - prompt for achievements
+        closeBranchModal();
+        if (branchesWithoutAchievement.length > 0) {
+            showCompletionModal('targets', branchesWithoutAchievement[0]);
+        } else {
+            showCompletionModal('all');
+        }
+        return;
+    }
+    else if (justSavedMode === 'ACHIEVEMENT') {
+        // We just saved an achievement - find next branch without achievement
+        if (branchesWithoutAchievement.length > 0) {
+            // Find next branch after current one that needs achievement
+            const currentIdx = dmBranches.indexOf(currentEditingBranch);
+            let nextBranch = null;
+
+            // Look for next branch without achievement after current position
+            for (let i = currentIdx + 1; i < dmBranches.length; i++) {
+                if (branchesWithoutAchievement.includes(dmBranches[i])) {
+                    nextBranch = dmBranches[i];
+                    break;
+                }
+            }
+
+            // If not found, wrap around to beginning
+            if (!nextBranch) {
+                for (let i = 0; i < currentIdx; i++) {
+                    if (branchesWithoutAchievement.includes(dmBranches[i])) {
+                        nextBranch = dmBranches[i];
+                        break;
+                    }
+                }
+            }
+
+            if (nextBranch) {
+                openBranchModal(nextBranch);
+                return;
+            }
+        }
+
+        // All achievements are done
+        closeBranchModal();
+        showCompletionModal('all');
+        return;
+    }
+
+    // Fallback: just go to next sequential branch
+    const idx = dmBranches.indexOf(currentEditingBranch);
+    if (idx !== -1 && idx < dmBranches.length - 1) {
+        const nextBranch = dmBranches[idx + 1];
         openBranchModal(nextBranch);
     } else {
         showToast("Reached end of your branch list", "alert");
         closeBranchModal();
+    }
+}
+
+// Show completion modal for targets/achievements done
+function showCompletionModal(type, firstBranchForAchievement = null) {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'completionOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    `;
+
+    let content = '';
+
+    if (type === 'targets') {
+        // All targets done, prompt for achievements
+        content = `
+            <div style="background: var(--bg-card); border-radius: 20px; padding: 40px; text-align: center; max-width: 450px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10B981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                    <svg viewBox="0 0 24 24" style="width: 40px; height: 40px; stroke: white; fill: none; stroke-width: 2.5;">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <h2 style="color: var(--text-primary); font-size: 24px; margin-bottom: 12px; font-weight: 700;">All Targets Uploaded! 🎯</h2>
+                <p style="color: var(--text-secondary); font-size: 16px; margin-bottom: 32px; line-height: 1.6;">
+                    Great work! All your branch targets have been set successfully.<br>
+                    <strong style="color: var(--text-primary);">Would you like to update achievements now?</strong>
+                </p>
+                <div style="display: flex; gap: 16px; justify-content: center;">
+                    <button onclick="closeCompletionModal()" style="padding: 14px 28px; border-radius: 12px; border: 2px solid var(--border-color); background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; font-size: 15px; transition: all 0.2s;">
+                        Maybe Later
+                    </button>
+                    <button onclick="startAchievementEntry('${firstBranchForAchievement}')" style="padding: 14px 28px; border-radius: 12px; border: none; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; font-weight: 600; cursor: pointer; font-size: 15px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); transition: all 0.2s;">
+                        Yes, Update Achievements →
+                    </button>
+                </div>
+            </div>
+        `;
+    } else {
+        // All done!
+        content = `
+            <div style="background: var(--bg-card); border-radius: 20px; padding: 40px; text-align: center; max-width: 450px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10B981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; animation: pulse 2s infinite;">
+                    <svg viewBox="0 0 24 24" style="width: 40px; height: 40px; stroke: white; fill: none; stroke-width: 2.5;">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <h2 style="color: var(--text-primary); font-size: 28px; margin-bottom: 12px; font-weight: 700;">All Done! 🎉</h2>
+                <p style="color: var(--text-secondary); font-size: 18px; margin-bottom: 12px; line-height: 1.6;">
+                    All targets and achievements have been uploaded successfully.
+                </p>
+                <p style="color: #10B981; font-size: 20px; font-weight: 600; margin-bottom: 32px;">
+                    Thank you for your hard work! 💪
+                </p>
+                <button onclick="closeCompletionModal()" style="padding: 14px 36px; border-radius: 12px; border: none; background: linear-gradient(135deg, #10B981, #059669); color: white; font-weight: 600; cursor: pointer; font-size: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); transition: all 0.2s;">
+                    Close
+                </button>
+            </div>
+        `;
+    }
+
+    overlay.innerHTML = content;
+    document.body.appendChild(overlay);
+
+    // Add animation keyframes if not present
+    if (!document.getElementById('completionAnimations')) {
+        const style = document.createElement('style');
+        style.id = 'completionAnimations';
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+// Close completion modal
+function closeCompletionModal() {
+    const overlay = document.getElementById('completionOverlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 300);
+    }
+}
+
+// Start achievement entry from completion modal
+function startAchievementEntry(branchName) {
+    closeCompletionModal();
+    if (branchName) {
+        setTimeout(() => openBranchModal(branchName), 300);
     }
 }
 
