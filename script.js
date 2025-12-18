@@ -1450,6 +1450,12 @@ function setReportDate(offset) {
     // Update global state
     state.systemDate = isoDate;
 
+    // FIX: Update range to match single selected date
+    state.dateFrom = isoDate;
+    state.dateTo = isoDate;
+    saveDateRange(isoDate, isoDate); // Persist if needed
+
+
     // Update inputs
     const input = document.getElementById("reportDateInput");
     if (input) input.value = isoDate;
