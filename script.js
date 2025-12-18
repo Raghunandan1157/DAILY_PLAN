@@ -1876,6 +1876,10 @@ function generatePlanTableHTML(type, dateStr) {
 
         const region = row[idxRegion] || "Unknown";
         const entry = state.branchDetails[branchName];
+
+        // Data source:
+        // - PLAN: Uses entry.target which is from 'daily_reports' table
+        // - ACHIEVEMENT: Uses entry.achievement which is from 'daily_reports_achievements' table
         const data = isPlan ? (entry?.target || {}) : (entry?.achievement || {});
 
         if (!regionMap[region]) regionMap[region] = [];
@@ -1948,12 +1952,16 @@ function generatePlanTableHTML(type, dateStr) {
     // Format number
     const fmt = n => n === 0 ? '-' : n.toLocaleString('en-IN');
 
+    // Dynamic labels: Use 'Ach' for achievement, 'Plan' for plan
+    const planLabel = isPlan ? 'Plan' : 'Ach';
+    const disbLabel = isPlan ? 'Disbursement Plan' : 'Disbursement Ach';
+
     // Build HTML table
     let html = `
         <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: auto;">
             <!-- Title -->
             <tr>
-                <td colspan="18" style="text-align: center; font-weight: bold; font-size: 14px; padding: 8px; background: ${colors.white}; border: 1px solid #000;">
+                <td colspan="20" style="text-align: center; font-weight: bold; font-size: 14px; padding: 8px; background: ${colors.white}; border: 1px solid #000;">
                     ${title}
                 </td>
             </tr>
@@ -1965,23 +1973,23 @@ function generatePlanTableHTML(type, dateStr) {
                 <td colspan="2" style="background: ${colors.pnpa}; border: 1px solid #000; padding: 4px 8px; text-align: center;">PNPA</td>
                 <td colspan="2" style="background: ${colors.npa}; border: 1px solid #000; padding: 4px 8px; text-align: center;">NPA</td>
                 <td colspan="4" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center;">FY 25-26</td>
-                <td colspan="4" style="background: ${colors.disb}; border: 1px solid #000; padding: 4px 8px; text-align: center;">Disbursement Plan</td>
+                <td colspan="4" style="background: ${colors.disb}; border: 1px solid #000; padding: 4px 8px; text-align: center;">${disbLabel}</td>
                 <td colspan="3" style="background: ${colors.kyc}; border: 1px solid #000; padding: 4px 8px; text-align: center;">KYC Sourcing</td>
             </tr>
             <!-- Header Row 2 -->
             <tr style="font-weight: bold; font-size: 9px;">
                 <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">FTOD Actual</td>
-                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">FTOD Plan</td>
+                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">FTOD ${planLabel}</td>
                 <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Nov-25 Demand</td>
                 <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Nov-25 Collections</td>
                 <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Actual</td>
-                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Plan</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${planLabel}</td>
                 <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Activation</td>
                 <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Closure</td>
                 <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Actual OD Acc</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">OD Plan</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">OD ${planLabel}</td>
                 <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Non starter Acc</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Non starter Plan</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Non starter ${planLabel}</td>
                 <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IGL Acc</td>
                 <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IGL Amt</td>
                 <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IL Acc</td>
@@ -2047,6 +2055,15 @@ function generatePlanTableHTML(type, dateStr) {
         </tr>
     </table>
     `;
+
+    // Add note for Achievement report
+    if (!isPlan) {
+        html += `
+            <div style="margin-top: 8px; font-size: 11px; font-style: italic; color: #666; font-family: Arial, sans-serif;">
+                * ACH means Achievement
+            </div>
+        `;
+    }
 
     return html;
 }
