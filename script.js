@@ -772,11 +772,26 @@ function aggregateDataByBranch(rows) {
         const branchName = row.branch_name;
         if (!byBranch[branchName]) {
             byBranch[branchName] = { ...row };
+            // Ensure initial numeric values are actually numbers
+            Object.keys(byBranch[branchName]).forEach(key => {
+                if (key !== 'id' && key !== 'branch_name' && key !== 'date' && key !== 'region' && key !== 'district' && key !== 'dm_name') {
+                    const val = Number(byBranch[branchName][key]);
+                    if (!isNaN(val)) {
+                        byBranch[branchName][key] = val;
+                    }
+                }
+            });
         } else {
             // Sum numeric fields
             Object.keys(row).forEach(key => {
-                if (typeof row[key] === 'number' && key !== 'id') {
-                    byBranch[branchName][key] = (byBranch[branchName][key] || 0) + row[key];
+                // Check if key is one of our numeric metrics
+                // Or just try to parse it
+                if (key !== 'id' && key !== 'branch_name' && key !== 'date' && key !== 'region' && key !== 'district' && key !== 'dm_name' && key !== 'created_at') {
+                    const rowVal = Number(row[key]);
+                    if (!isNaN(rowVal)) {
+                        const existingVal = Number(byBranch[branchName][key]) || 0;
+                        byBranch[branchName][key] = existingVal + rowVal;
+                    }
                 }
             });
             // Keep non-numeric fields from latest date
@@ -1891,13 +1906,40 @@ function generateAndDownloadReport(branchDetails, fromDate, toDate) {
     // Use passed data source
     const sourceData = branchDetails || state.branchDetails;
 
-    state.rawData.rows.forEach(row => {
-        const branchName = row[idxBranch];
+    // Get list of branches from the sourceData keys to ensure we include all fetched data
+    // Fallback to state.rawData if sourceData is empty (which shouldn't happen if we have data)
+    let branchList = Object.keys(sourceData);
+    if (branchList.length === 0 && state.rawData && state.rawData.rows) {
+        branchList = state.rawData.rows.map(r => r[idxBranch]).filter(b => b);
+    }
+
+    branchList.sort(); // Optional: sort alphabetically
+
+    branchList.forEach(branchName => {
         if (!branchName) return;
 
-        const region = row[idxRegion] || "";
-        const district = row[idxDistrict] || "";
-        const dm = row[idxDM] || "";
+        // Try to get metadata from sourceData first, then fallback to rawData
+        let region = "", district = "", dm = "";
+
+        if (sourceData[branchName]) {
+            // Check target or achievement for metadata
+            const meta = sourceData[branchName].target || sourceData[branchName].achievement;
+            if (meta) {
+                region = meta.region || "";
+                district = meta.district || "";
+                dm = meta.dm_name || meta.dm || "";
+            }
+        }
+
+        // Fallback to rawData for metadata if missing
+        if ((!region || !district || !dm) && state.rawData && state.rawData.rows) {
+            const row = state.rawData.rows.find(r => r[idxBranch] === branchName);
+            if (row) {
+                region = region || row[idxRegion] || "";
+                district = district || row[idxDistrict] || "";
+                dm = dm || row[idxDM] || "";
+            }
+        }
 
         const entry = sourceData[branchName];
 
