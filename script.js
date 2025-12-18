@@ -1889,183 +1889,72 @@ async function downloadCurrentStatusReport() {
 
 // --- DOWNLOAD STATUS COMPARISON PNG ---
 async function downloadStatusComparisonPNG() {
-    // Ensure html2canvas library is loaded
-    if (typeof html2canvas === 'undefined') {
-        console.error('html2canvas is not loaded');
-        showToast('❌ html2canvas library missing', true);
-        return;
-    }
     setLoading(true, "Generating Comparison Image...");
-    console.log('Starting PNG generation');
+
     try {
         // 1. Calculate Dates
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
+
         const todayStr = formatDateISO(today);
         const yesterdayStr = formatDateISO(yesterday);
+
         const todayLabel = today.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
         const yesterdayLabel = yesterday.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-        // 2. Fetch Data (Parallel)
+
+        // 2. Fetch Data (Parallel) - We need RAW data, not global state mutation
         const [todayData, yesterdayData] = await Promise.all([
             fetchAndAggregateData(todayStr, todayStr),
             fetchAndAggregateData(yesterdayStr, yesterdayStr)
         ]);
+
         // 3. Calculate Stats Helper
         const calcStats = (data) => {
             let stats = { targetSet: 0, completed: 0, notStarted: 0 };
+
+            // Iterate over ALL branches known in system (from rawData headers/rows) to match logic
+            // Or just iterate over the data returned. Ideally match total branches.
+            // Let's iterate over ALL branches to be accurate.
             const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
             const allBranches = state.rawData.rows.map(r => r[idxBranch]).filter(b => b);
+
             allBranches.forEach(br => {
                 const entry = data[br] || {};
                 const t = entry.target;
                 const a = entry.achievement;
+
                 if (t && a) stats.completed++;
-                else if (t) stats.targetSet++;
-                else stats.notStarted++;
+                else if (t) stats.targetSet++; // Has target but NO achievement (Pending Achievement)
+                else if (a) stats.targetSet++; // Has achievement but NO target? Treat as "Active/Partial" -> Group with "Target Set" or "Completed"? 
+                // Requirement said: "finished setting target, completed achievement and who have not yet started"
+                // Let's map cleanly:
+                // "Finished Setting Target" -> Only Target? Or Target + Achievement?
+                // User said: "number of people who have finished setting target, completed achievement and who have not yet started"
+                // This usually implies 3 buckets.
+                // 1. Completed Achievement (Green)
+                // 2. Target Set (Yellow) - implies target is set but achievement pending
+                // 3. Not Started (Red) - neither
+
+                // Refined Logic:
+                if (t && a) {
+                    stats.completed++;
+                } else if (t) {
+                    stats.targetSet++;
+                } else {
+                    stats.notStarted++;
+                }
             });
             return stats;
         };
+
         const sToday = calcStats(todayData);
         const sYesterday = calcStats(yesterdayData);
+
         // 4. Render Hidden HTML
         const container = document.getElementById('png-export-container');
-        if (!container) {
-            console.error('png-export-container not found');
-            showToast('❌ Hidden container missing', true);
-            return;
-        }
-        // Make container temporarily visible for rendering
-        container.style.display = 'block';
-        container.style.width = 'auto';
-        container.style.height = 'auto';
+
         container.innerHTML = `
-            <div style="padding: 40px; font-family: 'Inter', sans-serif; background: #F3F4F6;">
-                <div style="background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden;">
-                    <!-- Header -->
-                    <div style="background: #1F2937; padding: 30px; text-align: center;">
-                        <div style="color: #9CA3AF; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">NLPL Daily Reporting</div>
-                        <div style="color: white; font-size: 28px; font-weight: 800;">Status Comparison</div>
-                    </div>
-                    <!-- Content Grid -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #E5E7EB;">
-                        <!-- Yesterday Column -->
-                        <div style="padding: 30px; border-right: 1px solid #E5E7EB;">
-                            <div style="text-align: center; margin-bottom: 24px;">
-                                <div style="font-size: 18px; font-weight: 700; color: #1F2937;">Yesterday</div>
-                                <div style="font-size: 13px; color: #6B7280;">${yesterdayLabel}</div>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 16px;">
-                                ${renderStatRow('✅ Completed', sYesterday.completed, '#D1FAE5', '#065F46')}
-                                ${renderStatRow('🎯 Plans Set', sYesterday.targetSet, '#FEF3C7', '#92400E')}
-                                ${renderStatRow('⏳ Not Started', sYesterday.notStarted, '#FEE2E2', '#991B1B')}
-                            </div>
-                        </div>
-                        <!-- Today Column -->
-                        <div style="padding: 30px;">
-                            <div style="text-align: center; margin-bottom: 24px;">
-                                <div style="font-size: 18px; font-weight: 700; color: #1F2937;">Today</div>
-                                <div style="font-size: 13px; color: #6B7280;">${todayLabel}</div>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 16px;">
-                                ${renderStatRow('✅ Completed', sToday.completed, '#D1FAE5', '#065F46')}
-                                ${renderStatRow('🎯 Plans Set', sToday.targetSet, '#FEF3C7', '#92400E')}
-                                ${renderStatRow('⏳ Not Started', sToday.notStarted, '#FEE2E2', '#991B1B')}
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Footer -->
-                    <div style="padding: 20px; background: #F9FAFB; text-align: center; font-size: 12px; color: #9CA3AF;">
-                        Generated on ${new Date().toLocaleString()}
-                    </div>
-                </div>
-            </div>
-        `;
-        // 5. Capture with html2canvas
-        const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: null });
-        // 6. Download image
-        const link = document.createElement('a');
-        link.download = `Status_Comparison_${todayStr}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        // 7. Cleanup
-        container.innerHTML = '';
-        container.style.display = 'none';
-        setLoading(false);
-        showToast('✅ Image Comparison Downloaded');
-        console.log('PNG generation completed');
-    } catch (err) {
-        console.error('PNG Gen Error:', err);
-        setLoading(false);
-        showToast('❌ Failed to generate comparison image', true);
-    }
-}
-setLoading(true, "Generating Comparison Image...");
-
-try {
-    // 1. Calculate Dates
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const todayStr = formatDateISO(today);
-    const yesterdayStr = formatDateISO(yesterday);
-
-    const todayLabel = today.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-    const yesterdayLabel = yesterday.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-
-    // 2. Fetch Data (Parallel) - We need RAW data, not global state mutation
-    const [todayData, yesterdayData] = await Promise.all([
-        fetchAndAggregateData(todayStr, todayStr),
-        fetchAndAggregateData(yesterdayStr, yesterdayStr)
-    ]);
-
-    // 3. Calculate Stats Helper
-    const calcStats = (data) => {
-        let stats = { targetSet: 0, completed: 0, notStarted: 0 };
-
-        // Iterate over ALL branches known in system (from rawData headers/rows) to match logic
-        // Or just iterate over the data returned. Ideally match total branches.
-        // Let's iterate over ALL branches to be accurate.
-        const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
-        const allBranches = state.rawData.rows.map(r => r[idxBranch]).filter(b => b);
-
-        allBranches.forEach(br => {
-            const entry = data[br] || {};
-            const t = entry.target;
-            const a = entry.achievement;
-
-            if (t && a) stats.completed++;
-            else if (t) stats.targetSet++; // Has target but NO achievement (Pending Achievement)
-            else if (a) stats.targetSet++; // Has achievement but NO target? Treat as "Active/Partial" -> Group with "Target Set" or "Completed"? 
-            // Requirement said: "finished setting target, completed achievement and who have not yet started"
-            // Let's map cleanly:
-            // "Finished Setting Target" -> Only Target? Or Target + Achievement?
-            // User said: "number of people who have finished setting target, completed achievement and who have not yet started"
-            // This usually implies 3 buckets.
-            // 1. Completed Achievement (Green)
-            // 2. Target Set (Yellow) - implies target is set but achievement pending
-            // 3. Not Started (Red) - neither
-
-            // Refined Logic:
-            if (t && a) {
-                stats.completed++;
-            } else if (t) {
-                stats.targetSet++;
-            } else {
-                stats.notStarted++;
-            }
-        });
-        return stats;
-    };
-
-    const sToday = calcStats(todayData);
-    const sYesterday = calcStats(yesterdayData);
-
-    // 4. Render Hidden HTML
-    const container = document.getElementById('png-export-container');
-
-    container.innerHTML = `
             <div style="padding: 40px; font-family: 'Inter', sans-serif; background: #F3F4F6;">
                 <div style="background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden;">
                     <!-- Header -->
@@ -2113,29 +2002,29 @@ try {
             </div>
         `;
 
-    // 5. Capture with html2canvas
-    const canvas = await html2canvas(container, {
-        scale: 2, // High resolution
-        useCORS: true,
-        backgroundColor: null
-    });
+        // 5. Capture with html2canvas
+        const canvas = await html2canvas(container, {
+            scale: 2, // High resolution
+            useCORS: true,
+            backgroundColor: null
+        });
 
-    // 6. Download
-    const link = document.createElement('a');
-    link.download = `Status_Comparison_${todayStr}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+        // 6. Download
+        const link = document.createElement('a');
+        link.download = `Status_Comparison_${todayStr}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
 
-    // 7. Cleanup
-    container.innerHTML = '';
-    setLoading(false);
-    showToast("✅ Image Comparison Downloaded");
+        // 7. Cleanup
+        container.innerHTML = '';
+        setLoading(false);
+        showToast("✅ Image Comparison Downloaded");
 
-} catch (err) {
-    console.error("PNG Gen Error:", err);
-    setLoading(false);
-    showToast("❌ Failed to generate comparison image", true);
-}
+    } catch (err) {
+        console.error("PNG Gen Error:", err);
+        setLoading(false);
+        showToast("❌ Failed to generate comparison image", true);
+    }
 }
 
 function renderStatRow(label, value, bg, color) {
