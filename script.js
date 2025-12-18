@@ -823,6 +823,7 @@ function aggregateDataByBranch(rows) {
 }
 
 // Merge achievement data with plan data when Supabase achievement rows miss values
+// IMPORTANT: Only merges when there is ACTUAL achievement data in Supabase, not empty objects
 function mergeAchievementsWithPlan(branchDetails) {
     const achievementFields = [
         'ftod_actual',
@@ -844,7 +845,25 @@ function mergeAchievementsWithPlan(branchDetails) {
     Object.keys(branchDetails).forEach(branchName => {
         const entry = branchDetails[branchName] || {};
         const plan = entry.target || {};
-        const achievement = entry.achievement || {};
+        const achievement = entry.achievement; // Don't default to empty object here!
+
+        // Only process if there is ACTUAL achievement data from Supabase
+        // Check if entry.achievement exists and has at least one meaningful field 
+        // (e.g., id, branch_name from Supabase, or any non-null achievement field)
+        const hasRealAchievementData = achievement && (
+            achievement.id ||
+            achievement.branch_name ||
+            achievementFields.some(field => {
+                const val = achievement[field];
+                return val !== null && val !== undefined && val !== '' && val !== 0;
+            })
+        );
+
+        if (!hasRealAchievementData) {
+            // No actual achievement data - don't create a fake achievement object
+            return;
+        }
+
         const merged = { ...achievement };
 
         achievementFields.forEach(field => {
