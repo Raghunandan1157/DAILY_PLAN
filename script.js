@@ -3077,64 +3077,7 @@ function calculateDMSummaryStats(branchNames) {
 }
 
 function renderDMSummaryCards(stats) {
-    // 1. Db Done
-    const dbVal = `${stats.disbAcc} A/c | ₹${(stats.disbAmt / 100000).toFixed(2)}L`;
-
-    // 2. Regular Collection % (FTOD + Slipped)
-    const regPlan = stats.ftodPlan + stats.slipPlan;
-    const regAct = stats.ftodAchieve + stats.slipAchieve;
-    const regPct = regPlan > 0 ? Math.round((regAct / regPlan) * 100) : 0;
-
-    // 3. NPA Collection % (Closure)
-    const npaPct = stats.npaClosePlan > 0 ? Math.round((stats.npaCloseAchieve / stats.npaClosePlan) * 100) : 0;
-
-    // 4. PNPA Collection %
-    const pnpaPct = stats.pnpaPlan > 0 ? Math.round((stats.pnpaAchieve / stats.pnpaPlan) * 100) : 0;
-
-    // BOLD COLORS configuration
-    const cards = [
-        {
-            label: "Total Db Done",
-            value: dbVal,
-            bg: "linear-gradient(135deg, #10B981 0%, #059669 100%)", // Green Gradient
-            icon: `<svg class="icon" viewBox="0 0 24 24" style="color:white;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`
-        },
-        {
-            label: "Regular Collection",
-            value: `${regPct}%`,
-            bg: "linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)", // Indigo Gradient
-            icon: `<svg class="icon" viewBox="0 0 24 24" style="color:white;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`
-        },
-        {
-            label: "NPA Collection",
-            value: `${npaPct}%`,
-            bg: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)", // Amber Gradient
-            icon: `<svg class="icon" viewBox="0 0 24 24" style="color:white;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
-        },
-        {
-            label: "PNPA Collection",
-            value: `${pnpaPct}%`,
-            bg: "linear-gradient(135deg, #EC4899 0%, #DB2777 100%)", // Pink Gradient
-            icon: `<svg class="icon" viewBox="0 0 24 24" style="color:white;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`
-        }
-    ];
-
-    return `
-        <div class="dashboard-grid fade-enter" style="margin-bottom: 24px;">
-            ${cards.map(c => `
-                <div class="metric-card" onclick="showToast('We do not have the data to show yet', 'info')" 
-                     style="cursor: pointer; background: ${c.bg}; color: white;">
-                    <div class="metric-header">
-                        <div class="metric-icon" style="background: rgba(255,255,255,0.2); color: white;">
-                            ${c.icon}
-                        </div>
-                    </div>
-                    <div class="metric-value" style="font-size: 20px; color: white;">${c.value}</div>
-                    <div class="metric-title" style="color: rgba(255,255,255,0.9);">${c.label}</div>
-                </div>
-            `).join('')}
-        </div>
-    `;
+    return ""; // Summary cards removed as per user request
 }
 
 function renderHierarchySummaryCard(stats, title) {
