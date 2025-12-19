@@ -1441,16 +1441,16 @@ function renderDashboard() {
             if (state.role === 'DM' && state.viewStack.length === 1 && currentData instanceof Set) {
                 // We are in District View (showing list of branches)
                 const branchList = Array.from(currentData);
-                const dmStats = calculateDMSummaryStats(branchList);
-                summaryHTML = renderDMSummaryCards(dmStats);
+                const aggStats = calculateAggregateStatsForBranches(branchList);
+                summaryHTML = renderHierarchySummaryCard(aggStats, currentTitle);
             }
             // --- DM ROOT SUMMARY (All Districts) ---
             if (state.role === 'DM' && state.viewStack.length === 0) {
                 // We are in Root View (showing list of Districts)
                 // Need to aggregate ALL branches from these districts
                 const allBranches = getAllBranchesFromNode(currentData);
-                const dmStats = calculateDMSummaryStats(allBranches);
-                summaryHTML = renderDMSummaryCards(dmStats);
+                const aggStats = calculateAggregateStatsForBranches(allBranches);
+                summaryHTML = renderHierarchySummaryCard(aggStats, currentTitle);
             }
 
             // Header with Back Button
@@ -2939,8 +2939,12 @@ function calculateAggregateStatsForBranches(branchNames) {
         plansSet: 0,
         completed: 0,
         ftodPlan: 0, ftodAchieve: 0,
+        livedPlan: 0, livedAchieve: 0,
+        pnpaPlan: 0, pnpaAchieve: 0,
         collPlan: 0, collAchieve: 0,
         disbPlan: 0, disbAchieve: 0,
+        disbIglAmtPlan: 0, disbIglAmtAchieve: 0,
+        disbIlAmtPlan: 0, disbIlAmtAchieve: 0,
         kyc: 0
     };
 
@@ -2966,22 +2970,34 @@ function calculateAggregateStatsForBranches(branchNames) {
             const pnpa = safeInt(t.pnpa_plan);
 
             stats.ftodPlan += ftod;
+            stats.livedPlan += lived;
+            stats.pnpaPlan += pnpa;
             stats.collPlan += (ftod + lived + pnpa);
 
-            stats.disbPlan += (safeFloat(t.disb_igl_amt) + safeFloat(t.disb_il_amt));
+            const iglAmt = safeFloat(t.disb_igl_amt);
+            const ilAmt = safeFloat(t.disb_il_amt);
+            stats.disbIglAmtPlan += iglAmt;
+            stats.disbIlAmtPlan += ilAmt;
+            stats.disbPlan += (iglAmt + ilAmt);
         }
 
         // Achievement Data
         if (hasAchieve) {
             const a = entry.achievement;
-            const ftod = safeInt(a.ftod_actual);
+            const ftod = safeInt(a.ftod_actual); // Note: Assuming ftod_actual is correct based on previous fix discussion
             const lived = safeInt(a.nov_25_Slipped_Accounts_Actual);
             const pnpa = safeInt(a.pnpa_actual);
 
             stats.ftodAchieve += ftod;
+            stats.livedAchieve += lived;
+            stats.pnpaAchieve += pnpa;
             stats.collAchieve += (ftod + lived + pnpa);
 
-            stats.disbAchieve += (safeFloat(a.disb_igl_amt) + safeFloat(a.disb_il_amt));
+            const iglAmt = safeFloat(a.disb_igl_amt);
+            const ilAmt = safeFloat(a.disb_il_amt);
+            stats.disbIglAmtAchieve += iglAmt;
+            stats.disbIlAmtAchieve += ilAmt;
+            stats.disbAchieve += (iglAmt + ilAmt);
 
             stats.kyc += (safeInt(a.kyc_fig_igl) + safeInt(a.kyc_il) + safeInt(a.kyc_npa));
         }
@@ -3086,6 +3102,22 @@ function renderHierarchySummaryCard(stats, title) {
     const disbPlanCr = (stats.disbPlan / 10000000).toFixed(2);
     const disbAchieveCr = (stats.disbAchieve / 10000000).toFixed(2);
 
+    // Helpers for subsets
+    const subRow = (label, ach, pln, isCr = false) => {
+        const p = isCr ? (pln / 10000000).toFixed(2) + 'Cr' : pln.toLocaleString();
+        const a = isCr ? (ach / 10000000).toFixed(2) + 'Cr' : ach.toLocaleString();
+        const pct = pln > 0 ? Math.round((ach / pln) * 100) : 0;
+        const col = pct >= 100 ? '#10B981' : (pct >= 80 ? '#F59E0B' : '#EF4444');
+        return `
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-top:2px;">
+                <span>${label}</span>
+                <span>
+                    <span style="color:${col}; font-weight:600;">${a}</span> / ${p}
+                </span>
+            </div>
+        `;
+    };
+
     return `
         <div style="background:var(--bg-body); border:1px solid var(--border-color); border-radius:12px; padding:16px; margin-bottom:20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
@@ -3095,10 +3127,10 @@ function renderHierarchySummaryCard(stats, title) {
                 </div>
             </div>
             
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
                 <!-- Collection -->
                 <div>
-                    <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">TOTAL COLLECTION</div>
+                    <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; font-weight:600;">TOTAL COLLECTION</div>
                     <div style="display:flex; align-items:baseline; gap:6px;">
                         <span style="font-weight:700; font-size:16px;">${stats.collAchieve.toLocaleString()}</span>
                         <span style="font-size:11px; color:var(--text-secondary);">/ ${stats.collPlan.toLocaleString()}</span>
@@ -3106,12 +3138,16 @@ function renderHierarchySummaryCard(stats, title) {
                     <div style="height:4px; background:var(--border-color); border-radius:2px; margin-top:6px; overflow:hidden;">
                         <div style="height:100%; width:${collPct}%; background:${collPct >= 100 ? '#10B981' : '#F59E0B'};"></div>
                     </div>
-                    <div style="text-align:right; font-size:10px; font-weight:600; margin-top:2px; color:${collPct >= 100 ? '#10B981' : '#F59E0B'};">${collPct}%</div>
+                    <div style="margin-top:6px; padding-top:4px; border-top:1px dashed var(--border-color);">
+                        ${subRow("FTOD Accounts", stats.ftodAchieve, stats.ftodPlan)}
+                        ${subRow("Slipped (Nov 25)", stats.livedAchieve, stats.livedPlan)}
+                        ${subRow("PNPA Accounts", stats.pnpaAchieve, stats.pnpaPlan)}
+                    </div>
                 </div>
 
                 <!-- Disbursement -->
                  <div>
-                    <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">TOTAL DISBURSEMENT</div>
+                    <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; font-weight:600;">TOTAL DISBURSEMENT</div>
                     <div style="display:flex; align-items:baseline; gap:6px;">
                         <span style="font-weight:700; font-size:16px;">₹${disbAchieveCr}Cr</span>
                         <span style="font-size:11px; color:var(--text-secondary);">/ ${disbPlanCr}Cr</span>
@@ -3119,12 +3155,15 @@ function renderHierarchySummaryCard(stats, title) {
                     <div style="height:4px; background:var(--border-color); border-radius:2px; margin-top:6px; overflow:hidden;">
                         <div style="height:100%; width:${disbPct}%; background:${disbPct >= 100 ? '#10B981' : '#8B5CF6'};"></div>
                     </div>
-                    <div style="text-align:right; font-size:10px; font-weight:600; margin-top:2px; color:${disbPct >= 100 ? '#10B981' : '#8B5CF6'};">${disbPct}%</div>
+                    <div style="margin-top:6px; padding-top:4px; border-top:1px dashed var(--border-color);">
+                        ${subRow("IGL & FIG (Amt)", stats.disbIglAmtAchieve, stats.disbIglAmtPlan, true)}
+                        ${subRow("IL (Amt)", stats.disbIlAmtAchieve, stats.disbIlAmtPlan, true)}
+                    </div>
                 </div>
 
                 <!-- KYC -->
                 <div>
-                     <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">TOTAL KYC</div>
+                     <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; font-weight:600;">TOTAL KYC</div>
                      <div style="font-weight:700; font-size:16px;">${stats.kyc.toLocaleString()}</div>
                      <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Sourcing Generated</div>
                 </div>
