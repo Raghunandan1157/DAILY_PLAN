@@ -3586,6 +3586,22 @@ function openBranchModal(branchName) {
                 input.placeholder = "Enter Achievement...";
             }
         });
+
+        // SPECIAL REQUEST: Block Disbursement Achievement Fields
+        // IGL & FIG (Accounts, Amount) and IL (Accounts, Amount)
+        // ids: disb_igl_acc, disb_igl_amt, disb_il_acc, disb_il_amt
+        const blockedFields = ['disb_igl_acc', 'disb_igl_amt', 'disb_il_acc', 'disb_il_amt'];
+        blockedFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.disabled = true;
+                el.value = ""; // Clear value
+                el.placeholder = "Blocked";
+                el.style.backgroundColor = "#fee2e2"; // Light red
+                el.style.borderColor = "#ef4444"; // Red border
+                el.style.cursor = "not-allowed";
+            }
+        });
     }
     else {
         // STATE 3: VIEW ONLY - Beautiful UI with Percentage Calculations
