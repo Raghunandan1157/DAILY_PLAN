@@ -1899,6 +1899,8 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
     const tAch = { ftod:0, slip:0, pnpa:0, npaAct:0, npaClose:0, od:0, ns:0, disbIglAcc:0, disbIglAmt:0, disbIlAcc:0, disbIlAmt:0, kycFig:0, kycIl:0, kycNpa:0 };
 
     let bodyRows = '';
+    let totalRowAchievementSum = 0;
+    let rowCountForAvg = 0;
 
     sortedRows.forEach(row => {
         const p = row.plan;
@@ -1953,6 +1955,16 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
         tAch.disbIlAcc += a_disbIlAcc; tAch.disbIlAmt += a_disbIlAmt;
         tAch.kycFig += a_kycFig; tAch.kycIl += a_kycIl; tAch.kycNpa += a_kycNpa;
 
+        // Calc Row Achievement % for Avg
+        const rowCollPlan = p_ftod + p_slip + p_pnpa;
+        const rowCollAch = a_ftod + a_slip + a_pnpa;
+        const rowPct = rowCollPlan > 0 ? (rowCollAch / rowCollPlan) * 100 : 0;
+
+        if (rowCollPlan > 0) {
+            totalRowAchievementSum += rowPct;
+            rowCountForAvg++;
+        }
+
         bodyRows += `
             <tr style="font-size: 10px;">
                 <td style="background: ${colors.white}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: left; font-weight: 600;">${row.name}</td>
@@ -1994,6 +2006,43 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
             </tr>
         `;
     });
+
+    // --- EXECUTIVE SUMMARY METRICS ---
+    const totalCollPlan = tPlan.ftod + tPlan.slip + tPlan.pnpa;
+    const totalCollAch = tAch.ftod + tAch.slip + tAch.pnpa;
+    const totalCollPct = totalCollPlan > 0 ? Math.round((totalCollAch / totalCollPlan) * 100) : 0;
+
+    const totalDisbAmt = tAch.disbIglAmt + tAch.disbIlAmt;
+    const netNpaChange = tAch.npaAct - tAch.npaClose; // Net = Activation - Closure
+    const avgAchPct = rowCountForAvg > 0 ? Math.round(totalRowAchievementSum / rowCountForAvg) : 0;
+
+    const netNpaLabel = netNpaChange > 0 ? `+${netNpaChange}` : `${netNpaChange}`;
+    const netNpaColor = netNpaChange > 0 ? '#EF4444' : '#10B981'; // Red if increased, Green if decreased
+
+    const summaryHTML = `
+        <div style="display:flex; justify-content:space-around; margin-bottom:20px; font-family:Arial, sans-serif;">
+            <div style="border:1px solid #ddd; border-radius:8px; padding:16px; width:22%; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase;">Total Collection</div>
+                <div style="font-size:24px; font-weight:700; color:#4F46E5; margin-top:8px;">${totalCollPct}%</div>
+                <div style="font-size:10px; color:#999; margin-top:4px;">${fmt(totalCollAch)} / ${fmt(totalCollPlan)}</div>
+            </div>
+            <div style="border:1px solid #ddd; border-radius:8px; padding:16px; width:22%; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase;">Total Disbursement</div>
+                <div style="font-size:24px; font-weight:700; color:#10B981; margin-top:8px;">₹${(totalDisbAmt / 10000000).toFixed(2)}Cr</div>
+                <div style="font-size:10px; color:#999; margin-top:4px;">IGL & IL</div>
+            </div>
+            <div style="border:1px solid #ddd; border-radius:8px; padding:16px; width:22%; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase;">Net NPA Change</div>
+                <div style="font-size:24px; font-weight:700; color:${netNpaColor}; margin-top:8px;">${netNpaLabel}</div>
+                <div style="font-size:10px; color:#999; margin-top:4px;">Act: ${tAch.npaAct} | Close: ${tAch.npaClose}</div>
+            </div>
+            <div style="border:1px solid #ddd; border-radius:8px; padding:16px; width:22%; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase;">Avg Achievement</div>
+                <div style="font-size:24px; font-weight:700; color:#F59E0B; margin-top:8px;">${avgAchPct}%</div>
+                <div style="font-size:10px; color:#999; margin-top:4px;">Per Branch/Row</div>
+            </div>
+        </div>
+    `;
 
     // Grand Total Row
     const totalRow = `
@@ -2056,13 +2105,17 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
     `;
 
     return `
-        <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: auto; background:white;">
+        <div style="background:white; padding:20px;">
             <!-- Title -->
-            <tr>
-                <td colspan="30" style="text-align: center; font-weight: bold; font-size: 14px; padding: 12px; background: ${colors.white}; border: 1px solid ${colors.border}; color:black;">
-                    ${title}
-                </td>
-            </tr>
+            <div style="text-align: center; font-weight: bold; font-size: 18px; padding: 12px; font-family:Arial, sans-serif; margin-bottom:20px;">
+                ${title}
+            </div>
+
+            <!-- EXECUTIVE SUMMARY -->
+            ${summaryHTML}
+
+            <!-- MAIN TABLE -->
+            <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: 100%; background:white;">
             <!-- Section Headers -->
             <tr style="font-weight: bold; font-size: 11px;">
                 <td rowspan="2" style="background: ${colors.white}; border: 1px solid ${colors.border}; padding: 4px 8px; text-align: center; vertical-align:middle; width: 120px;">${firstColHeader}</td>
@@ -2088,7 +2141,8 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
 
             ${bodyRows}
             ${totalRow}
-        </table>
+            </table>
+        </div>
     `;
 }
 
