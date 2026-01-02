@@ -1552,13 +1552,14 @@ function renderReports(buffer) {
             <!-- 3. ACTIONS -->
             <div style="padding: 16px; border-top: 1px solid var(--border-color);">
                 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px;">
-                    <button class="btn btn-primary" onclick="handleGenerateReports()" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
-                        <svg class="icon" viewBox="0 0 24 24" style="stroke: white; width: 20px; height: 20px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-                        Generate Daily Reports
+                    <button class="btn btn-outline" onclick="handleGeneratePlanReport()" style="padding:12px 24px; border-color: var(--primary); color: var(--primary); font-size: 15px; font-weight: 600;">
+                        <svg class="icon" viewBox="0 0 24 24" style="stroke: currentColor; width: 18px; height: 18px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                        Generate Plan Report
                     </button>
-                </div>
-                <div style="margin-top: 8px; text-align: center; color: var(--text-secondary); font-size: 12px;">
-                    Generates separate Plan and Achievement PNGs for the selected date and level.
+                    <button class="btn btn-primary" onclick="handleGenerateBothReports()" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
+                        <svg class="icon" viewBox="0 0 24 24" style="stroke: white; width: 20px; height: 20px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Generate Plan & Achievement Reports
+                    </button>
                 </div>
             </div>
         </div>
@@ -1685,8 +1686,8 @@ function getReportRows(level) {
 
 // --- REPORT GENERATION ---
 
-// Main entry point
-async function handleGenerateReports() {
+// Generate Only Plan Report
+async function handleGeneratePlanReport() {
     // 1. Validate
     if (!state.branchDetails || Object.keys(state.branchDetails).length === 0) {
         showToast("No data available to generate reports.", "alert");
@@ -1697,21 +1698,46 @@ async function handleGenerateReports() {
     const dateStr = state.systemDate;
     const dateDisplay = formatDateForDisplay(dateStr);
 
-    setLoading(true, "Generating Daily Reports...");
+    setLoading(true, "Generating Plan Report...");
 
     try {
-        // --- 2. GENERATE PLAN PNG ---
-        // Generates ONLY Plan columns
+        // GENERATE PLAN PNG
         await generateReportPNG('PLAN', level, dateStr, dateDisplay);
 
-        // Small delay to ensure browser handles first download
+        showToast("✅ Plan Report Generated!", "check");
+    } catch (e) {
+        console.error("Report Generation Error:", e);
+        showToast("Error generating report.", "alert");
+    } finally {
+        setLoading(false);
+    }
+}
+
+// Generate Both Plan & Achievement Reports
+async function handleGenerateBothReports() {
+    // 1. Validate
+    if (!state.branchDetails || Object.keys(state.branchDetails).length === 0) {
+        showToast("No data available to generate reports.", "alert");
+        return;
+    }
+
+    const level = state.reportLevel; // REGION, DISTRICT, BRANCH
+    const dateStr = state.systemDate;
+    const dateDisplay = formatDateForDisplay(dateStr);
+
+    setLoading(true, "Generating Both Reports...");
+
+    try {
+        // --- 1. GENERATE PLAN PNG ---
+        await generateReportPNG('PLAN', level, dateStr, dateDisplay);
+
+        // Small delay to ensure browser handles first download without blocking
         await new Promise(r => setTimeout(r, 1000));
 
-        // --- 3. GENERATE ACHIEVEMENT PNG ---
-        // Generates ONLY Achievement columns
+        // --- 2. GENERATE ACHIEVEMENT PNG ---
         await generateReportPNG('ACHIEVEMENT', level, dateStr, dateDisplay);
 
-        showToast("✅ Reports Generated Successfully!", "check");
+        showToast("✅ Both Reports Generated!", "check");
     } catch (e) {
         console.error("Report Generation Error:", e);
         showToast("Error generating reports.", "alert");
