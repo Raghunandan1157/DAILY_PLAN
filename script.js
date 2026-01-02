@@ -147,6 +147,7 @@ let state = {
     isLoading: false, // Track loading state
     realtimeChannels: [], // Track subscriptions for cleanup
     viewMode: 'PLAN', // 'PLAN' (Plan only) or 'REVIEW' (Plan vs Achievement)
+    reportLevel: 'BRANCH', // 'BRANCH', 'DISTRICT', 'REGION'
     dateFrom: null, // Range Start
     dateTo: null,   // Range End
     isDragging: false,
@@ -287,6 +288,18 @@ function toggleViewMode() {
 
     // Re-render
     renderDashboard();
+}
+
+function setReportLevel(level) {
+    state.reportLevel = level;
+    // Re-render Reports Tab (since buttons are there)
+    if (state.activeTab === 'reports') {
+        const buffer = document.createElement("div");
+        renderReports(buffer);
+        const container = document.getElementById("dashboard-container");
+        container.innerHTML = "";
+        container.appendChild(buffer);
+    }
 }
 
 function updateViewModeUI() {
@@ -1502,19 +1515,32 @@ function renderReports(buffer) {
                 <div style="font-size:12px; color:var(--text-secondary);">Select the data points you want to include in your report.</div>
             </div>
 
-            <!-- 1. DATE SELECTION -->
+            <!-- 1. DATE SELECTION & LEVEL -->
             <div style="padding: 16px; border-bottom: 1px solid var(--border-color);">
-                <div style="font-size:14px; font-weight:600; margin-bottom:12px;">1. Select Date Range</div>
-                <div style="display:flex; gap:12px; align-items:center;">
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn btn-outline" onclick="setReportDate(-1)">Yesterday</button>
-                        <button class="btn btn-primary" onclick="setReportDate(0)">Today</button>
-                        <button class="btn btn-outline" onclick="setReportDate(1)">Tomorrow</button>
+                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+                    <div>
+                        <div style="font-size:14px; font-weight:600; margin-bottom:12px;">1. Select Date Range</div>
+                        <div style="display:flex; gap:12px; align-items:center;">
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-outline" onclick="setReportDate(-1)">Yesterday</button>
+                                <button class="btn btn-primary" onclick="setReportDate(0)">Today</button>
+                                <button class="btn btn-outline" onclick="setReportDate(1)">Tomorrow</button>
+                            </div>
+                            <div style="width:1px; height:24px; background:var(--border-color); margin:0 8px;"></div>
+                            <input type="date" id="reportDateInput" value="${state.systemDate}"
+                                onchange="state.systemDate = this.value; updateHeaderDate(this.value); fetchSupabaseData();"
+                                style="padding:8px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-body); color:var(--text-primary);">
+                        </div>
                     </div>
-                    <div style="width:1px; height:24px; background:var(--border-color); margin:0 8px;"></div>
-                    <input type="date" id="reportDateInput" value="${state.systemDate}" 
-                        onchange="state.systemDate = this.value; updateHeaderDate(this.value); fetchSupabaseData();"
-                        style="padding:8px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-body); color:var(--text-primary);">
+
+                    <div>
+                        <div style="font-size:14px; font-weight:600; margin-bottom:12px;">2. Report Level</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn ${state.reportLevel === 'REGION' ? 'btn-primary' : 'btn-outline'}" onclick="setReportLevel('REGION')">Region Level</button>
+                            <button class="btn ${state.reportLevel === 'DISTRICT' ? 'btn-primary' : 'btn-outline'}" onclick="setReportLevel('DISTRICT')">District Level</button>
+                            <button class="btn ${state.reportLevel === 'BRANCH' ? 'btn-primary' : 'btn-outline'}" onclick="setReportLevel('BRANCH')">Branch Level</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1596,6 +1622,81 @@ function getCellColor(achievement, plan) {
     if (percentage >= 100) return '#D1FAE5'; // Green - Met or exceeded
     if (percentage >= 50) return '#FEF3C7';   // Yellow - 50-99%
     return '#FECACA';                          // Light red - Below 50%
+}
+
+// --- REPORT AGGREGATION HELPER ---
+function getReportRows(level) {
+    const rows = [];
+    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
+    const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
+    const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
+    const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
+
+    // Helper to sum objects (only numeric values)
+    const sumObjects = (acc, curr) => {
+        if (!curr) return acc;
+        Object.keys(curr).forEach(key => {
+            // Skip non-numeric fields or IDs
+            if (['id', 'branch_name', 'date', 'region', 'district', 'dm_name', 'created_at'].includes(key)) return;
+
+            const val = Number(curr[key]);
+            if (!isNaN(val)) {
+                acc[key] = (Number(acc[key]) || 0) + val;
+            }
+        });
+        return acc;
+    };
+
+    if (level === 'BRANCH') {
+        state.rawData.rows.forEach(r => {
+            const name = r[idxBranch];
+            const entry = state.branchDetails[name] || {};
+            rows.push({
+                name: name,
+                region: r[idxRegion],
+                district: r[idxDistrict],
+                dm: r[idxDM],
+                target: entry.target || {},
+                achievement: entry.achievement || {}
+            });
+        });
+        return rows;
+    }
+
+    // Aggregation for REGION / DISTRICT
+    const groups = {};
+
+    state.rawData.rows.forEach(r => {
+        const branchName = r[idxBranch];
+        const region = r[idxRegion] || "Unknown";
+        const district = r[idxDistrict] || "Unknown";
+        // const dm = r[idxDM]; // Unused for grouping key, but can be part of metadata
+
+        let key;
+        if (level === 'REGION') key = region;
+        else if (level === 'DISTRICT') key = district;
+
+        if (!key) return;
+
+        if (!groups[key]) {
+            groups[key] = {
+                name: key, // Will be Region Name or District Name
+                region: level === 'REGION' ? key : region,
+                district: level === 'DISTRICT' ? key : 'All',
+                dm: 'Multiple',
+                target: {},
+                achievement: {}
+            };
+        }
+
+        const entry = state.branchDetails[branchName];
+        if (entry) {
+            if (entry.target) groups[key].target = sumObjects(groups[key].target, entry.target);
+            if (entry.achievement) groups[key].achievement = sumObjects(groups[key].achievement, entry.achievement);
+        }
+    });
+
+    return Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
 }
 
 // --- DOWNLOAD PLAN REPORT (Basic Plan Data Only) ---
@@ -1723,21 +1824,15 @@ function downloadPlanReport() {
         kycFig: 0, kycIl: 0, kycNpa: 0
     };
 
-    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
-    const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
-    const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
-    const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
+    const reportRows = getReportRows(state.reportLevel);
 
-    state.rawData.rows.forEach(row => {
-        const branchName = row[idxBranch];
-        if (!branchName) return;
+    reportRows.forEach(row => {
+        const branchName = row.name;
+        const region = row.region || "";
+        const district = row.district || "";
+        const dm = row.dm || "";
 
-        const region = row[idxRegion] || "";
-        const district = row[idxDistrict] || "";
-        const dm = row[idxDM] || "";
-
-        const entry = state.branchDetails[branchName];
-        const t = entry && entry.target ? entry.target : {};
+        const t = row.target || {};
 
         // MAPPING - Only use target (plan) data
         const ftodAct = getInt(t.ftod_actual);
@@ -1881,25 +1976,21 @@ function generatePlanTableHTML(type, dateStr) {
         header: '#4682B4'     // Steel blue for main header
     };
 
-    // Build rows data
-    const rows = [];
-    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
-    const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
+    // Build rows data using aggregated rows
+    // This allows the PNG to reflect the selected level
+    const reportRows = getReportRows(state.reportLevel);
 
-    // Group by region for organization
+    // Group by region for organization (even if aggregating by region, we group by region)
+    // If level is REGION, regionMap will have 1 item per region array
     const regionMap = {};
 
-    state.rawData.rows.forEach(row => {
-        const branchName = row[idxBranch];
-        if (!branchName) return;
+    reportRows.forEach(row => {
+        const branchName = row.name;
+        // If level is REGION, region name is in row.region (which is same as name)
+        const region = row.region || "Unknown";
 
-        const region = row[idxRegion] || "Unknown";
-        const entry = state.branchDetails[branchName];
-
-        // Data source:
-        // - PLAN: Uses entry.target which is from 'daily_reports' table
-        // - ACHIEVEMENT: Uses entry.achievement which is from 'daily_reports_achievements' table
-        const data = isPlan ? (entry?.target || {}) : (entry?.achievement || {});
+        // Data source
+        const data = isPlan ? (row.target || {}) : (row.achievement || {});
 
         if (!regionMap[region]) regionMap[region] = [];
 
@@ -2210,7 +2301,27 @@ async function downloadAchievementPlanReportDirectly() {
             return;
         }
 
-        await generateAndDownloadReport(reportData, fromDate, toDate);
+        // Apply aggregation if needed (using temporary state logic)
+        // Since getReportRows uses state.branchDetails and state.rawData,
+        // we need to temporarily inject the fetched range data into branchDetails to use getReportRows logic
+        // OR refactor getReportRows. Refactoring is cleaner but passing data source is safer.
+
+        // Let's manually reuse getReportRows logic here for the range data
+        // BUT fetchAndAggregateData returns a MAP branch->details.
+        // getReportRows expects state.branchDetails to be that map.
+        // So we can mock state.branchDetails for getReportRows if we want to reuse it exactly.
+
+        const originalDetails = state.branchDetails;
+        state.branchDetails = reportData; // temporarily swap for aggregation
+
+        let reportRows = [];
+        try {
+            reportRows = getReportRows(state.reportLevel);
+        } finally {
+            state.branchDetails = originalDetails; // restore
+        }
+
+        await generateAndDownloadReport(reportRows, fromDate, toDate);
 
         setLoading(false);
         showToast(`✅ Report Downloaded: ${label}`);
@@ -2225,7 +2336,7 @@ async function downloadAchievementPlanReportDirectly() {
 
 
 
-function generateAndDownloadReport(branchDetails, fromDate, toDate) {
+function generateAndDownloadReport(reportRows, fromDate, toDate) {
     // Colors
     const cPeach = '#FFDAB9';
     const cGreen = '#D1FAE5';
@@ -2363,54 +2474,38 @@ function generateAndDownloadReport(branchDetails, fromDate, toDate) {
         kycFig: 0, kycIl: 0, kycNpa: 0
     };
 
-    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
-    const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
-    const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
-    const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
+    // Use passed report rows
+    // If passed data is still a map (legacy fallback), convert it using getReportRows logic style or just iterate keys
+    let rowsToProcess = reportRows;
 
-    // Use passed data source
-    const sourceData = branchDetails || state.branchDetails;
-
-    // Get list of branches from the sourceData keys to ensure we include all fetched data
-    // Fallback to state.rawData if sourceData is empty (which shouldn't happen if we have data)
-    let branchList = Object.keys(sourceData);
-    if (branchList.length === 0 && state.rawData && state.rawData.rows) {
-        branchList = state.rawData.rows.map(r => r[idxBranch]).filter(b => b);
+    // Check if it's an array (from getReportRows) or object (map)
+    if (!Array.isArray(reportRows)) {
+        // Fallback or if called with map directly
+        // We assume if map, it's branch level map
+        const sourceData = reportRows || state.branchDetails;
+        rowsToProcess = Object.keys(sourceData).sort().map(k => {
+            const entry = sourceData[k];
+            // Try to find meta
+            const meta = entry.target || entry.achievement || {};
+            return {
+                name: k,
+                region: meta.region || "",
+                district: meta.district || "",
+                dm: meta.dm_name || meta.dm || "",
+                target: entry.target || {},
+                achievement: entry.achievement || {}
+            };
+        });
     }
 
-    branchList.sort(); // Optional: sort alphabetically
+    rowsToProcess.forEach(row => {
+        const branchName = row.name;
+        const region = row.region || "";
+        const district = row.district || "";
+        const dm = row.dm || "";
 
-    branchList.forEach(branchName => {
-        if (!branchName) return;
-
-        // Try to get metadata from sourceData first, then fallback to rawData
-        let region = "", district = "", dm = "";
-
-        if (sourceData[branchName]) {
-            // Check target or achievement for metadata
-            const meta = sourceData[branchName].target || sourceData[branchName].achievement;
-            if (meta) {
-                region = meta.region || "";
-                district = meta.district || "";
-                dm = meta.dm_name || meta.dm || "";
-            }
-        }
-
-        // Fallback to rawData for metadata if missing
-        if ((!region || !district || !dm) && state.rawData && state.rawData.rows) {
-            const row = state.rawData.rows.find(r => r[idxBranch] === branchName);
-            if (row) {
-                region = region || row[idxRegion] || "";
-                district = district || row[idxDistrict] || "";
-                dm = dm || row[idxDM] || "";
-            }
-        }
-
-        const entry = sourceData[branchName];
-
-        // Separate achievement and target data for comparison
-        const a = entry && entry.achievement ? entry.achievement : {};
-        const t = entry && entry.target ? entry.target : {};
+        const a = row.achievement || {};
+        const t = row.target || {};
 
         // MAPPING - Use achievement for actual, target for plan
         const ftodAct = getInt(a.ftod_actual);
