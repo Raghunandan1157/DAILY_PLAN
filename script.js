@@ -1713,7 +1713,7 @@ async function handleGeneratePlanReport() {
     }
 }
 
-// Generate Both Plan & Achievement Reports
+// Generate Both Plan & Achievement Reports (Combined Side-by-Side)
 async function handleGenerateBothReports() {
     // 1. Validate
     if (!state.branchDetails || Object.keys(state.branchDetails).length === 0) {
@@ -1725,22 +1725,26 @@ async function handleGenerateBothReports() {
     const dateStr = state.systemDate;
     const dateDisplay = formatDateForDisplay(dateStr);
 
-    setLoading(true, "Generating Both Reports...");
+    setLoading(true, "Generating Combined Report...");
 
     try {
-        // --- 1. GENERATE PLAN PNG ---
-        await generateReportPNG('PLAN', level, dateStr, dateDisplay);
+        // 1. Get Data for both
+        const planRows = getAggregatedReportData(level, true);
+        const achieveRows = getAggregatedReportData(level, false);
 
-        // Small delay to ensure browser handles first download without blocking
-        await new Promise(r => setTimeout(r, 1000));
+        // 2. Generate Combined HTML
+        const reportTitle = `Plan vs Achievement – ${level} – ${dateDisplay}`;
+        const html = generateCombinedReportHTML(reportTitle, level, planRows, achieveRows);
 
-        // --- 2. GENERATE ACHIEVEMENT PNG ---
-        await generateReportPNG('ACHIEVEMENT', level, dateStr, dateDisplay);
+        // 3. Convert & Download
+        // plan_vs_achievement_region_2023-10-25.png
+        const filename = `plan_vs_achievement_${level.toLowerCase()}_${dateStr}.png`;
+        await convertTableToPNG(html, filename);
 
-        showToast("✅ Both Reports Generated!", "check");
+        showToast("✅ Combined Report Generated!", "check");
     } catch (e) {
         console.error("Report Generation Error:", e);
-        showToast("Error generating reports.", "alert");
+        showToast("Error generating report.", "alert");
     } finally {
         setLoading(false);
     }
@@ -1852,7 +1856,297 @@ function getAggregatedReportData(level, isPlan) {
     return Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
 }
 
-// Generate HTML Table string
+// Generate Combined HTML Table string (Side-by-Side)
+function generateCombinedReportHTML(title, level, planRows, achieveRows) {
+    // Colors
+    const colors = {
+        white: '#FFFFFF',
+        header: '#4682B4',
+        planBg: '#F0F8FF',      // AliceBlue for Plan section header
+        achieveBg: '#F0FFF0',   // HoneyDew for Achievement section header
+
+        // Data Columns
+        ftod: '#E0F2FE',
+        slipped: '#DCFCE7',
+        pnpa: '#FCE7F3',
+        npa: '#FEF9C3',
+        fy2526: '#F3F4F6',
+        disb: '#FFEDD5',
+        kyc: '#F3E8FF',
+
+        border: '#000000'
+    };
+
+    const firstColHeader = level === 'BRANCH' ? 'BRANCH' : (level === 'DISTRICT' ? 'DISTRICT' : 'REGION');
+    const fmt = n => n === 0 ? '-' : n.toLocaleString('en-IN');
+
+    // 1. Merge Rows by Name
+    const mergedMap = new Map();
+    planRows.forEach(r => mergedMap.set(r.name, { name: r.name, plan: r.data || {}, achieve: {} }));
+    achieveRows.forEach(r => {
+        if (!mergedMap.has(r.name)) {
+            mergedMap.set(r.name, { name: r.name, plan: {}, achieve: r.data || {} });
+        } else {
+            mergedMap.get(r.name).achieve = r.data || {};
+        }
+    });
+
+    // Sort by name
+    const sortedRows = Array.from(mergedMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+    // Totals
+    const tPlan = { ftod:0, slip:0, pnpa:0, npaAct:0, npaClose:0, od:0, ns:0, disbIglAcc:0, disbIglAmt:0, disbIlAcc:0, disbIlAmt:0, kycFig:0, kycIl:0, kycNpa:0 };
+    const tAch = { ftod:0, slip:0, pnpa:0, npaAct:0, npaClose:0, od:0, ns:0, disbIglAcc:0, disbIglAmt:0, disbIlAcc:0, disbIlAmt:0, kycFig:0, kycIl:0, kycNpa:0 };
+
+    let bodyRows = '';
+    let totalRowAchievementSum = 0;
+    let rowCountForAvg = 0;
+
+    sortedRows.forEach(row => {
+        const p = row.plan;
+        const a = row.achieve;
+
+        // --- EXTRACT VALUES ---
+
+        // PLAN Values
+        const p_ftod = parseInt(p.ftod_plan) || 0;
+        const p_slip = parseInt(p.nov_25_Slipped_Accounts_Plan) || 0;
+        const p_pnpa = parseInt(p.pnpa_plan) || 0;
+        const p_npaAct = parseInt(p.npa_activation) || 0;
+        const p_npaClose = parseInt(p.npa_closure) || 0;
+        const p_od = parseInt(p.fy_od_plan) || 0;
+        const p_ns = parseInt(p.fy_non_start_plan) || 0;
+        const p_disbIglAcc = parseInt(p.disb_igl_acc) || 0;
+        const p_disbIglAmt = parseInt(p.disb_igl_amt) || 0;
+        const p_disbIlAcc = parseInt(p.disb_il_acc) || 0;
+        const p_disbIlAmt = parseInt(p.disb_il_amt) || 0;
+        const p_kycFig = parseInt(p.kyc_fig_igl) || 0;
+        const p_kycIl = parseInt(p.kyc_il) || 0;
+        const p_kycNpa = parseInt(p.kyc_npa) || 0;
+
+        // ACHIEVE Values
+        const a_ftod = parseInt(a.ftod_actual) || 0;
+        const a_slip = parseInt(a.nov_25_Slipped_Accounts_Actual) || 0;
+        const a_pnpa = parseInt(a.pnpa_actual) || 0;
+        const a_npaAct = parseInt(a.npa_activation) || 0;
+        const a_npaClose = parseInt(a.npa_closure) || 0;
+        const a_od = parseInt(a.fy_od_acc) || 0;
+        const a_ns = parseInt(a.fy_non_start_acc) || 0;
+        const a_disbIglAcc = parseInt(a.disb_igl_acc) || 0;
+        const a_disbIglAmt = parseInt(a.disb_igl_amt) || 0;
+        const a_disbIlAcc = parseInt(a.disb_il_acc) || 0;
+        const a_disbIlAmt = parseInt(a.disb_il_amt) || 0;
+        const a_kycFig = parseInt(a.kyc_fig_igl) || 0;
+        const a_kycIl = parseInt(a.kyc_il) || 0;
+        const a_kycNpa = parseInt(a.kyc_npa) || 0;
+
+        // Update Totals
+        tPlan.ftod += p_ftod; tPlan.slip += p_slip; tPlan.pnpa += p_pnpa;
+        tPlan.npaAct += p_npaAct; tPlan.npaClose += p_npaClose;
+        tPlan.od += p_od; tPlan.ns += p_ns;
+        tPlan.disbIglAcc += p_disbIglAcc; tPlan.disbIglAmt += p_disbIglAmt;
+        tPlan.disbIlAcc += p_disbIlAcc; tPlan.disbIlAmt += p_disbIlAmt;
+        tPlan.kycFig += p_kycFig; tPlan.kycIl += p_kycIl; tPlan.kycNpa += p_kycNpa;
+
+        tAch.ftod += a_ftod; tAch.slip += a_slip; tAch.pnpa += a_pnpa;
+        tAch.npaAct += a_npaAct; tAch.npaClose += a_npaClose;
+        tAch.od += a_od; tAch.ns += a_ns;
+        tAch.disbIglAcc += a_disbIglAcc; tAch.disbIglAmt += a_disbIglAmt;
+        tAch.disbIlAcc += a_disbIlAcc; tAch.disbIlAmt += a_disbIlAmt;
+        tAch.kycFig += a_kycFig; tAch.kycIl += a_kycIl; tAch.kycNpa += a_kycNpa;
+
+        // Calc Row Achievement % for Avg
+        const rowCollPlan = p_ftod + p_slip + p_pnpa;
+        const rowCollAch = a_ftod + a_slip + a_pnpa;
+        const rowPct = rowCollPlan > 0 ? (rowCollAch / rowCollPlan) * 100 : 0;
+
+        if (rowCollPlan > 0) {
+            totalRowAchievementSum += rowPct;
+            rowCountForAvg++;
+        }
+
+        bodyRows += `
+            <tr style="font-size: 10px;">
+                <td style="background: ${colors.white}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: left; font-weight: 600;">${row.name}</td>
+
+                <!-- PLAN DATA -->
+                <td style="background: ${colors.ftod}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_ftod)}</td>
+                <td style="background: ${colors.slipped}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_slip)}</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_pnpa)}</td>
+                <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_npaAct)}</td>
+                <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_npaClose)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_od)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_ns)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_disbIglAcc)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: right;">${fmt(p_disbIglAmt)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_disbIlAcc)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: right;">${fmt(p_disbIlAmt)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_kycFig)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_kycIl)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_kycNpa)}</td>
+
+                <!-- SEPARATOR -->
+                <td style="background: #000; width: 2px; padding: 0;"></td>
+
+                <!-- ACHIEVEMENT DATA -->
+                <td style="background: ${colors.ftod}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_ftod)}</td>
+                <td style="background: ${colors.slipped}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_slip)}</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_pnpa)}</td>
+                <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_npaAct)}</td>
+                <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_npaClose)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_od)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_ns)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_disbIglAcc)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: right;">${fmt(a_disbIglAmt)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_disbIlAcc)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: right;">${fmt(a_disbIlAmt)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_kycFig)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_kycIl)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(a_kycNpa)}</td>
+            </tr>
+        `;
+    });
+
+    // --- EXECUTIVE SUMMARY METRICS ---
+    const totalCollPlan = tPlan.ftod + tPlan.slip + tPlan.pnpa;
+    const totalCollAch = tAch.ftod + tAch.slip + tAch.pnpa;
+    const totalCollPct = totalCollPlan > 0 ? Math.round((totalCollAch / totalCollPlan) * 100) : 0;
+
+    const totalDisbAmt = tAch.disbIglAmt + tAch.disbIlAmt;
+    const netNpaChange = tAch.npaAct - tAch.npaClose; // Net = Activation - Closure
+    const avgAchPct = rowCountForAvg > 0 ? Math.round(totalRowAchievementSum / rowCountForAvg) : 0;
+
+    const netNpaLabel = netNpaChange > 0 ? `+${netNpaChange}` : `${netNpaChange}`;
+    const netNpaColor = netNpaChange > 0 ? '#EF4444' : '#10B981'; // Red if increased, Green if decreased
+
+    const summaryHTML = `
+        <div style="display:flex; justify-content:space-around; margin-bottom:20px; font-family:Arial, sans-serif;">
+            <div style="border:1px solid #ddd; border-radius:8px; padding:16px; width:22%; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase;">Total Collection</div>
+                <div style="font-size:24px; font-weight:700; color:#4F46E5; margin-top:8px;">${totalCollPct}%</div>
+                <div style="font-size:10px; color:#999; margin-top:4px;">${fmt(totalCollAch)} / ${fmt(totalCollPlan)}</div>
+            </div>
+            <div style="border:1px solid #ddd; border-radius:8px; padding:16px; width:22%; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase;">Total Disbursement</div>
+                <div style="font-size:24px; font-weight:700; color:#10B981; margin-top:8px;">₹${(totalDisbAmt / 10000000).toFixed(2)}Cr</div>
+                <div style="font-size:10px; color:#999; margin-top:4px;">IGL & IL</div>
+            </div>
+            <div style="border:1px solid #ddd; border-radius:8px; padding:16px; width:22%; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase;">Net NPA Change</div>
+                <div style="font-size:24px; font-weight:700; color:${netNpaColor}; margin-top:8px;">${netNpaLabel}</div>
+                <div style="font-size:10px; color:#999; margin-top:4px;">Act: ${tAch.npaAct} | Close: ${tAch.npaClose}</div>
+            </div>
+            <div style="border:1px solid #ddd; border-radius:8px; padding:16px; width:22%; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase;">Avg Achievement</div>
+                <div style="font-size:24px; font-weight:700; color:#F59E0B; margin-top:8px;">${avgAchPct}%</div>
+                <div style="font-size:10px; color:#999; margin-top:4px;">Per Branch/Row</div>
+            </div>
+        </div>
+    `;
+
+    // Grand Total Row
+    const totalRow = `
+        <tr style="font-weight: bold; font-size: 10px; background: #FFFF00;">
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: left;">Grand Total</td>
+
+            <!-- PLAN TOTALS -->
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.ftod)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.slip)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.pnpa)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.npaAct)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.npaClose)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.od)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.ns)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.disbIglAcc)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: right;">${fmt(tPlan.disbIglAmt)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.disbIlAcc)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: right;">${fmt(tPlan.disbIlAmt)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.kycFig)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.kycIl)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tPlan.kycNpa)}</td>
+
+             <!-- SEPARATOR -->
+            <td style="background: #000;"></td>
+
+            <!-- ACHIEVE TOTALS -->
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.ftod)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.slip)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.pnpa)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.npaAct)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.npaClose)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.od)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.ns)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.disbIglAcc)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: right;">${fmt(tAch.disbIglAmt)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.disbIlAcc)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: right;">${fmt(tAch.disbIlAmt)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.kycFig)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.kycIl)}</td>
+            <td style="background: #FFFF00; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(tAch.kycNpa)}</td>
+        </tr>
+    `;
+
+    // Common Column Headers Row
+    const subHeaders = `
+        <td style="background: ${colors.ftod}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">FTOD</td>
+        <td style="background: ${colors.slipped}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">Slipped</td>
+        <td style="background: ${colors.pnpa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">PNPA</td>
+        <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">Act</td>
+        <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">Close</td>
+        <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">OD</td>
+        <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">NS</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IGL#</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IGL ₹</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL#</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL ₹</td>
+        <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">FIG/IGL</td>
+        <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL</td>
+        <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">NPA</td>
+    `;
+
+    return `
+        <div style="background:white; padding:20px;">
+            <!-- Title -->
+            <div style="text-align: center; font-weight: bold; font-size: 18px; padding: 12px; font-family:Arial, sans-serif; margin-bottom:20px;">
+                ${title}
+            </div>
+
+            <!-- EXECUTIVE SUMMARY -->
+            ${summaryHTML}
+
+            <!-- MAIN TABLE -->
+            <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: 100%; background:white;">
+            <!-- Section Headers -->
+            <tr style="font-weight: bold; font-size: 11px;">
+                <td rowspan="2" style="background: ${colors.white}; border: 1px solid ${colors.border}; padding: 4px 8px; text-align: center; vertical-align:middle; width: 120px;">${firstColHeader}</td>
+
+                <!-- PLAN HEADER -->
+                <td colspan="14" style="background: ${colors.planBg}; border: 1px solid ${colors.border}; padding: 6px; text-align: center; border-bottom: 2px solid ${colors.border}; color:black;">
+                    PLAN
+                </td>
+
+                <td rowspan="2" style="background: #000; width: 2px;"></td>
+
+                <!-- ACHIEVEMENT HEADER -->
+                <td colspan="14" style="background: ${colors.achieveBg}; border: 1px solid ${colors.border}; padding: 6px; text-align: center; border-bottom: 2px solid ${colors.border}; color:black;">
+                    ACHIEVEMENT
+                </td>
+            </tr>
+
+            <!-- Sub Headers Row -->
+            <tr style="font-weight: bold;">
+                ${subHeaders}
+                ${subHeaders}
+            </tr>
+
+            ${bodyRows}
+            ${totalRow}
+            </table>
+        </div>
+    `;
+}
+
+// Generate HTML Table string (Original Single)
 function generateReportHTML(title, level, rows, isPlan) {
     // Colors
     const colors = {
