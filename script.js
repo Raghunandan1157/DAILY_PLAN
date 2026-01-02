@@ -1551,30 +1551,14 @@ function renderReports(buffer) {
 
             <!-- 3. ACTIONS -->
             <div style="padding: 16px; border-top: 1px solid var(--border-color);">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                    <!-- Excel Downloads -->
-                    <div style="display:flex; gap:12px;">
-                        <button class="btn btn-outline" onclick="downloadPlanReport()" style="padding:10px 24px;">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            Download Plan Report
-                        </button>
-                        <button class="btn btn-primary" onclick="downloadAchievementPlanReportDirectly()" style="padding:10px 24px;">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            Download Achievement Plan Report
-                        </button>
-                    </div>
-                    
-                    <!-- PNG Downloads -->
-                    <div style="display:flex; gap:12px;">
-                        <button class="btn btn-outline" onclick="downloadPlanPNG()" style="padding:10px 24px; background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; border: none;">
-                            <svg class="icon" viewBox="0 0 24 24" style="stroke: white;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                            Plan PNG
-                        </button>
-                        <button class="btn btn-primary" onclick="downloadAchievementPNG()" style="padding:10px 24px; background: linear-gradient(135deg, #10B981, #059669); color: white; border: none;">
-                            <svg class="icon" viewBox="0 0 24 24" style="stroke: white;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                            Achievement PNG
-                        </button>
-                    </div>
+                <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <button class="btn btn-primary" onclick="handleGenerateReports()" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
+                        <svg class="icon" viewBox="0 0 24 24" style="stroke: white; width: 20px; height: 20px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                        Generate Daily Reports
+                    </button>
+                </div>
+                <div style="margin-top: 8px; text-align: center; color: var(--text-secondary); font-size: 12px;">
+                    Generates separate Plan and Achievement PNGs for the selected date and level.
                 </div>
             </div>
         </div>
@@ -1699,253 +1683,58 @@ function getReportRows(level) {
     return Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
 }
 
-// --- DOWNLOAD PLAN REPORT (Basic Plan Data Only) ---
-function downloadPlanReport() {
-    // Colors
-    const cPeach = '#FFDAB9';
-    const cGreen = '#D1FAE5';
-    const cBlue = '#E0F2FE';
-    const cPink = '#FCE7F3';
-    const cYellow = '#FEF3C7';
-    const cCyan = '#CFFAFE';
-    const cOrange = '#FFEDD5';
-    const cHeader = '#000000';
-    const cWhite = '#FFFFFF';
+// --- REPORT GENERATION ---
 
-    // HTML Header for Excel to detect charset
-    let table = `
-    <html xmlns:x="urn:schemas-microsoft-com:office:excel">
-    <head>
-        <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
-        <!--[if gte mso 9]>
-        <xml>
-            <x:ExcelWorkbook>
-                <x:ExcelWorksheets>
-                    <x:ExcelWorksheet>
-                        <x:Name>Plan Report</x:Name>
-                        <x:WorksheetOptions>
-                            <x:Panes></x:Panes>
-                        </x:WorksheetOptions>
-                    </x:ExcelWorksheet>
-                </x:ExcelWorksheets>
-            </x:ExcelWorkbook>
-        </xml>
-        <![endif]-->
-        <style>
-            table { border-collapse: collapse; width: 100%; }
-            th { border: 1px solid #000; text-align: center; font-family: Arial, sans-serif; font-size: 10pt; }
-            td { border: 1px solid #000; text-align: right; font-family: Arial, sans-serif; font-size: 10pt; white-space: nowrap; }
-            .txt-left { text-align: left; }
-            .txt-center { text-align: center; }
-            /* Header Colors */
-            .bg-header { background: ${cHeader}; color: white; font-weight: bold; text-align: center; }
-            .bg-peach { background: ${cPeach}; color: black; text-align: center; }
-            .bg-green { background: ${cGreen}; color: black; text-align: center; }
-            .bg-blue { background: ${cBlue}; color: black; text-align: center; }
-            .bg-pink { background: ${cPink}; color: black; text-align: center; }
-            .bg-yellow { background: ${cYellow}; color: black; text-align: center; }
-            .bg-cyan { background: ${cCyan}; color: black; text-align: center; }
-            .bg-orange { background: ${cOrange}; color: black; text-align: center; }
-            .bg-white { background: ${cWhite}; color: black; text-align: center; }
-            .title-row { text-align: center; font-size: 14pt; font-weight: bold; background: #FFFFFF; color: #000000; height: 30px; }
-        </style>
-    </head>
-    <body>
-        <table>
-            <!-- Title Row -->
-            <tr>
-                <th colspan="25" class="title-row">Plan Report - ${state.systemDate}</th>
-            </tr>
-            <!-- Row 1: Group Headers -->
-            <tr>
-                <th rowspan="2" class="bg-white">ID</th>
-                <th rowspan="2" class="bg-white">DATE</th>
-                <th rowspan="2" class="bg-white">BRANCH_NAME</th>
-                <th rowspan="2" class="bg-white">REGION</th>
-                <th rowspan="2" class="bg-white">DISTRICT</th>
-                <th rowspan="2" class="bg-white">DM_NAME</th>
-                
-                <!-- FTOD -->
-                <th colspan="2" class="bg-blue">FTOD</th>
-                <!-- Slipped -->
-                <th colspan="2" class="bg-green">Nov Slipped</th>
-                <!-- PNPA -->
-                <th colspan="2" class="bg-pink">PNPA</th>
-                <!-- NPA -->
-                <th colspan="2" class="bg-yellow">NPA</th>
-                <!-- FY 25-26 -->
-                <th colspan="4" class="bg-cyan">FY 25-26</th>
-                <!-- Disbursement Plan -->
-                <th colspan="4" class="bg-orange">Disbursement Plan</th>
-                <!-- KYC -->
-                <th colspan="3" class="bg-blue">KYC Sourcing</th>
-            </tr>
-            
-            <!-- Row 2: Sub Headers -->
-            <tr>
-                <!-- FTOD -->
-                <th class="bg-blue">FTOD Actual</th><th class="bg-blue">FTOD Plan</th>
-                <!-- Slipped -->
-                <th class="bg-green">Nov-25 Demand</th><th class="bg-green">Nov-25 Collections</th>
-                <!-- PNPA -->
-                <th class="bg-pink">Actual</th><th class="bg-pink">Plan</th>
-                <!-- NPA -->
-                <th class="bg-yellow">Activation</th><th class="bg-yellow">Closure</th>
-                <!-- FY 25-26 -->
-                <th class="bg-cyan">Actual OD Acc</th><th class="bg-cyan">OD Plan</th><th class="bg-cyan">Non starter Acc</th><th class="bg-cyan">Non starter Plan</th>
-                <!-- Disbursement -->
-                <th class="bg-orange">IGL Acc</th><th class="bg-orange">IGL Amt</th><th class="bg-orange">IL Acc</th><th class="bg-orange">IL Amt</th>
-                <!-- KYC -->
-                <th class="bg-blue">IGL&FIG</th><th class="bg-blue">IL</th><th class="bg-blue">NPA</th>
-            </tr>
-    `;
+// Main entry point
+async function handleGenerateReports() {
+    // 1. Validate
+    if (!state.branchDetails || Object.keys(state.branchDetails).length === 0) {
+        showToast("No data available to generate reports.", "alert");
+        return;
+    }
 
+    const level = state.reportLevel; // REGION, DISTRICT, BRANCH
     const dateStr = state.systemDate;
-    let idCounter = 1;
+    const dateDisplay = formatDateForDisplay(dateStr);
 
-    // Helper to get int
-    const getInt = (val) => {
-        const n = parseInt(val);
-        return isNaN(n) ? 0 : n;
-    };
+    setLoading(true, "Generating Daily Reports...");
 
-    // Helper to format number in Indian system (1,00,00,000)
-    const formatIndian = (num) => {
-        if (num === 0) return '-';
-        return num.toLocaleString('en-IN');
-    };
+    try {
+        // --- 2. GENERATE PLAN PNG ---
+        // Generates ONLY Plan columns
+        await generateReportPNG('PLAN', level, dateStr, dateDisplay);
 
-    // Grand totals
-    let totals = {
-        ftodAct: 0, ftodPlan: 0, slipDem: 0, slipColl: 0,
-        pnpaAct: 0, pnpaPlan: 0, npaAct: 0, npaClose: 0,
-        odAcc: 0, odPlan: 0, nsAcc: 0, nsPlan: 0,
-        disbIglAcc: 0, disbIglAmt: 0, disbIlAcc: 0, disbIlAmt: 0,
-        kycFig: 0, kycIl: 0, kycNpa: 0
-    };
+        // Small delay to ensure browser handles first download
+        await new Promise(r => setTimeout(r, 1000));
 
-    const reportRows = getReportRows(state.reportLevel);
+        // --- 3. GENERATE ACHIEVEMENT PNG ---
+        // Generates ONLY Achievement columns
+        await generateReportPNG('ACHIEVEMENT', level, dateStr, dateDisplay);
 
-    reportRows.forEach(row => {
-        const branchName = row.name;
-        const region = row.region || "";
-        const district = row.district || "";
-        const dm = row.dm || "";
-
-        const t = row.target || {};
-
-        // MAPPING - Only use target (plan) data
-        const ftodAct = getInt(t.ftod_actual);
-        const ftodPlan = getInt(t.ftod_plan);
-        const slipDem = getInt(t.nov_25_Slipped_Accounts_Actual);
-        const slipColl = getInt(t.nov_25_Slipped_Accounts_Plan);
-        const pnpaAct = getInt(t.pnpa_actual);
-        const pnpaPlan = getInt(t.pnpa_plan);
-        const npaAct = getInt(t.npa_activation);
-        const npaClose = getInt(t.npa_closure);
-        const odAcc = getInt(t.fy_od_acc);
-        const odPlan = getInt(t.fy_od_plan);
-        const nsAcc = getInt(t.fy_non_start_acc);
-        const nsPlan = getInt(t.fy_non_start_plan);
-        const sancAcc = 0;
-        const sancAmt = 0;
-        const disbIglAcc = getInt(t.disb_igl_acc);
-        const disbIglAmt = getInt(t.disb_igl_amt);
-        const disbIlAcc = getInt(t.disb_il_acc);
-        const disbIlAmt = getInt(t.disb_il_amt);
-        const kycFig = getInt(t.kyc_fig_igl);
-        const kycIl = getInt(t.kyc_il);
-        const kycNpa = getInt(t.kyc_npa);
-
-        // Accumulate totals
-        totals.ftodAct += ftodAct; totals.ftodPlan += ftodPlan;
-        totals.slipDem += slipDem; totals.slipColl += slipColl;
-        totals.pnpaAct += pnpaAct; totals.pnpaPlan += pnpaPlan;
-        totals.npaAct += npaAct; totals.npaClose += npaClose;
-        totals.odAcc += odAcc; totals.odPlan += odPlan;
-        totals.nsAcc += nsAcc; totals.nsPlan += nsPlan;
-        totals.disbIglAcc += disbIglAcc; totals.disbIglAmt += disbIglAmt;
-        totals.disbIlAcc += disbIlAcc; totals.disbIlAmt += disbIlAmt;
-        totals.kycFig += kycFig; totals.kycIl += kycIl; totals.kycNpa += kycNpa;
-
-        table += `
-        <tr>
-            <td class="txt-center bg-white">${idCounter++}</td>
-            <td class="txt-center bg-white">${dateStr}</td>
-            <td class="txt-left bg-white">${branchName}</td>
-            <td class="txt-left bg-white">${region}</td>
-            <td class="txt-left bg-white">${district}</td>
-            <td class="txt-left bg-white">${dm}</td>
-            <td class="bg-blue">${formatIndian(ftodAct)}</td><td class="bg-blue">${formatIndian(ftodPlan)}</td>
-            <td class="bg-green">${formatIndian(slipDem)}</td><td class="bg-green">${formatIndian(slipColl)}</td>
-            <td class="bg-pink">${formatIndian(pnpaAct)}</td><td class="bg-pink">${formatIndian(pnpaPlan)}</td>
-            <td class="bg-yellow">${formatIndian(npaAct)}</td><td class="bg-yellow">${formatIndian(npaClose)}</td>
-            <td class="bg-cyan">${formatIndian(odAcc)}</td><td class="bg-cyan">${formatIndian(odPlan)}</td><td class="bg-cyan">${formatIndian(nsAcc)}</td><td class="bg-cyan">${formatIndian(nsPlan)}</td>
-            <td class="bg-orange">${formatIndian(disbIglAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIglAmt)}</td><td class="bg-orange">${formatIndian(disbIlAcc)}</td><td class="bg-orange" style="text-align: right;">${formatIndian(disbIlAmt)}</td>
-            <td class="bg-blue">${formatIndian(kycFig)}</td><td class="bg-blue">${formatIndian(kycIl)}</td><td class="bg-blue">${formatIndian(kycNpa)}</td>
-        </tr>`;
-    });
-
-    // Grand Total Row
-    table += `
-        <tr style="font-weight: bold; background: #FFFF00;">
-            <td class="txt-center" colspan="6" style="background: #FFFF00; font-weight: bold;">GRAND TOTAL</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.ftodAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.ftodPlan)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.slipDem)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.slipColl)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.pnpaPlan)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaAct)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.npaClose)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.odPlan)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.nsPlan)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIglAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIglAmt)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.disbIlAcc)}</td><td style="background: #FFFF00; font-weight: bold; text-align: right;">${formatIndian(totals.disbIlAmt)}</td>
-            <td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycFig)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycIl)}</td><td style="background: #FFFF00; font-weight: bold; text-align: center;">${formatIndian(totals.kycNpa)}</td>
-        </tr>`;
-
-    table += `</table></body></html>`;
-
-    const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Plan_Report_${state.systemDate}.xls`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+        showToast("✅ Reports Generated Successfully!", "check");
+    } catch (e) {
+        console.error("Report Generation Error:", e);
+        showToast("Error generating reports.", "alert");
+    } finally {
+        setLoading(false);
+    }
 }
 
-// --- PNG EXPORT FUNCTIONS ---
+// Generate Single PNG
+async function generateReportPNG(type, level, dateStr, dateDisplay) {
+    const isPlan = type === 'PLAN';
+    const reportTitle = `${type} – ${level} – ${dateDisplay}`;
+    // plan_region_2023-10-25.png
+    const filename = `${type.toLowerCase()}_${level.toLowerCase()}_${dateStr}.png`;
 
-// Generate Plan PNG (Daily PLAN REPORT table as image)
-async function downloadPlanPNG() {
-    showToast("Generating Plan PNG...", "info");
+    // 1. Get Aggregated Data
+    const rows = getAggregatedReportData(level, isPlan);
 
-    const dateStr = formatDateForDisplay(state.systemDate);
-    const tableHTML = generatePlanTableHTML('PLAN', dateStr);
+    // 2. Generate HTML
+    const html = generateReportHTML(reportTitle, level, rows, isPlan);
 
-    await convertTableToPNG(tableHTML, `Daily_PLAN_Report_${state.systemDate}.png`);
-    showToast("✅ Plan PNG Downloaded!", "check");
-}
-
-// Generate Achievement PNG (Plan table + Achievement table below)
-async function downloadAchievementPNG() {
-    showToast("Generating Achievement PNG...", "info");
-
-    const dateStr = formatDateForDisplay(state.systemDate);
-
-    // Generate Plan table
-    const planTableHTML = generatePlanTableHTML('PLAN', dateStr);
-
-    // Generate Achievement table (2 rows gap)
-    const achieveTableHTML = generatePlanTableHTML('ACHIEVEMENT', dateStr);
-
-    // Combine with spacing
-    const combinedHTML = `
-        ${planTableHTML}
-        <div style="height: 40px;"></div>
-        ${achieveTableHTML}
-    `;
-
-    await convertTableToPNG(combinedHTML, `Daily_Achievement_Report_${state.systemDate}.png`);
-    showToast("✅ Achievement PNG Downloaded!", "check");
+    // 3. Convert & Download
+    await convertTableToPNG(html, filename);
 }
 
 // Format date for display (DD-MM-YYYY)
@@ -1957,12 +1746,89 @@ function formatDateForDisplay(dateStr) {
     return `${day}-${month}-${year}`;
 }
 
-// Generate table HTML for PNG export
-function generatePlanTableHTML(type, dateStr) {
-    const isPlan = type === 'PLAN';
-    const title = isPlan ? `Daily PLAN REPORT for the Date ${dateStr}` : `Daily ACHIEVEMENT REPORT for the Date ${dateStr}`;
+// Get data filtered by Type (Plan/Achievement) and Aggregated by Level
+function getAggregatedReportData(level, isPlan) {
+    const rows = [];
+    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
+    const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
+    const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
 
-    // Colors matching the uploaded image
+    // Helper to sum objects (only numeric values)
+    const sumObjects = (acc, curr) => {
+        if (!curr) return acc;
+        Object.keys(curr).forEach(key => {
+            // Skip non-numeric fields or IDs
+            if (['id', 'branch_name', 'date', 'region', 'district', 'dm_name', 'created_at'].includes(key)) return;
+
+            const val = Number(curr[key]);
+            if (!isNaN(val)) {
+                acc[key] = (Number(acc[key]) || 0) + val;
+            }
+        });
+        return acc;
+    };
+
+    // 1. BRANCH LEVEL (No Aggregation, just Filter)
+    if (level === 'BRANCH') {
+        state.rawData.rows.forEach(r => {
+            const name = r[idxBranch];
+            const region = r[idxRegion];
+            const district = r[idxDistrict];
+
+            const entry = state.branchDetails[name] || {};
+            // Filter: Get ONLY Target or ONLY Achievement
+            const data = isPlan ? (entry.target || {}) : (entry.achievement || {});
+
+            // Only add if there is data (optional? requirement implies showing even empty rows if it's the structure)
+            // But let's include all branches for completeness
+            rows.push({
+                name: name, // The grouping key (Branch Name)
+                region: region,
+                district: district,
+                data: data // The numeric data
+            });
+        });
+        return rows; // Already sorted by nature of rawData order usually
+    }
+
+    // 2. REGION or DISTRICT LEVEL (Aggregation)
+    const groups = {};
+
+    state.rawData.rows.forEach(r => {
+        const branchName = r[idxBranch];
+        const region = r[idxRegion] || "Unknown";
+        const district = r[idxDistrict] || "Unknown";
+
+        let key;
+        if (level === 'REGION') key = region;
+        else if (level === 'DISTRICT') key = district;
+
+        if (!key) return;
+
+        if (!groups[key]) {
+            groups[key] = {
+                name: key, // The grouping key (Region Name or District Name)
+                region: level === 'REGION' ? key : region,
+                district: level === 'DISTRICT' ? key : 'All',
+                data: {} // Accumulator
+            };
+        }
+
+        const entry = state.branchDetails[branchName];
+        if (entry) {
+            const source = isPlan ? entry.target : entry.achievement;
+            if (source) {
+                groups[key].data = sumObjects(groups[key].data, source);
+            }
+        }
+    });
+
+    return Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
+}
+
+// Generate HTML Table string
+function generateReportHTML(title, level, rows, isPlan) {
+    // Colors
     const colors = {
         title: '#000000',
         ftod: '#87CEEB',      // Light blue
@@ -1976,185 +1842,94 @@ function generatePlanTableHTML(type, dateStr) {
         header: '#4682B4'     // Steel blue for main header
     };
 
-    // Build rows data using aggregated rows
-    // This allows the PNG to reflect the selected level
-    const reportRows = getReportRows(state.reportLevel);
+    const firstColHeader = level === 'BRANCH' ? 'BRANCH' : (level === 'DISTRICT' ? 'DISTRICT' : 'REGION');
 
-    // Group by region for organization (even if aggregating by region, we group by region)
-    // If level is REGION, regionMap will have 1 item per region array
-    const regionMap = {};
+    // Labels based on Type
+    const suffix = isPlan ? 'Plan' : 'Actual';
+    const npaLabel = isPlan ? 'Plan' : 'Actual'; // Assuming Plan table has NPA columns? Code logic suggests yes.
 
-    reportRows.forEach(row => {
-        const branchName = row.name;
-        // If level is REGION, region name is in row.region (which is same as name)
-        const region = row.region || "Unknown";
+    // Data Field Mappings
+    // Determine which field to read from the 'data' object
+    // Plan uses _plan suffix mostly, Achievement uses _actual or _acc
+    const f = (fieldPlan, fieldAchieve) => isPlan ? fieldPlan : fieldAchieve;
 
-        // Data source
-        const data = isPlan ? (row.target || {}) : (row.achievement || {});
-
-        if (!regionMap[region]) regionMap[region] = [];
-
-        regionMap[region].push({
-            region,
-            ftodActual: parseInt(data.ftod_actual) || 0,
-            ftodPlan: parseInt(data.ftod_plan) || 0,
-            nov25Demand: parseInt(data.nov_25_Slipped_Accounts_Actual) || 0,
-            nov25Coll: parseInt(data.nov_25_Slipped_Accounts_Plan) || 0,
-            pnpaActual: parseInt(data.pnpa_actual) || 0,
-            pnpaPlan: parseInt(data.pnpa_plan) || 0,
-            npaActivation: parseInt(data.npa_activation) || 0,
-            npaClosure: parseInt(data.npa_closure) || 0,
-            fyOdAcc: parseInt(data.fy_od_acc) || 0,
-            fyOdPlan: parseInt(data.fy_od_plan) || 0,
-            fyNsAcc: parseInt(data.fy_non_start_acc) || 0,
-            fyNsPlan: parseInt(data.fy_non_start_plan) || 0,
-            disbIglAcc: parseInt(data.disb_igl_acc) || 0,
-            disbIglAmt: parseInt(data.disb_igl_amt) || 0,
-            disbIlAcc: parseInt(data.disb_il_acc) || 0,
-            disbIlAmt: parseInt(data.disb_il_amt) || 0,
-            kycFig: parseInt(data.kyc_fig_igl) || 0,
-            kycIl: parseInt(data.kyc_il) || 0,
-            kycNpa: parseInt(data.kyc_npa) || 0
-        });
-    });
-
-    // Aggregate by region
-    const regionData = {};
-    Object.keys(regionMap).forEach(region => {
-        const branches = regionMap[region];
-        regionData[region] = {
-            region,
-            ftodActual: branches.reduce((s, b) => s + b.ftodActual, 0),
-            ftodPlan: branches.reduce((s, b) => s + b.ftodPlan, 0),
-            nov25Demand: branches.reduce((s, b) => s + b.nov25Demand, 0),
-            nov25Coll: branches.reduce((s, b) => s + b.nov25Coll, 0),
-            pnpaActual: branches.reduce((s, b) => s + b.pnpaActual, 0),
-            pnpaPlan: branches.reduce((s, b) => s + b.pnpaPlan, 0),
-            npaActivation: branches.reduce((s, b) => s + b.npaActivation, 0),
-            npaClosure: branches.reduce((s, b) => s + b.npaClosure, 0),
-            fyOdAcc: branches.reduce((s, b) => s + b.fyOdAcc, 0),
-            fyOdPlan: branches.reduce((s, b) => s + b.fyOdPlan, 0),
-            fyNsAcc: branches.reduce((s, b) => s + b.fyNsAcc, 0),
-            fyNsPlan: branches.reduce((s, b) => s + b.fyNsPlan, 0),
-            disbIglAcc: branches.reduce((s, b) => s + b.disbIglAcc, 0),
-            disbIglAmt: branches.reduce((s, b) => s + b.disbIglAmt, 0),
-            disbIlAcc: branches.reduce((s, b) => s + b.disbIlAcc, 0),
-            disbIlAmt: branches.reduce((s, b) => s + b.disbIlAmt, 0),
-            kycFig: branches.reduce((s, b) => s + b.kycFig, 0),
-            kycIl: branches.reduce((s, b) => s + b.kycIl, 0),
-            kycNpa: branches.reduce((s, b) => s + b.kycNpa, 0)
-        };
-    });
-
-    // Grand totals
+    // Build Rows & Totals
     const totals = {
-        ftodActual: 0, ftodPlan: 0, nov25Demand: 0, nov25Coll: 0,
-        pnpaActual: 0, pnpaPlan: 0, npaActivation: 0, npaClosure: 0,
-        fyOdAcc: 0, fyOdPlan: 0, fyNsAcc: 0, fyNsPlan: 0,
+        ftod: 0, slipped: 0, pnpa: 0,
+        npaAct: 0, npaClose: 0,
+        od: 0, ns: 0,
         disbIglAcc: 0, disbIglAmt: 0, disbIlAcc: 0, disbIlAmt: 0,
         kycFig: 0, kycIl: 0, kycNpa: 0
     };
 
-    Object.values(regionData).forEach(r => {
-        Object.keys(totals).forEach(k => totals[k] += r[k]);
-    });
-
-    // Format number
+    let bodyRows = '';
     const fmt = n => n === 0 ? '-' : n.toLocaleString('en-IN');
 
-    // Dynamic labels: Use 'Ach' for achievement, 'Plan' for plan
-    const planLabel = isPlan ? 'Plan' : 'Ach';
-    const disbLabel = isPlan ? 'Disbursement Plan' : 'Disbursement Ach';
+    rows.forEach(row => {
+        const d = row.data || {};
 
-    // Build HTML table
-    let html = `
-        <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: auto;">
-            <!-- Title -->
-            <tr>
-                <td colspan="20" style="text-align: center; font-weight: bold; font-size: 14px; padding: 8px; background: ${colors.white}; border: 1px solid #000;">
-                    ${title}
-                </td>
-            </tr>
-            <!-- Header Row 1 -->
-            <tr style="font-weight: bold; font-size: 10px;">
-                <td rowspan="2" style="background: ${colors.white}; border: 1px solid #000; padding: 4px 8px; text-align: center;">REGION</td>
-                <td colspan="2" style="background: ${colors.ftod}; border: 1px solid #000; padding: 4px 8px; text-align: center;">FTOD</td>
-                <td colspan="2" style="background: ${colors.slipped}; border: 1px solid #000; padding: 4px 8px; text-align: center;">Nov Slipped</td>
-                <td colspan="2" style="background: ${colors.pnpa}; border: 1px solid #000; padding: 4px 8px; text-align: center;">PNPA</td>
-                <td colspan="2" style="background: ${colors.npa}; border: 1px solid #000; padding: 4px 8px; text-align: center;">NPA</td>
-                <td colspan="4" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center;">FY 25-26</td>
-                <td colspan="4" style="background: ${colors.disb}; border: 1px solid #000; padding: 4px 8px; text-align: center;">${disbLabel}</td>
-                <td colspan="3" style="background: ${colors.kyc}; border: 1px solid #000; padding: 4px 8px; text-align: center;">KYC Sourcing</td>
-            </tr>
-            <!-- Header Row 2 -->
-            <tr style="font-weight: bold; font-size: 9px;">
-                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">FTOD Actual</td>
-                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">FTOD ${planLabel}</td>
-                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Nov-25 Demand</td>
-                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Nov-25 Collections</td>
-                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Actual</td>
-                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${planLabel}</td>
-                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Activation</td>
-                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Closure</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Actual OD Acc</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">OD ${planLabel}</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Non starter Acc</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">Non starter ${planLabel}</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IGL Acc</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IGL Amt</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IL Acc</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IL Amt</td>
-                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IGL&FIG</td>
-                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">IL</td>
-                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">NPA</td>
-            </tr>
-    `;
+        // Extract values using dynamic mapping
+        const ftod = parseInt(d[f('ftod_plan', 'ftod_actual')]) || 0;
+        const slipped = parseInt(d[f('nov_25_Slipped_Accounts_Plan', 'nov_25_Slipped_Accounts_Actual')]) || 0;
+        const pnpa = parseInt(d[f('pnpa_plan', 'pnpa_actual')]) || 0;
 
-    // Data rows by region
-    Object.keys(regionData).sort().forEach(region => {
-        const r = regionData[region];
-        html += `
+        // NPA: For Plan, we assume the same columns exist in Plan table (from previous code analysis)
+        // If not, they will be 0.
+        const npaAct = parseInt(d['npa_activation']) || 0;
+        const npaClose = parseInt(d['npa_closure']) || 0;
+
+        const od = parseInt(d[f('fy_od_plan', 'fy_od_acc')]) || 0;
+        const ns = parseInt(d[f('fy_non_start_plan', 'fy_non_start_acc')]) || 0;
+
+        const disbIglAcc = parseInt(d['disb_igl_acc']) || 0;
+        const disbIglAmt = parseInt(d['disb_igl_amt']) || 0;
+        const disbIlAcc = parseInt(d['disb_il_acc']) || 0;
+        const disbIlAmt = parseInt(d['disb_il_amt']) || 0;
+
+        const kycFig = parseInt(d['kyc_fig_igl']) || 0;
+        const kycIl = parseInt(d['kyc_il']) || 0;
+        const kycNpa = parseInt(d['kyc_npa']) || 0;
+
+        // Sum Totals
+        totals.ftod += ftod; totals.slipped += slipped; totals.pnpa += pnpa;
+        totals.npaAct += npaAct; totals.npaClose += npaClose;
+        totals.od += od; totals.ns += ns;
+        totals.disbIglAcc += disbIglAcc; totals.disbIglAmt += disbIglAmt;
+        totals.disbIlAcc += disbIlAcc; totals.disbIlAmt += disbIlAmt;
+        totals.kycFig += kycFig; totals.kycIl += kycIl; totals.kycNpa += kycNpa;
+
+        bodyRows += `
             <tr style="font-size: 10px;">
-                <td style="background: ${colors.white}; border: 1px solid #000; padding: 3px 6px; text-align: left; font-weight: 600;">${region}</td>
-                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.ftodActual)}</td>
-                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.ftodPlan)}</td>
-                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.nov25Demand)}</td>
-                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.nov25Coll)}</td>
-                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.pnpaActual)}</td>
-                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.pnpaPlan)}</td>
-                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.npaActivation)}</td>
-                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.npaClosure)}</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.fyOdAcc)}</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.fyOdPlan)}</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.fyNsAcc)}</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.fyNsPlan)}</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.disbIglAcc)}</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: right;">${fmt(r.disbIglAmt)}</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.disbIlAcc)}</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: right;">${fmt(r.disbIlAmt)}</td>
-                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.kycFig)}</td>
-                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.kycIl)}</td>
-                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(r.kycNpa)}</td>
+                <td style="background: ${colors.white}; border: 1px solid #000; padding: 3px 6px; text-align: left; font-weight: 600;">${row.name}</td>
+                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(ftod)}</td>
+                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(slipped)}</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(pnpa)}</td>
+                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(npaAct)}</td>
+                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(npaClose)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(od)}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(ns)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(disbIglAcc)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: right;">${fmt(disbIglAmt)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(disbIlAcc)}</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: right;">${fmt(disbIlAmt)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(kycFig)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(kycIl)}</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(kycNpa)}</td>
             </tr>
         `;
     });
 
-    // Grand Total row
-    html += `
+    // Grand Total Row
+    const totalRow = `
         <tr style="font-weight: bold; font-size: 10px; background: #FFFF00;">
             <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: left;">Grand Total</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.ftodActual)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.ftodPlan)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.nov25Demand)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.nov25Coll)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.pnpaActual)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.pnpaPlan)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.npaActivation)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.npaClosure)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.fyOdAcc)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.fyOdPlan)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.fyNsAcc)}</td>
-            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.fyNsPlan)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.ftod)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.slipped)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.pnpa)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.npaAct)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.npaClose)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.od)}</td>
+            <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.ns)}</td>
             <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.disbIglAcc)}</td>
             <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: right;">${fmt(totals.disbIglAmt)}</td>
             <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.disbIlAcc)}</td>
@@ -2163,19 +1938,48 @@ function generatePlanTableHTML(type, dateStr) {
             <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.kycIl)}</td>
             <td style="background: #FFFF00; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(totals.kycNpa)}</td>
         </tr>
-    </table>
     `;
 
-    // Add note for Achievement report
-    if (!isPlan) {
-        html += `
-            <div style="margin-top: 8px; font-size: 11px; font-style: italic; color: #666; font-family: Arial, sans-serif;">
-                * ACH means Achievement
-            </div>
-        `;
-    }
-
-    return html;
+    return `
+        <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: auto; background:white;">
+            <!-- Title -->
+            <tr>
+                <td colspan="15" style="text-align: center; font-weight: bold; font-size: 14px; padding: 8px; background: ${colors.white}; border: 1px solid #000; color:black;">
+                    ${title}
+                </td>
+            </tr>
+            <!-- Header Row 1 -->
+            <tr style="font-weight: bold; font-size: 10px;">
+                <td rowspan="2" style="background: ${colors.white}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">${firstColHeader}</td>
+                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">FTOD</td>
+                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">Slipped</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">PNPA</td>
+                <td colspan="2" style="background: ${colors.npa}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">NPA</td>
+                <td colspan="2" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">FY 25-26</td>
+                <td colspan="4" style="background: ${colors.disb}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">Disbursement ${suffix}</td>
+                <td colspan="3" style="background: ${colors.kyc}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">KYC Sourcing</td>
+            </tr>
+            <!-- Header Row 2 -->
+            <tr style="font-weight: bold; font-size: 9px;">
+                <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">${suffix}</td>
+                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">${suffix}</td>
+                <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">${suffix}</td>
+                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">Activation</td>
+                <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">Closure</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">OD ${suffix}</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">NS ${suffix}</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL Acc</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL Amt</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL Acc</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL Amt</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL&FIG</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">NPA</td>
+            </tr>
+            ${bodyRows}
+            ${totalRow}
+        </table>
+    `;
 }
 
 // Convert HTML table to PNG and download
