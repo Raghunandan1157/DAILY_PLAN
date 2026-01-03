@@ -1833,6 +1833,43 @@ function getReportRows(level) {
 
 // --- REPORT GENERATION ---
 
+// --- REPORT PREVIEW MODAL ---
+function showReportPreviewModal(htmlContent, title, filename) {
+    const modal = document.getElementById('reportPreviewModal');
+    const body = document.getElementById('reportPreviewBody');
+    const titleEl = document.getElementById('reportPreviewTitle');
+    const downloadBtn = document.getElementById('btnDownloadReport');
+
+    if (!modal || !body || !titleEl || !downloadBtn) {
+        console.error("Report Preview Modal elements not found");
+        return;
+    }
+
+    // Set Content
+    titleEl.textContent = title;
+    body.innerHTML = htmlContent;
+
+    // Set Download Action
+    // Remove old event listeners to avoid duplicates if we used addEventListener
+    // But onclick attribute is easier to overwrite
+    downloadBtn.onclick = () => {
+        showToast("Preparing download...", "info");
+        convertTableToPNG(htmlContent, filename);
+    };
+
+    // Show
+    modal.classList.add('visible');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function closeReportPreviewModal() {
+    const modal = document.getElementById('reportPreviewModal');
+    if (modal) {
+        modal.classList.remove('visible');
+        document.body.style.overflow = '';
+    }
+}
+
 // Generate Only Plan Report
 async function handleGeneratePlanReport() {
     // 1. Validate
@@ -1848,14 +1885,24 @@ async function handleGeneratePlanReport() {
     setLoading(true, "Generating Plan Report...");
 
     try {
-        // GENERATE PLAN PNG
-        await generateReportPNG('PLAN', level, dateStr, dateDisplay);
+        // GENERATE PLAN REPORT PREVIEW
+        const type = 'PLAN';
+        const isPlan = true;
+        const reportTitle = `${type} – ${level} – ${dateDisplay}`;
+        const filename = `${type.toLowerCase()}_${level.toLowerCase()}_${dateStr}.png`;
 
-        showToast("✅ Plan Report Generated!", "check");
+        // 1. Get Aggregated Data
+        const rows = getAggregatedReportData(level, isPlan);
+
+        // 2. Generate HTML
+        const html = generateReportHTML(reportTitle, level, rows, isPlan);
+
+        // 3. Show Preview Modal
+        showReportPreviewModal(html, reportTitle, filename);
+        setLoading(false);
     } catch (e) {
         console.error("Report Generation Error:", e);
         showToast("Error generating report.", "alert");
-    } finally {
         setLoading(false);
     }
 }
@@ -1883,35 +1930,18 @@ async function handleGenerateBothReports() {
         const reportTitle = `Plan vs Achievement – ${level} – ${dateDisplay}`;
         const html = generateCombinedReportHTML(reportTitle, level, planRows, achieveRows);
 
-        // 3. Convert & Download
+        // 3. Show Preview Modal
         // plan_vs_achievement_region_2023-10-25.png
         const filename = `plan_vs_achievement_${level.toLowerCase()}_${dateStr}.png`;
-        await convertTableToPNG(html, filename);
 
-        showToast("✅ Combined Report Generated!", "check");
+        showReportPreviewModal(html, reportTitle, filename);
+        setLoading(false);
+
     } catch (e) {
         console.error("Report Generation Error:", e);
         showToast("Error generating report.", "alert");
-    } finally {
         setLoading(false);
     }
-}
-
-// Generate Single PNG
-async function generateReportPNG(type, level, dateStr, dateDisplay) {
-    const isPlan = type === 'PLAN';
-    const reportTitle = `${type} – ${level} – ${dateDisplay}`;
-    // plan_region_2023-10-25.png
-    const filename = `${type.toLowerCase()}_${level.toLowerCase()}_${dateStr}.png`;
-
-    // 1. Get Aggregated Data
-    const rows = getAggregatedReportData(level, isPlan);
-
-    // 2. Generate HTML
-    const html = generateReportHTML(reportTitle, level, rows, isPlan);
-
-    // 3. Convert & Download
-    await convertTableToPNG(html, filename);
 }
 
 // Format date for display (DD-MM-YYYY)
