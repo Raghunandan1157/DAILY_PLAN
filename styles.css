@@ -800,59 +800,6 @@
             margin-bottom: 24px;
         }
 
-        /* Report Options Modal Styles */
-        .option-card {
-            background: var(--bg-body);
-            border: 2px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            gap: 12px;
-        }
-
-        .option-card:hover {
-            border-color: var(--primary-accent);
-            background: var(--bg-card);
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-        }
-
-        .option-card:active {
-            transform: scale(0.98);
-        }
-
-        .option-icon-box {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 8px;
-            transition: transform 0.2s;
-        }
-
-        .option-card:hover .option-icon-box {
-            transform: scale(1.1);
-        }
-
-        .option-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .option-desc {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-
         .chart-title {
             font-size: 16px;
             font-weight: 600;

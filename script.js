@@ -1610,11 +1610,11 @@ function renderReports(buffer) {
             <!-- 3. ACTIONS -->
             <div style="padding: 16px; border-top: 1px solid var(--border-color);">
                 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px;">
-                    <button class="btn btn-outline" onclick="openReportOptionsModal((action) => handleGeneratePlanReport(action))" style="padding:12px 24px; border-color: var(--primary); color: var(--primary); font-size: 15px; font-weight: 600;">
+                    <button class="btn btn-outline" onclick="handleGeneratePlanReport()" style="padding:12px 24px; border-color: var(--primary); color: var(--primary); font-size: 15px; font-weight: 600;">
                         <svg class="icon" viewBox="0 0 24 24" style="stroke: currentColor; width: 18px; height: 18px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
                         Generate Plan Report
                     </button>
-                    <button class="btn btn-primary" onclick="openReportOptionsModal((action) => handleGenerateBothReports(action))" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
+                    <button class="btn btn-primary" onclick="handleGenerateBothReports()" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
                         <svg class="icon" viewBox="0 0 24 24" style="stroke: white; width: 20px; height: 20px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         Generate Plan & Achievement Reports
                     </button>
@@ -1682,11 +1682,11 @@ function renderDMReports(buffer) {
             <!-- ACTIONS -->
             <div style="padding: 16px; border-top: 1px solid var(--border-color);">
                 <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px;">
-                    <button class="btn btn-outline" onclick="openReportOptionsModal((action) => handleGeneratePlanReport(action))" style="padding:12px 24px; border-color: var(--primary); color: var(--primary); font-size: 15px; font-weight: 600;">
+                    <button class="btn btn-outline" onclick="handleGeneratePlanReport()" style="padding:12px 24px; border-color: var(--primary); color: var(--primary); font-size: 15px; font-weight: 600;">
                         <svg class="icon" viewBox="0 0 24 24" style="stroke: currentColor; width: 18px; height: 18px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
                         Generate Plan Report
                     </button>
-                    <button class="btn btn-primary" onclick="openReportOptionsModal((action) => handleGenerateBothReports(action))" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
+                    <button class="btn btn-primary" onclick="handleGenerateBothReports()" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
                         <svg class="icon" viewBox="0 0 24 24" style="stroke: white; width: 20px; height: 20px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         Generate Plan & Achievement Reports
                     </button>
@@ -1834,7 +1834,7 @@ function getReportRows(level) {
 // --- REPORT GENERATION ---
 
 // Generate Only Plan Report
-async function handleGeneratePlanReport(action = 'VIEW') {
+async function handleGeneratePlanReport() {
     // 1. Validate
     if (!state.branchDetails || Object.keys(state.branchDetails).length === 0) {
         showToast("No data available to generate reports.", "alert");
@@ -1849,11 +1849,9 @@ async function handleGeneratePlanReport(action = 'VIEW') {
 
     try {
         // GENERATE PLAN PNG
-        await generateReportPNG('PLAN', level, dateStr, dateDisplay, action);
+        await generateReportPNG('PLAN', level, dateStr, dateDisplay);
 
-        if (action === 'VIEW') {
-            showToast("✅ Plan Report Generated!", "check");
-        }
+        showToast("✅ Plan Report Generated!", "check");
     } catch (e) {
         console.error("Report Generation Error:", e);
         showToast("Error generating report.", "alert");
@@ -1863,7 +1861,7 @@ async function handleGeneratePlanReport(action = 'VIEW') {
 }
 
 // Generate Both Plan & Achievement Reports (Combined Side-by-Side)
-async function handleGenerateBothReports(action = 'VIEW') {
+async function handleGenerateBothReports() {
     // 1. Validate
     if (!state.branchDetails || Object.keys(state.branchDetails).length === 0) {
         showToast("No data available to generate reports.", "alert");
@@ -1885,19 +1883,12 @@ async function handleGenerateBothReports(action = 'VIEW') {
         const reportTitle = `Plan vs Achievement – ${level} – ${dateDisplay}`;
         const html = generateCombinedReportHTML(reportTitle, level, planRows, achieveRows);
 
-        // 3. Convert & Action
+        // 3. Convert & Download
         // plan_vs_achievement_region_2023-10-25.png
         const filename = `plan_vs_achievement_${level.toLowerCase()}_${dateStr}.png`;
+        await convertTableToPNG(html, filename);
 
-        const blob = await generateReportBlob(html);
-
-        if (action === 'SHARE') {
-            await shareBlob(blob, filename, reportTitle, `Here is the ${reportTitle}`);
-        } else {
-            downloadBlob(blob, filename);
-            showToast("✅ Combined Report Generated!", "check");
-        }
-
+        showToast("✅ Combined Report Generated!", "check");
     } catch (e) {
         console.error("Report Generation Error:", e);
         showToast("Error generating report.", "alert");
@@ -1907,7 +1898,7 @@ async function handleGenerateBothReports(action = 'VIEW') {
 }
 
 // Generate Single PNG
-async function generateReportPNG(type, level, dateStr, dateDisplay, action = 'VIEW') {
+async function generateReportPNG(type, level, dateStr, dateDisplay) {
     const isPlan = type === 'PLAN';
     const reportTitle = `${type} – ${level} – ${dateDisplay}`;
     // plan_region_2023-10-25.png
@@ -1919,14 +1910,8 @@ async function generateReportPNG(type, level, dateStr, dateDisplay, action = 'VI
     // 2. Generate HTML
     const html = generateReportHTML(reportTitle, level, rows, isPlan);
 
-    // 3. Convert & Action
-    const blob = await generateReportBlob(html);
-
-    if (action === 'SHARE') {
-        await shareBlob(blob, filename, reportTitle, `Here is the ${reportTitle}`);
-    } else {
-        downloadBlob(blob, filename);
-    }
+    // 3. Convert & Download
+    await convertTableToPNG(html, filename);
 }
 
 // Format date for display (DD-MM-YYYY)
@@ -6121,133 +6106,3 @@ window.addEventListener('click', function (e) {
         }
     }
 });
-
-// --- REPORT OPTIONS MODAL LOGIC ---
-let reportActionCallback = null;
-
-function openReportOptionsModal(callback) {
-    reportActionCallback = callback;
-    document.getElementById('reportOptionsModal').classList.add('visible');
-}
-
-function closeReportOptionsModal() {
-    reportActionCallback = null;
-    document.getElementById('reportOptionsModal').classList.remove('visible');
-}
-
-function selectReportOption(action) {
-    if (reportActionCallback) {
-        reportActionCallback(action);
-    }
-    closeReportOptionsModal();
-}
-
-// --- BLOB & SHARE HELPERS ---
-
-// Refactored: Just return the Blob, don't auto download
-async function generateReportBlob(tableHTML) {
-    // Create a hidden container
-    const container = document.createElement('div');
-    container.style.cssText = `
-        position: fixed;
-        left: -9999px;
-        top: 0;
-        background: white;
-        padding: 20px;
-    `;
-    container.innerHTML = tableHTML;
-    document.body.appendChild(container);
-
-    // Wait for rendering
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Get dimensions
-    const tableEl = container.querySelector('table');
-    const width = tableEl.offsetWidth + 40;
-    const height = container.offsetHeight + 20;
-
-    // Create canvas
-    const canvas = document.createElement('canvas');
-    const scale = 2; // Higher resolution
-    canvas.width = width * scale;
-    canvas.height = height * scale;
-
-    const ctx = canvas.getContext('2d');
-    ctx.scale(scale, scale);
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, width, height);
-
-    // Use html2canvas-like approach with foreignObject
-    const svgData = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-            <foreignObject width="100%" height="100%">
-                <div xmlns="http://www.w3.org/1999/xhtml" style="background: white; padding: 10px;">
-                    ${tableHTML}
-                </div>
-            </foreignObject>
-        </svg>
-    `;
-
-    const img = new Image();
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
-
-    return new Promise((resolve, reject) => {
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0);
-            URL.revokeObjectURL(url);
-            document.body.removeChild(container);
-
-            // Get PNG Blob
-            canvas.toBlob(blob => {
-                resolve(blob);
-            }, 'image/png');
-        };
-
-        img.onerror = (e) => {
-            document.body.removeChild(container);
-            console.error("Image load error", e);
-            reject(e);
-        };
-    });
-}
-
-function downloadBlob(blob, filename) {
-    const downloadUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(downloadUrl);
-}
-
-async function shareBlob(blob, filename, title, text) {
-    if (!navigator.canShare) {
-        showToast("Sharing not supported on this browser", "alert");
-        downloadBlob(blob, filename); // Fallback
-        return;
-    }
-
-    const file = new File([blob], filename, { type: blob.type });
-    const data = {
-        files: [file],
-        title: title || 'Report',
-        text: text || 'Here is the report.'
-    };
-
-    if (navigator.canShare(data)) {
-        try {
-            await navigator.share(data);
-            showToast("Report shared successfully!", "check");
-        } catch (err) {
-            if (err.name !== 'AbortError') {
-                console.error("Share failed:", err);
-                showToast("Share failed, downloading instead.", "alert");
-                downloadBlob(blob, filename);
-            }
-        }
-    } else {
-        showToast("System does not support sharing this file.", "alert");
-        downloadBlob(blob, filename); // Fallback
-    }
-}
