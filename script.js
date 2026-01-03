@@ -1,6 +1,7 @@
 // --- SUPABASE CONFIG ---
 const SUPABASE_URL = 'https://zovnmmdfthpbubrorsgh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpvdm5tbWRmdGhwYnVicm9yc2doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NzE3ODgsImV4cCI6MjA3NzE0Nzc4OH0.92BH2sjUOgkw6iSRj1_4gt0p3eThg3QT4VK-Q4EdmBE';
+const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAAHzCAYAAADW0+8yAAAAAXNSR0IArs4c6QAAIABJREFUeF7snQeYVcUZ99+ZOfXW7bv0joVmjWI0gjU2jIU1BjWoKHYRRUTaIigICAIiwa6ABYzGEuwBjVFUCBZAEKSzwC7bbjt1Zr5vzmI+42eUsrCFuTw+8HhPmfnN3PM/885bEMiPJCAJSAKSgCQgCTR6AqjR90B2QBKQBCSBQ4wA5xwhhPgh1m3Z3V8hIAVdThFJQBKQBCQBSaAJEJCC3gQGUXZBEpAEJAFJQBKQgi7ngCQgCUgCkoAk0AQISEFvAoMouyAJSAKSgCQgCUhBl3NAEpAEJAFJQBJoAgSkoDeBQZRdkAQkAUlAEpAEpKDLOSAJSAKSgCQgCTQBAlLQm8Agyi5IApKAJCAJSAJS0OUckAQkAUlAEpAEmgABKehNYBBlFyQBSUASkIIu54AkIAlIApKAJNAECEhBbwKDKLsgCUgCkoAkIAlIQZdzQBKoQwIyfK8OYcpLSQKSwF4RkIK+V7jkwZKAJCAJSAKSQMMkIAW9YY6LbJUkIAlIApKAJLBXBKSg7xUuebAkIAlIApKAJNAwCUhBb5jjIlslCUgCkoAkIAnsFQEp6HuFSx4sCUgCkoAkIAk0TAJS0BvmuMhWSQKSgCQgCUgCe0VACvpe4ZIHSwKSgCQgCUgCDZOAFPSGOS6yVZKAJCAJSAKSwF4RkIK+V7jkwZKAJCAJSAKSQMMkIAW9YY6LbJUkIAkcYAL1mdWvPu99gLHKy9cjASno9Qhf3vq/CdTXQ66+7ivHXxKQBCSBuiQgBb0uacprSQKSgCQgCUgC9URACno9gZe3lQQkAUngYBOQ1qiDTfzg3k8K+sHlLe8mCUgCkoAkIAkcEAJS0A8IVnlRSUASOJQIyJXvoTTa/93XhjT2UtAP3Xkoey4JSAKSgCTQhAhIQW9Cgym7IglIApKAJHDoEpCCfuiOvey5JCAJSAKSQBMiIAW9CQ2m7Iok8GMCJSUlOKffb9S1AJC71aTQqxcrQYhJSpKAJNA0CUhBb5rjKnt1iBJYtGiRMmXp0laViJ20I5PpniGsvQugq5pWqVF/e4ShT7u3a7X08D9es0OK+yE6SWS3mywBKehNdmhlxw41Av3mTo99VLrrnCrO/4RC4VNsj8URB6ypKvi+D4QzqjC2w61JLG6dm/PUqR27Lnnsggsyhxon2V9JoKkSkILeVEdW9uuQInDRI4/kLk2W3VAR1W/KKGohUMBAARFigK5p4LouMOaDrmHObYdi29neiqgPXH5Y1+dKpKgfUnNFdrbpEpCC3nTHVvbsECFQsmKF9vwrrwzYpaNRyYhR4HGEgKugawY4iQxgUwWGAYD5gFUFDMpBydgQydjf57jO3ZeefvrrJb17+4cILtlNSaDJEpCC3mSHVnbsUCFw/H3jj99hosfLCe/uGTqiSAHwAMDjoCk6eNwHriIAwgE8D8CnEGUY4ghRXrVr8WGF2df+45a7Nh0qvGQ/JYGmSkAKelMdWdmvQ4LA9IVr9fu/eH5wjYrutU0lAroBQDSAjA8qYDA1ExKOBUAAwFAAGA1EXaccDMbBxLxSSyQHTT6i6/PFxcX0kIAmOykJNFECUtCb6MDKbh0aBPo++2zrxbt2vuqG9aPTnCGfCk0mgDwEEcME13LA4wyYCgAKBhBRaxiBJgzsvgfMd3nEdl/p4MENy0pKdh0a1GQvJYGmSUAKetMcV9mrQ4RAnxdeOPqd9WveDOXnNq9xLWCAAJAC2GfAXQaapgGoBHwMQKlTu0JHHADEprrYV2cQB7QkZ2fNHzfcf780ux8i80Z2s2kSkILeNMdV9qoBETiQxRvOe2HOKR/v3PFa0nOylbAJri82zzEoRANORQ4ZDAx48AcIBlBQ4BwH4jsFAVF1oFu3LT/MUy5fM27cmgaETTZFEpAE9pKAFPS9BCYPlwT2hIAQ8ZtmzcpaWbku8n3ayRTp+Vb0VHAX9RpNEQqWyHXy+f3850/+5+aNr4Gm5qRdG8xQCITR3fUYYM0A5lBAWAXuuoANVSzegbo2YOEgx4XgIzCqEsu6UuVPn5eUfFcnjfrRRQSH4gVj1JWryjStWlPKU6lI62g08+mUKVVQhxzqut3yepJAYyQgBb0xjpps80ElsC8rbHHOVXMmh5Zt3N7ZCendLQZt7JSbzMHmylBGWXXxOafuqItQsdMff7z7at99s9JKtWIKBocyILoKDDBw2wViRkHBGFzbAS7eI4LMrwwIQUBtC1SsQI7tLfqdlnvlgsE3bqsrsCWLFin/WrGiYF359i62xrtRz4+7mfT3zdTQv11/1/3/3/3/3//7//7//2//4//8//6//5//4//3//2//1//0//z//z//x//x";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- DATA & STATE ---
@@ -473,6 +474,33 @@ document.addEventListener('mouseup', () => {
     }
 });
 
+// --- AUDIT LOGGING ---
+async function logReportAction(action, level) {
+    if (!state.currentUser) return;
+
+    const payload = {
+        user_name: state.currentUser,
+        role: state.role,
+        action: action,
+        report_level: level,
+        timestamp: new Date().toISOString()
+    };
+
+    console.log("Audit Log:", payload);
+
+    try {
+        // Attempt to log to Supabase 'report_logs' table
+        // This is a fire-and-forget operation, we don't block the UI
+        // We assume table 'report_logs' might exist. If not, error is caught and ignored.
+        const { error } = await supabaseClient.from('report_logs').insert([payload]);
+        if (error) {
+            console.warn("Audit Log Insert Failed (Table might not exist):", error.message);
+        }
+    } catch (e) {
+        console.warn("Audit Log Error:", e);
+    }
+}
+
 function renderCalendar(previewStart = null, previewEnd = null) {
     const container = document.getElementById('calendarDays');
     const monthYearLabel = document.getElementById('calendarMonthYear');
@@ -733,10 +761,16 @@ function navigateDatePicker(delta) {
 // Fetch data for a date range (aggregates multiple days)
 // Core fetch and aggregate logic - Reusable
 async function fetchAndAggregateData(fromDate, toDate) {
-    const p1 = supabaseClient.from('daily_reports').select('*').gte('date', fromDate).lte('date', toDate);
-    const p2 = supabaseClient.from('daily_reports_achievements').select('*').gte('date', fromDate).lte('date', toDate);
+    let query1 = supabaseClient.from('daily_reports').select('*').gte('date', fromDate).lte('date', toDate);
+    let query2 = supabaseClient.from('daily_reports_achievements').select('*').gte('date', fromDate).lte('date', toDate);
 
-    const [resPlan, resAchieve] = await Promise.all([p1, p2]);
+    // STRICT BACKEND ENFORCEMENT: If DM, restrict fetch to their name
+    if (state.role === 'DM' && state.currentUser) {
+        query1 = query1.eq('dm_name', state.currentUser);
+        query2 = query2.eq('dm_name', state.currentUser);
+    }
+
+    const [resPlan, resAchieve] = await Promise.all([query1, query2]);
 
     if (resPlan.error || resAchieve.error) {
         throw new Error(resPlan.error?.message || resAchieve.error?.message);
@@ -921,8 +955,17 @@ async function fetchSupabaseData() {
             }, 15000)
         );
 
-        const p1 = supabaseClient.from('daily_reports').select('*').eq('date', targetDate);
-        const p2 = supabaseClient.from('daily_reports_achievements').select('*').eq('date', targetDate);
+        let query1 = supabaseClient.from('daily_reports').select('*').eq('date', targetDate);
+        let query2 = supabaseClient.from('daily_reports_achievements').select('*').eq('date', targetDate);
+
+        // STRICT BACKEND ENFORCEMENT: If DM, restrict fetch to their name
+        if (state.role === 'DM' && state.currentUser) {
+            query1 = query1.eq('dm_name', state.currentUser);
+            query2 = query2.eq('dm_name', state.currentUser);
+        }
+
+        const p1 = query1;
+        const p2 = query2;
 
         console.log("fetchSupabaseData: Awaiting Promise.race");
         const [resPlan, resAchieve] = await Promise.race([
@@ -1263,7 +1306,8 @@ function loadAppUI() {
     // Disable Sidebar items for DM
     if (role === 'DM') {
         document.getElementById('nav-dashboard').classList.add('hidden');
-        document.getElementById('nav-reports').classList.add('hidden');
+        // Reports enabled for DM
+        document.getElementById('nav-reports').classList.remove('hidden');
         // Auto switch to hierarchy
         switchTab('hierarchy');
     } else {
@@ -1398,7 +1442,7 @@ function renderDashboard() {
             }
         }
         // 3. REPORTS TAB (CEO Only)
-        else if (state.activeTab === 'reports' && state.role === 'CEO') {
+        else if (state.activeTab === 'reports') {
             renderReports(buffer);
             container.innerHTML = "";
             container.appendChild(buffer);
@@ -1536,7 +1580,9 @@ function renderReports(buffer) {
                     <div>
                         <div style="font-size:14px; font-weight:600; margin-bottom:12px;">2. Report Level</div>
                         <div style="display:flex; gap:8px;">
-                            <button class="btn ${state.reportLevel === 'REGION' ? 'btn-primary' : 'btn-outline'}" onclick="setReportLevel('REGION')">Region Level</button>
+                            ${state.role !== 'DM' ?
+                            `<button class="btn ${state.reportLevel === 'REGION' ? 'btn-primary' : 'btn-outline'}" onclick="setReportLevel('REGION')">Region Level</button>`
+                            : ''}
                             <button class="btn ${state.reportLevel === 'DISTRICT' ? 'btn-primary' : 'btn-outline'}" onclick="setReportLevel('DISTRICT')">District Level</button>
                             <button class="btn ${state.reportLevel === 'BRANCH' ? 'btn-primary' : 'btn-outline'}" onclick="setReportLevel('BRANCH')">Branch Level</button>
                         </div>
@@ -1694,9 +1740,22 @@ async function handleGeneratePlanReport() {
         return;
     }
 
+    // Ensure valid state for DM
+    if (state.role === 'DM' && state.reportLevel === 'REGION') {
+        state.reportLevel = 'DISTRICT';
+    }
+
+    // Ensure valid state for DM
+    if (state.role === 'DM' && state.reportLevel === 'REGION') {
+        state.reportLevel = 'DISTRICT';
+    }
+
     const level = state.reportLevel; // REGION, DISTRICT, BRANCH
     const dateStr = state.systemDate;
     const dateDisplay = formatDateForDisplay(dateStr);
+
+    // Log Action
+    logReportAction('Generate Plan Report', level);
 
     setLoading(true, "Generating Plan Report...");
 
@@ -1724,6 +1783,9 @@ async function handleGenerateBothReports() {
     const level = state.reportLevel; // REGION, DISTRICT, BRANCH
     const dateStr = state.systemDate;
     const dateDisplay = formatDateForDisplay(dateStr);
+
+    // Log Action
+    logReportAction('Generate Combined Report', level);
 
     setLoading(true, "Generating Combined Report...");
 
@@ -1782,6 +1844,7 @@ function getAggregatedReportData(level, isPlan) {
     const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
     const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
     const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
+    const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
 
     // Helper to sum objects (only numeric values)
     const sumObjects = (acc, curr) => {
@@ -1800,7 +1863,12 @@ function getAggregatedReportData(level, isPlan) {
 
     // 1. BRANCH LEVEL (No Aggregation, just Filter)
     if (level === 'BRANCH') {
-        state.rawData.rows.forEach(r => {
+        let sourceRows = state.rawData.rows;
+        if (state.role === 'DM' && state.currentUser) {
+            sourceRows = sourceRows.filter(r => (r[idxDM] || "").trim() === state.currentUser);
+        }
+
+        sourceRows.forEach(r => {
             const name = r[idxBranch];
             const region = r[idxRegion];
             const district = r[idxDistrict];
@@ -1824,7 +1892,12 @@ function getAggregatedReportData(level, isPlan) {
     // 2. REGION or DISTRICT LEVEL (Aggregation)
     const groups = {};
 
-    state.rawData.rows.forEach(r => {
+    let sourceRows = state.rawData.rows;
+    if (state.role === 'DM' && state.currentUser) {
+        sourceRows = sourceRows.filter(r => (r[idxDM] || "").trim() === state.currentUser);
+    }
+
+    sourceRows.forEach(r => {
         const branchName = r[idxBranch];
         const region = r[idxRegion] || "Unknown";
         const district = r[idxDistrict] || "Unknown";
@@ -2104,12 +2177,33 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
         <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">NPA</td>
     `;
 
+    // Header HTML with Logo
+    const headerHTML = `
+        <div style="display:flex; align-items:center; justify-content:center; margin-bottom:20px; position:relative;">
+            <div style="position:absolute; left:0; top:0; bottom:0; display:flex; align-items:center;">
+                <img src="${logoBase64}" style="height:60px; width:auto;" alt="Logo" />
+            </div>
+            <div style="text-align: center; font-weight: bold; font-size: 18px; font-family:Arial, sans-serif;">
+                ${title}
+            </div>
+        </div>
+    `;
+
+    // Footer HTML
+    const now = new Date();
+    const timestamp = now.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+    const user = state.currentUser || 'System';
+    const footerHTML = `
+        <div style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 10px; font-size: 10px; color: #666; font-family: Arial, sans-serif; display: flex; justify-content: space-between;">
+            <span>Generated by: ${user}</span>
+            <span>Generated on: ${timestamp}</span>
+        </div>
+    `;
+
     return `
         <div style="background:white; padding:20px;">
             <!-- Title -->
-            <div style="text-align: center; font-weight: bold; font-size: 18px; padding: 12px; font-family:Arial, sans-serif; margin-bottom:20px;">
-                ${title}
-            </div>
+            ${headerHTML}
 
             <!-- EXECUTIVE SUMMARY -->
             ${summaryHTML}
@@ -2142,6 +2236,8 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
             ${bodyRows}
             ${totalRow}
             </table>
+
+            ${footerHTML}
         </div>
     `;
 }
@@ -2260,14 +2356,33 @@ function generateReportHTML(title, level, rows, isPlan) {
         </tr>
     `;
 
+    // Header HTML with Logo
+    const headerHTML = `
+        <div style="display:flex; align-items:center; justify-content:center; margin-bottom:20px; position:relative;">
+            <div style="position:absolute; left:0; top:0; bottom:0; display:flex; align-items:center;">
+                <img src="${logoBase64}" style="height:60px; width:auto;" alt="Logo" />
+            </div>
+            <div style="text-align: center; font-weight: bold; font-size: 18px; font-family:Arial, sans-serif;">
+                ${title}
+            </div>
+        </div>
+    `;
+
+    // Footer HTML
+    const now = new Date();
+    const timestamp = now.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+    const user = state.currentUser || 'System';
+    const footerHTML = `
+        <div style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 10px; font-size: 10px; color: #666; font-family: Arial, sans-serif; display: flex; justify-content: space-between;">
+            <span>Generated by: ${user}</span>
+            <span>Generated on: ${timestamp}</span>
+        </div>
+    `;
+
     return `
-        <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: auto; background:white;">
-            <!-- Title -->
-            <tr>
-                <td colspan="15" style="text-align: center; font-weight: bold; font-size: 14px; padding: 8px; background: ${colors.white}; border: 1px solid #000; color:black;">
-                    ${title}
-                </td>
-            </tr>
+        <div style="background:white; padding:20px;">
+        ${headerHTML}
+        <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: 100%; background:white;">
             <!-- Header Row 1 -->
             <tr style="font-weight: bold; font-size: 10px;">
                 <td rowspan="2" style="background: ${colors.white}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">${firstColHeader}</td>
@@ -2299,6 +2414,8 @@ function generateReportHTML(title, level, rows, isPlan) {
             ${bodyRows}
             ${totalRow}
         </table>
+        ${footerHTML}
+        </div>
     `;
 }
 
