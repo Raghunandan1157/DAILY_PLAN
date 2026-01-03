@@ -291,6 +291,12 @@ function toggleViewMode() {
 }
 
 function setReportLevel(level) {
+    // DM cannot access REGION level - enforce restriction
+    if (state.role === 'DM' && level === 'REGION') {
+        console.warn('DM users cannot access REGION level reports');
+        return; // Block the action
+    }
+
     state.reportLevel = level;
     // Re-render Reports Tab (since buttons are there)
     if (state.activeTab === 'reports') {
@@ -300,6 +306,41 @@ function setReportLevel(level) {
         container.innerHTML = "";
         container.appendChild(buffer);
     }
+}
+
+// --- DM HELPER FUNCTIONS ---
+// Get the district(s) assigned to the current DM
+function getDMDistricts() {
+    if (!state.currentUser || !state.rawData) return [];
+    const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
+    const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
+
+    if (idxDM === -1 || idxDistrict === -1) return [];
+
+    const districts = new Set();
+    state.rawData.rows.forEach(r => {
+        if ((r[idxDM] || '').trim() === state.currentUser) {
+            districts.add(r[idxDistrict]);
+        }
+    });
+    return Array.from(districts);
+}
+
+// Get branches assigned to the current DM
+function getDMBranches() {
+    if (!state.currentUser || !state.rawData) return [];
+    const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
+    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
+
+    if (idxDM === -1 || idxBranch === -1) return [];
+
+    const branches = [];
+    state.rawData.rows.forEach(r => {
+        if ((r[idxDM] || '').trim() === state.currentUser) {
+            branches.push(r[idxBranch]);
+        }
+    });
+    return branches;
 }
 
 function updateViewModeUI() {
@@ -1263,7 +1304,17 @@ function loadAppUI() {
     // Disable Sidebar items for DM
     if (role === 'DM') {
         document.getElementById('nav-dashboard').classList.add('hidden');
-        document.getElementById('nav-reports').classList.add('hidden');
+        // DM CAN access reports but with restrictions - show the nav item
+        document.getElementById('nav-reports').classList.remove('hidden');
+        // Set default report level to DISTRICT for DM (not REGION)
+        state.reportLevel = 'DISTRICT';
+
+        // Hide date picker and search for DM - they cannot use filters
+        const datePicker = document.querySelector('.date-picker-wrapper');
+        if (datePicker) datePicker.style.display = 'none';
+        const searchContainer = document.querySelector('.search-container');
+        if (searchContainer) searchContainer.style.display = 'none';
+
         // Auto switch to hierarchy
         switchTab('hierarchy');
     } else {
@@ -1397,8 +1448,8 @@ function renderDashboard() {
                 renderDMTable(document.getElementById("dmTableHook"));
             }
         }
-        // 3. REPORTS TAB (CEO Only)
-        else if (state.activeTab === 'reports' && state.role === 'CEO') {
+        // 3. REPORTS TAB (CEO and DM with role-based restrictions)
+        else if (state.activeTab === 'reports') {
             renderReports(buffer);
             container.innerHTML = "";
             container.appendChild(buffer);
@@ -1508,6 +1559,13 @@ function renderDashboard() {
 }
 
 function renderReports(buffer) {
+    // DM-specific rendering with restrictions
+    if (state.role === 'DM') {
+        renderDMReports(buffer);
+        return;
+    }
+
+    // CEO Full Access UI
     buffer.innerHTML = `
         <div class="chart-card grid-full">
             <div class="chart-header">
@@ -1567,6 +1625,74 @@ function renderReports(buffer) {
             .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; cursor: pointer; }
             .checkbox-row input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; }
         </style>
+    `;
+}
+
+// DM Restricted Reports View
+function renderDMReports(buffer) {
+    const dmDistricts = getDMDistricts();
+    const dmBranches = getDMBranches();
+    const districtDisplay = dmDistricts.length > 0 ? dmDistricts.join(', ') : 'Your District';
+    const branchCount = dmBranches.length;
+
+    // Ensure DM cannot have REGION level set
+    if (state.reportLevel === 'REGION') {
+        state.reportLevel = 'DISTRICT';
+    }
+
+    buffer.innerHTML = `
+        <div class="chart-card grid-full">
+            <div class="chart-header">
+                <div class="chart-title">📊 My Reports</div>
+                <div style="font-size:12px; color:var(--text-secondary);">View reports for your assigned district and branches.</div>
+            </div>
+
+            <!-- DM INFO BANNER -->
+            <div style="padding: 16px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(79, 70, 229, 0.05)); border-bottom: 1px solid var(--border-color);">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:40px; height:40px; background:var(--primary-accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:600;">
+                        ${state.currentUser ? state.currentUser.charAt(0) : 'D'}
+                    </div>
+                    <div>
+                        <div style="font-weight:600; color:var(--text-primary);">${state.currentUser || 'District Manager'}</div>
+                        <div style="font-size:12px; color:var(--text-secondary);">District: ${districtDisplay} • ${branchCount} Branch${branchCount !== 1 ? 'es' : ''}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORT LEVEL (No Region for DM) -->
+            <div style="padding: 16px; border-bottom: 1px solid var(--border-color);">
+                <div style="font-size:14px; font-weight:600; margin-bottom:12px;">Report View</div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn ${state.reportLevel === 'DISTRICT' ? 'btn-primary' : 'btn-outline'}" onclick="setReportLevel('DISTRICT')">
+                        📍 District View
+                    </button>
+                    <button class="btn ${state.reportLevel === 'BRANCH' ? 'btn-primary' : 'btn-outline'}" onclick="setReportLevel('BRANCH')">
+                        🏢 Branch View
+                    </button>
+                </div>
+                <div style="margin-top:12px; padding:10px; background:var(--bg-body); border-radius:8px; font-size:12px; color:var(--text-secondary);">
+                    ${state.reportLevel === 'DISTRICT'
+            ? `<strong>District View:</strong> Showing aggregated data for <strong>${districtDisplay}</strong>`
+            : `<strong>Branch View:</strong> Showing ${branchCount} branch${branchCount !== 1 ? 'es' : ''} under your district`
+        }
+                </div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div style="padding: 16px; border-top: 1px solid var(--border-color);">
+                <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <button class="btn btn-outline" onclick="handleGeneratePlanReport()" style="padding:12px 24px; border-color: var(--primary); color: var(--primary); font-size: 15px; font-weight: 600;">
+                        <svg class="icon" viewBox="0 0 24 24" style="stroke: currentColor; width: 18px; height: 18px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                        Generate Plan Report
+                    </button>
+                    <button class="btn btn-primary" onclick="handleGenerateBothReports()" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
+                        <svg class="icon" viewBox="0 0 24 24" style="stroke: white; width: 20px; height: 20px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Generate Plan & Achievement Reports
+                    </button>
+                </div>
+            </div>
+        </div>
     `;
 }
 
@@ -1632,9 +1758,20 @@ function getReportRows(level) {
         return acc;
     };
 
+    // DM-specific filtering
+    const isDM = state.role === 'DM';
+    const dmBranches = isDM ? getDMBranches() : null;
+    const dmDistricts = isDM ? getDMDistricts() : null;
+
     if (level === 'BRANCH') {
         state.rawData.rows.forEach(r => {
             const name = r[idxBranch];
+
+            // DM Filter: Only include DM's own branches
+            if (isDM && !dmBranches.includes(name)) {
+                return; // Skip branches not assigned to this DM
+            }
+
             const entry = state.branchDetails[name] || {};
             rows.push({
                 name: name,
@@ -1658,8 +1795,18 @@ function getReportRows(level) {
         // const dm = r[idxDM]; // Unused for grouping key, but can be part of metadata
 
         let key;
-        if (level === 'REGION') key = region;
-        else if (level === 'DISTRICT') key = district;
+        if (level === 'REGION') {
+            // DM cannot access REGION level
+            if (isDM) return;
+            key = region;
+        }
+        else if (level === 'DISTRICT') {
+            // DM Filter: Only include DM's own districts
+            if (isDM && !dmDistricts.includes(district)) {
+                return; // Skip districts not assigned to this DM
+            }
+            key = district;
+        }
 
         if (!key) return;
 
@@ -1681,7 +1828,7 @@ function getReportRows(level) {
         }
     });
 
-    return Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
+    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // --- REPORT GENERATION ---
@@ -1853,7 +2000,7 @@ function getAggregatedReportData(level, isPlan) {
         }
     });
 
-    return Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
+    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Generate Combined HTML Table string (Side-by-Side)
@@ -1895,8 +2042,8 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
     const sortedRows = Array.from(mergedMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
     // Totals
-    const tPlan = { ftod:0, slip:0, pnpa:0, npaAct:0, npaClose:0, od:0, ns:0, disbIglAcc:0, disbIglAmt:0, disbIlAcc:0, disbIlAmt:0, kycFig:0, kycIl:0, kycNpa:0 };
-    const tAch = { ftod:0, slip:0, pnpa:0, npaAct:0, npaClose:0, od:0, ns:0, disbIglAcc:0, disbIglAmt:0, disbIlAcc:0, disbIlAmt:0, kycFig:0, kycIl:0, kycNpa:0 };
+    const tPlan = { ftod: 0, slip: 0, pnpa: 0, npaAct: 0, npaClose: 0, od: 0, ns: 0, disbIglAcc: 0, disbIglAmt: 0, disbIlAcc: 0, disbIlAmt: 0, kycFig: 0, kycIl: 0, kycNpa: 0 };
+    const tAch = { ftod: 0, slip: 0, pnpa: 0, npaAct: 0, npaClose: 0, od: 0, ns: 0, disbIglAcc: 0, disbIglAmt: 0, disbIlAcc: 0, disbIlAmt: 0, kycFig: 0, kycIl: 0, kycNpa: 0 };
 
     let bodyRows = '';
     let totalRowAchievementSum = 0;
