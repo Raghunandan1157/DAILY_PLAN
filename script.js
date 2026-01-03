@@ -1945,12 +1945,20 @@ function getAggregatedReportData(level, isPlan) {
         return acc;
     };
 
+    // DM-specific filtering
+    const isDM = state.role === 'DM';
+    const dmBranches = isDM ? getDMBranches() : null;
+    const dmDistricts = isDM ? getDMDistricts() : null;
+
     // 1. BRANCH LEVEL (No Aggregation, just Filter)
     if (level === 'BRANCH') {
         state.rawData.rows.forEach(r => {
             const name = r[idxBranch];
             const region = r[idxRegion];
             const district = r[idxDistrict];
+
+            // DM Filter
+            if (isDM && !dmBranches.includes(name)) return;
 
             const entry = state.branchDetails[name] || {};
             // Filter: Get ONLY Target or ONLY Achievement
@@ -1977,8 +1985,14 @@ function getAggregatedReportData(level, isPlan) {
         const district = r[idxDistrict] || "Unknown";
 
         let key;
-        if (level === 'REGION') key = region;
-        else if (level === 'DISTRICT') key = district;
+        if (level === 'REGION') {
+            if (isDM) return; // Block DM from Region reports
+            key = region;
+        }
+        else if (level === 'DISTRICT') {
+            if (isDM && !dmDistricts.includes(district)) return; // Filter DM districts
+            key = district;
+        }
 
         if (!key) return;
 
