@@ -1310,8 +1310,8 @@ function loadAppUI() {
         state.reportLevel = 'DISTRICT';
 
         // Hide date picker and search for DM - they cannot use filters
-        const datePicker = document.querySelector('.date-picker-wrapper');
-        if (datePicker) datePicker.style.display = 'none';
+        // const datePicker = document.querySelector('.date-picker-wrapper');
+        // if (datePicker) datePicker.style.display = 'none';
         const searchContainer = document.querySelector('.search-container');
         if (searchContainer) searchContainer.style.display = 'none';
 

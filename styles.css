@@ -1218,7 +1218,13 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
+            transition: opacity 0.3s;
             backdrop-filter: blur(2px);
+        }
+
+        /* Report Preview Modal - Highest Priority */
+        #reportPreviewModal {
+            z-index: 20000 !important;
         }
 
         .modal-overlay.visible {
