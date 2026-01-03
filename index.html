@@ -602,6 +602,51 @@
     </div>
   </div>
 
+  <!-- REPORT OPTIONS MODAL -->
+  <div class="modal-overlay" id="reportOptionsModal" style="z-index: 2000;">
+    <div class="modal-container" style="max-width: 400px;">
+      <div class="modal-header">
+        <div class="modal-title">Report Options</div>
+        <button class="modal-close" onclick="closeReportOptionsModal()" aria-label="Close">
+          <svg class="icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- VIEW OPTION -->
+          <div class="option-card" onclick="selectReportOption('VIEW')">
+            <div class="option-icon-box" style="background: var(--primary-light); color: var(--primary-accent);">
+              <svg class="icon" viewBox="0 0 24 24" style="width: 32px; height: 32px;">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </div>
+            <div class="option-title">View</div>
+            <div class="option-desc">Download & View</div>
+          </div>
+
+          <!-- SHARE OPTION -->
+          <div class="option-card" onclick="selectReportOption('SHARE')">
+            <div class="option-icon-box" style="background: var(--success-light); color: var(--success);">
+              <svg class="icon" viewBox="0 0 24 24" style="width: 32px; height: 32px;">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+            </div>
+            <div class="option-title">Share</div>
+            <div class="option-desc">Send via App</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
 
 
