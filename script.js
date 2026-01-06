@@ -155,7 +155,7 @@ let state = {
 };
 
 // --- HELPER FUNCTIONS ---
-function getSlippedLabel(dateStr) {
+function getPreviousMonthName(dateStr) {
     const targetDate = dateStr ? new Date(dateStr) : new Date();
     // Fix: Set to 1st of month to avoid month-end rollover issues (e.g. Mar 31 -> Mar 3)
     targetDate.setDate(1);
@@ -163,7 +163,11 @@ function getSlippedLabel(dateStr) {
     targetDate.setMonth(targetDate.getMonth() - 1);
 
     const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-    return `${monthNames[targetDate.getMonth()]} Slipped`;
+    return monthNames[targetDate.getMonth()];
+}
+
+function getSlippedLabel(dateStr) {
+    return `${getPreviousMonthName(dateStr)} Slipped`;
 }
 
 function calculateTotalCollectionPercentage() {
@@ -3914,6 +3918,13 @@ function openBranchModal(branchName) {
             el.parentElement.style.display = visible ? '' : 'none';
         }
     };
+
+    // Update dynamic titles
+    const prevMonth = getPreviousMonthName(state.systemDate);
+    const slippedTitleEl = document.getElementById('slippedSectionTitle');
+    if (slippedTitleEl) {
+        slippedTitleEl.textContent = `${prevMonth}-25 SLIPPED ACCOUNT`;
+    }
 
     if (reportState === 'ACHIEVEMENT') {
         updateLabel('ftod_plan', 'Achievement');
