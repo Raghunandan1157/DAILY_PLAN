@@ -2542,7 +2542,7 @@ function generateReportHTML(title, level, rows, isPlan) {
                 <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">${getSlippedLabel(state.systemDate)}</td>
                 <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">PNPA</td>
                 <td colspan="2" style="background: ${colors.npa}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">NPA</td>
-                <td colspan="2" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">FY 25-26</td>
+                <td colspan="2" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">FY 2025-26</td>
                 <td colspan="4" style="background: ${colors.disb}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">Disbursement ${suffix}</td>
                 <td colspan="3" style="background: ${colors.kyc}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">KYC Sourcing</td>
             </tr>
@@ -2800,8 +2800,8 @@ function generateAndDownloadReport(reportRows, fromDate, toDate) {
                 <th colspan="2" class="bg-pink">PNPA</th>
                 <!-- NPA -->
                 <th colspan="2" class="bg-yellow">NPA</th>
-                <!-- FY 25-26 -->
-                <th colspan="4" class="bg-cyan">FY 25-26</th>
+                <!-- FY 2025-26 -->
+                <th colspan="4" class="bg-cyan">FY 2025-26</th>
                 <!-- Disbursement Plan -->
                 <th colspan="4" class="bg-orange">Disbursement Plan</th>
                 <!-- KYC -->
@@ -2822,7 +2822,7 @@ function generateAndDownloadReport(reportRows, fromDate, toDate) {
                 <th class="bg-pink">Actual</th><th class="bg-pink">Plan</th>
                 <!-- NPA -->
                 <th class="bg-yellow">Activation</th><th class="bg-yellow">Closure</th>
-                <!-- FY 25-26 -->
+                <!-- FY 2025-26 -->
                 <th class="bg-cyan">Actual OD Acc</th><th class="bg-cyan">OD Plan</th><th class="bg-cyan">Non starter Acc</th><th class="bg-cyan">Non starter Plan</th>
                 <!-- Disbursement -->
                 <th class="bg-orange">IGL Acc</th><th class="bg-orange">IGL Amt</th><th class="bg-orange">IL Acc</th><th class="bg-orange">IL Amt</th>
@@ -3850,7 +3850,7 @@ function createViewSummary(targetData, achieveData) {
     )}
                         </div>
                         <div>
-                            ${section('FY 25-26 Accounts',
+                            ${section('FY 2025-26 Accounts',
         metricRow('Total OD Accounts', 'fy_od_acc', null, true) +
         metricRow('OD Collection Plan', 'fy_od_plan') +
         metricRow('Non-Starter Accounts', 'fy_non_start_acc', null, true) +
