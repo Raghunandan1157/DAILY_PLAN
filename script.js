@@ -1958,7 +1958,7 @@ function showReportPreviewModal(htmlContent, title, filename) {
 function openReportInNewTab() {
     const body = document.getElementById('reportPreviewBody');
     if (!body) return;
-    
+
     const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -1972,11 +1972,10 @@ function openReportInNewTab() {
         </head>
         <body>
             ${body.innerHTML}
-            <script>window.print();</script>
         </body>
         </html>
     `;
-    
+
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
@@ -1986,12 +1985,6 @@ function closeReportPreviewModal() {
     const modal = document.getElementById('reportPreviewModal');
     if (modal) {
         modal.classList.remove('visible');
-        // Reset fullscreen state when closing
-        const modalContainer = modal.querySelector('.modal-container');
-        if (modalContainer) modalContainer.classList.remove('fullscreen');
-        const viewBtn = modal.querySelector('.modal-footer .btn-outline');
-        if (viewBtn) viewBtn.textContent = "Full Screen";
-
         document.body.style.overflow = '';
     }
 }
