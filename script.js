@@ -154,6 +154,84 @@ let state = {
     dragStartDate: null
 };
 
+// --- HELPER FUNCTIONS ---
+function getPreviousMonthName(dateStr) {
+    const targetDate = dateStr ? new Date(dateStr) : new Date();
+    // Fix: Set to 1st of month to avoid month-end rollover issues (e.g. Mar 31 -> Mar 3)
+    targetDate.setDate(1);
+    // Go to previous month
+    targetDate.setMonth(targetDate.getMonth() - 1);
+
+    const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    return monthNames[targetDate.getMonth()];
+}
+
+function getSlippedLabel(dateStr) {
+    return `${getPreviousMonthName(dateStr)} Slipped`;
+}
+
+function calculateTotalCollectionPercentage() {
+    let totalPlan = 0;
+    let totalAchieve = 0;
+
+    // Use getReportRows logic to respect current filtering
+    // (We reuse the existing logic which respects state.role and state.reportLevel)
+    // However, getReportRows returns aggregated rows. We can sum them up.
+
+    // To be efficient and precise, let's iterate branchDetails directly
+    // but filter by the current VIEW constraints (Role/Level)
+    // Actually, getReportRows('BRANCH') already does the filtering for DM/Region
+    // Let's use getAggregatedReportData('BRANCH', true/false) logic or just iterate rawData
+
+    const idxBranch = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'branch');
+    const idxRegion = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'region');
+    const idxDistrict = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'district');
+    const idxDM = state.rawData.headers.findIndex(h => h.trim().toLowerCase() === 'dm name');
+
+    // DM Restriction
+    const isDM = state.role === 'DM';
+    const dmBranches = isDM ? getDMBranches() : null;
+
+    state.rawData.rows.forEach(r => {
+        const name = r[idxBranch];
+        if (!name) return;
+
+        // DM Filter
+        if (isDM && !dmBranches.includes(name)) return;
+
+        // Also respect Regional drill down?
+        // The requirements say "when filters/date/level changes".
+        // The Report Builder has a "Report Level" filter (Branch/District/Region).
+        // But the data source is always the same (filtered by Role).
+        // The "Achievement %" is typically "Total Achievement / Total Plan" for the *scope of the report*.
+        // Since the report usually covers "All Regions" (for CEO) or "My District" (for DM),
+        // we should calculate based on ALL available data for the current user.
+        // Unless "level changes" implies showing the achievement for that specific level?
+        // But the button generates the report for *all* entities at that level.
+        // So global aggregation for the user is correct.
+
+        const entry = state.branchDetails[name];
+        if (!entry) return;
+
+        // Sum Plans
+        if (entry.target) {
+            totalPlan += (Number(entry.target.ftod_plan) || 0) +
+                         (Number(entry.target.nov_25_Slipped_Accounts_Plan) || 0) +
+                         (Number(entry.target.pnpa_plan) || 0);
+        }
+
+        // Sum Achievements
+        if (entry.achievement) {
+            totalAchieve += (Number(entry.achievement.ftod_actual) || 0) +
+                            (Number(entry.achievement.nov_25_Slipped_Accounts_Actual) || 0) +
+                            (Number(entry.achievement.pnpa_actual) || 0);
+        }
+    });
+
+    if (totalPlan === 0) return 0;
+    return Math.round((totalAchieve / totalPlan) * 100);
+}
+
 // --- PERSISTENCE ---
 function loadPersistedDateRange() {
     try {
@@ -1566,6 +1644,7 @@ function renderReports(buffer) {
     }
 
     // CEO Full Access UI
+    const pct = calculateTotalCollectionPercentage();
     buffer.innerHTML = `
         <div class="chart-card grid-full">
             <div class="chart-header">
@@ -1616,7 +1695,7 @@ function renderReports(buffer) {
                     </button>
                     <button class="btn btn-primary" onclick="handleGenerateBothReports()" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
                         <svg class="icon" viewBox="0 0 24 24" style="stroke: white; width: 20px; height: 20px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Generate Plan & Achievement Reports
+                        Generate Plan & Achievement Reports ${pct > 0 ? `(${pct}%)` : ''}
                     </button>
                 </div>
             </div>
@@ -1640,6 +1719,7 @@ function renderDMReports(buffer) {
         state.reportLevel = 'DISTRICT';
     }
 
+    const pct = calculateTotalCollectionPercentage();
     buffer.innerHTML = `
         <div class="chart-card grid-full">
             <div class="chart-header">
@@ -1688,7 +1768,7 @@ function renderDMReports(buffer) {
                     </button>
                     <button class="btn btn-primary" onclick="handleGenerateBothReports()" style="padding:12px 32px; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
                         <svg class="icon" viewBox="0 0 24 24" style="stroke: white; width: 20px; height: 20px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Generate Plan & Achievement Reports
+                        Generate Plan & Achievement Reports ${pct > 0 ? `(${pct}%)` : ''}
                     </button>
                 </div>
             </div>
@@ -2280,16 +2360,16 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
     // Common Column Headers Row
     const subHeaders = `
         <td style="background: ${colors.ftod}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">FTOD</td>
-        <td style="background: ${colors.slipped}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">Slipped</td>
+        <td style="background: ${colors.slipped}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">${getSlippedLabel(state.systemDate)}</td>
         <td style="background: ${colors.pnpa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">PNPA</td>
         <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">Act</td>
         <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">Close</td>
         <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">OD</td>
         <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">NS</td>
-        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IGL#</td>
-        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IGL ₹</td>
-        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL#</td>
-        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL ₹</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IGL A/c</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IGL Amt</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL A/c</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL Amt</td>
         <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">FIG/IGL</td>
         <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL</td>
         <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">NPA</td>
@@ -2463,10 +2543,10 @@ function generateReportHTML(title, level, rows, isPlan) {
             <tr style="font-weight: bold; font-size: 10px;">
                 <td rowspan="2" style="background: ${colors.white}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">${firstColHeader}</td>
                 <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">FTOD</td>
-                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">Slipped</td>
+                <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">${getSlippedLabel(state.systemDate)}</td>
                 <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">PNPA</td>
                 <td colspan="2" style="background: ${colors.npa}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">NPA</td>
-                <td colspan="2" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">FY 25-26</td>
+                <td colspan="2" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">FY 2025-26</td>
                 <td colspan="4" style="background: ${colors.disb}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">Disbursement ${suffix}</td>
                 <td colspan="3" style="background: ${colors.kyc}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">KYC Sourcing</td>
             </tr>
@@ -2479,9 +2559,9 @@ function generateReportHTML(title, level, rows, isPlan) {
                 <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">Closure</td>
                 <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">OD ${suffix}</td>
                 <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">NS ${suffix}</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL Acc</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL A/c</td>
                 <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL Amt</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL Acc</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL A/c</td>
                 <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL Amt</td>
                 <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL&FIG</td>
                 <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL</td>
@@ -2724,8 +2804,8 @@ function generateAndDownloadReport(reportRows, fromDate, toDate) {
                 <th colspan="2" class="bg-pink">PNPA</th>
                 <!-- NPA -->
                 <th colspan="2" class="bg-yellow">NPA</th>
-                <!-- FY 25-26 -->
-                <th colspan="4" class="bg-cyan">FY 25-26</th>
+                <!-- FY 2025-26 -->
+                <th colspan="4" class="bg-cyan">FY 2025-26</th>
                 <!-- Disbursement Plan -->
                 <th colspan="4" class="bg-orange">Disbursement Plan</th>
                 <!-- KYC -->
@@ -2746,7 +2826,7 @@ function generateAndDownloadReport(reportRows, fromDate, toDate) {
                 <th class="bg-pink">Actual</th><th class="bg-pink">Plan</th>
                 <!-- NPA -->
                 <th class="bg-yellow">Activation</th><th class="bg-yellow">Closure</th>
-                <!-- FY 25-26 -->
+                <!-- FY 2025-26 -->
                 <th class="bg-cyan">Actual OD Acc</th><th class="bg-cyan">OD Plan</th><th class="bg-cyan">Non starter Acc</th><th class="bg-cyan">Non starter Plan</th>
                 <!-- Disbursement -->
                 <th class="bg-orange">IGL Acc</th><th class="bg-orange">IGL Amt</th><th class="bg-orange">IL Acc</th><th class="bg-orange">IL Amt</th>
@@ -3294,7 +3374,7 @@ function renderPlanBar(label, value, total, color, isMoney = false) {
         <div>
             <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:500; color:var(--text-primary); margin-bottom:6px;">
                 <span>${label}</span>
-                <span>${displayValue}</span>
+                <span>${isMoney ? displayValue.replace('₹', 'Amt ') : displayValue}</span>
             </div>
             <div style="height:8px; background:var(--bg-body); border-radius:4px; overflow:hidden;">
                 <div style="height:100%; width:${pct}%; background:${color}; border-radius:4px;"></div>
@@ -3550,7 +3630,7 @@ function renderHierarchySummaryCard(stats, title) {
                     </div>
                     <div style="margin-top:6px; padding-top:4px; border-top:1px dashed var(--border-color);">
                         ${subRow("FTOD Accounts", stats.ftodAchieve, stats.ftodPlan)}
-                        ${subRow("Slipped (Nov 25)", stats.livedAchieve, stats.livedPlan)}
+                        ${subRow(getSlippedLabel(state.systemDate), stats.livedAchieve, stats.livedPlan)}
                         ${subRow("PNPA Accounts", stats.pnpaAchieve, stats.pnpaPlan)}
                     </div>
                 </div>
@@ -3559,7 +3639,7 @@ function renderHierarchySummaryCard(stats, title) {
                  <div>
                     <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; font-weight:600;">TOTAL DISBURSEMENT</div>
                     <div style="display:flex; align-items:baseline; gap:6px;">
-                        <span style="font-weight:700; font-size:16px;">₹${disbAchieveCr}Cr</span>
+                        <span style="font-weight:700; font-size:16px;">Amt ${disbAchieveCr}Cr</span>
                         <span style="font-size:11px; color:var(--text-secondary);">/ ${disbPlanCr}Cr</span>
                     </div>
                     <div style="height:4px; background:var(--border-color); border-radius:2px; margin-top:6px; overflow:hidden;">
@@ -3758,7 +3838,7 @@ function createViewSummary(targetData, achieveData) {
         metricRow('Collection Plan', 'ftod_plan')
     )}
                             
-                            ${section('Slipped Accounts (Lived)',
+                            ${section(getSlippedLabel(state.systemDate),
         metricRow('Actual Account', 'nov_25_Slipped_Accounts_Actual', null, true) +
         metricRow('Collection Plan', 'nov_25_Slipped_Accounts_Plan')
     )}
@@ -3774,7 +3854,7 @@ function createViewSummary(targetData, achieveData) {
     )}
                         </div>
                         <div>
-                            ${section('FY 25-26 Accounts',
+                            ${section('FY 2025-26 Accounts',
         metricRow('Total OD Accounts', 'fy_od_acc', null, true) +
         metricRow('OD Collection Plan', 'fy_od_plan') +
         metricRow('Non-Starter Accounts', 'fy_non_start_acc', null, true) +
@@ -3839,6 +3919,13 @@ function openBranchModal(branchName) {
         }
     };
 
+    // Update dynamic titles
+    const prevMonth = getPreviousMonthName(state.systemDate);
+    const slippedTitleEl = document.getElementById('slippedSectionTitle');
+    if (slippedTitleEl) {
+        slippedTitleEl.textContent = `${prevMonth}-25 SLIPPED ACCOUNT`;
+    }
+
     if (reportState === 'ACHIEVEMENT') {
         updateLabel('ftod_plan', 'Achievement');
         updateLabel('nov_25_Slipped_Accounts_Plan', 'Achievement');
@@ -3863,7 +3950,7 @@ function openBranchModal(branchName) {
         });
     } else {
         updateLabel('ftod_plan', 'FTOD Collection Plan');
-        updateLabel('nov_25_Slipped_Accounts_Plan', 'Collection Plan');
+        updateLabel('nov_25_Slipped_Accounts_Plan', getSlippedLabel(state.systemDate));
         updateLabel('pnpa_plan', 'PNPA Collection Plan');
         updateLabel('fy_od_plan', 'COLLECTION PLAN');
         updateLabel('fy_non_start_plan', 'COLLECTION PLAN');
@@ -5070,7 +5157,7 @@ function openDetailModal(type, data = null) {
         'achievement': { icon: '📈', title: 'Achievement Analysis', subtitle: 'Performance ranking' },
         'collection': { icon: '💰', title: 'Collection Plan Breakdown', subtitle: 'FTOD + Slipped + PNPA' },
         'ftod': { icon: '🎯', title: 'FTOD Collection Details', subtitle: 'First Time Overdue' },
-        'slipped': { icon: '⚠️', title: 'Slipped Account Details', subtitle: 'Lived/Slipped accounts' },
+        'slipped': { icon: '⚠️', title: getSlippedLabel(state.systemDate), subtitle: 'Lived/Slipped accounts' },
         'pnpa': { icon: '📊', title: 'PNPA Details', subtitle: 'Potential NPA accounts' },
         'npa': { icon: '🔴', title: 'NPA Movement Details', subtitle: 'Activation vs Closure' },
         'portfolio': { icon: '📉', title: 'Portfolio Health Details', subtitle: 'Account distribution' },
@@ -5346,7 +5433,7 @@ function renderCollectionDetail(stats) {
 function renderMetricDetail(metricType, stats) {
     const config = {
         'ftod': { label: 'FTOD', targetField: 'ftod_plan', achieveField: 'ftod_actual', target: stats.ftodPlan, achieve: stats.ftodAchieve },
-        'slipped': { label: 'Slipped', targetField: 'nov_25_Slipped_Accounts_Plan', achieveField: 'nov_25_Slipped_Accounts_Actual', target: stats.livedPlan, achieve: stats.livedAchieve },
+        'slipped': { label: getSlippedLabel(state.systemDate), targetField: 'nov_25_Slipped_Accounts_Plan', achieveField: 'nov_25_Slipped_Accounts_Actual', target: stats.livedPlan, achieve: stats.livedAchieve },
         'pnpa': { label: 'PNPA', targetField: 'pnpa_plan', achieveField: 'pnpa_actual', target: stats.pnpaPlan, achieve: stats.pnpaAchieve },
         'npa': { label: 'NPA Movement', targetField: null, achieveField: null, activation: stats.npaActivation, closure: stats.npaClosure }
     };
@@ -5496,15 +5583,15 @@ function renderDisbursementDetailView(stats) {
                     <div class="detail-stat-card clickable-section" onclick="openDetailModal('disb_igl')">
                         <div class="detail-stat-value" style="color:#10B981;">${stats.disbIglAcc}</div>
                         <div class="detail-stat-label">IGL & FIG</div>
-                        <div style="font-size:12px; color:var(--text-secondary);">₹${(stats.disbIglAmt / 100000).toFixed(1)}L</div>
+                        <div style="font-size:12px; color:var(--text-secondary);">Amt ${(stats.disbIglAmt / 100000).toFixed(1)}L</div>
                     </div>
                     <div class="detail-stat-card clickable-section" onclick="openDetailModal('disb_il')">
                         <div class="detail-stat-value" style="color:#F59E0B;">${stats.disbIlAcc}</div>
                         <div class="detail-stat-label">IL</div>
-                        <div style="font-size:12px; color:var(--text-secondary);">₹${(stats.disbIlAmt / 100000).toFixed(1)}L</div>
+                        <div style="font-size:12px; color:var(--text-secondary);">Amt ${(stats.disbIlAmt / 100000).toFixed(1)}L</div>
                     </div>
                     <div class="detail-stat-card">
-                        <div class="detail-stat-value" style="color:var(--primary-accent);">₹${(stats.totalDisbursement / 10000000).toFixed(2)}Cr</div>
+                        <div class="detail-stat-value" style="color:var(--primary-accent);">Amt ${(stats.totalDisbursement / 10000000).toFixed(2)}Cr</div>
                         <div class="detail-stat-label">Total Disbursement</div>
                     </div>
                 </div>
@@ -5899,7 +5986,7 @@ function getKYCBreakdown() {
 function renderMetricBranchTable(metricType, stats) {
     const config = {
         'ftod': { targetField: 'ftod_plan', achieveField: 'ftod_actual', label: 'FTOD' },
-        'slipped': { targetField: 'nov_25_Slipped_Accounts_Plan', achieveField: 'nov_25_Slipped_Accounts_Actual', label: 'Slipped' },
+        'slipped': { targetField: 'nov_25_Slipped_Accounts_Plan', achieveField: 'nov_25_Slipped_Accounts_Actual', label: getSlippedLabel(state.systemDate) },
         'pnpa': { targetField: 'pnpa_plan', achieveField: 'pnpa_actual', label: 'PNPA' },
         'collection': { targetField: null, achieveField: null, label: 'All' }
     };
