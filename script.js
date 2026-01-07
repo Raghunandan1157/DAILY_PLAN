@@ -1955,19 +1955,31 @@ function showReportPreviewModal(htmlContent, title, filename) {
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
 }
 
-function toggleReportFullscreen() {
-    const modalContainer = document.querySelector('#reportPreviewModal .modal-container');
-    const viewBtn = document.querySelector('#reportPreviewModal .modal-footer .btn-outline');
-
-    if (modalContainer) {
-        modalContainer.classList.toggle('fullscreen');
-        const isFullscreen = modalContainer.classList.contains('fullscreen');
-
-        if (viewBtn) {
-            viewBtn.textContent = isFullscreen ? "Restore" : "Full Screen";
-            // Update icon or style if needed
-        }
-    }
+function openReportInNewTab() {
+    const body = document.getElementById('reportPreviewBody');
+    if (!body) return;
+    
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Report Preview</title>
+            <style>
+                body { margin: 20px; font-family: Arial, sans-serif; background: white; }
+                table { border-collapse: collapse; width: 100%; }
+                /* Add basic styles to ensure it looks good */
+            </style>
+        </head>
+        <body>
+            ${body.innerHTML}
+            <script>window.print();</script>
+        </body>
+        </html>
+    `;
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
 }
 
 function closeReportPreviewModal() {
