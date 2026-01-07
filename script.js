@@ -2872,24 +2872,11 @@ function renderCEOPlanDashboard(stats, buffer) {
                 <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Total Amount Plan</div>
             </div>
         </div>
-
-        <div class="metric-card">
-            <div class="metric-header">
-                <div class="metric-icon" style="background:#FEF3C7; color:#D97706;">
-                   <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
-                </div>
-            </div>
-            <div>
-                <div class="metric-title">KYC Sourcing Plan</div>
-                <div class="metric-value">${stats.kycTotal.toLocaleString()}</div>
-                <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Total Accounts Plan</div>
-            </div>
-        </div>
     `;
 
     // ROW 2: DETAILED BREAKDOWN
     buffer.innerHTML += `
-        <div class="chart-card grid-half">
+        <div class="chart-card grid-full">
             <div class="chart-header">
                 <div class="chart-title">🎯 Collection Targets Breakdown</div>
             </div>
@@ -2897,6 +2884,18 @@ function renderCEOPlanDashboard(stats, buffer) {
                 ${renderPlanBar('FTOD Accounts', stats.ftodPlan, stats.totalCollectionPlan, '#6366F1')}
                 ${renderPlanBar('Slipped (Lived)', stats.livedPlan, stats.totalCollectionPlan, '#F59E0B')}
                 ${renderPlanBar('PNPA Accounts', stats.pnpaPlan, stats.totalCollectionPlan, '#EF4444')}
+                ${renderPlanBar('NPA Accounts', stats.npaTotalPlan, stats.totalCollectionPlan, '#EC4899')}
+            </div>
+        </div>
+
+        <div class="chart-card grid-half">
+            <div class="chart-header">
+                <div class="chart-title">👤 KYC Sourcing Plan</div>
+            </div>
+             <div style="display:flex; flex-direction:column; gap:16px;">
+                ${renderPlanBar('IGL & FIG', stats.kycFigIglPlan, stats.kycTotal, '#F59E0B')}
+                ${renderPlanBar('IL', stats.kycIlPlan, stats.kycTotal, '#3B82F6')}
+                ${renderPlanBar('For NPA', stats.kycNpaPlan, stats.kycTotal, '#EF4444')}
             </div>
         </div>
 
@@ -2904,18 +2903,24 @@ function renderCEOPlanDashboard(stats, buffer) {
             <div class="chart-header">
                 <div class="chart-title">💰 Disbursement Plan Breakdown</div>
             </div>
-             <div style="display:flex; flex-direction:column; gap:16px;">
-                ${renderPlanBar('IGL & FIG Amount', stats.disbIglAmtPlan, stats.totalDisbursementPlan, '#10B981', true)}
-                ${renderPlanBar('IL Amount', stats.disbIlAmtPlan, stats.totalDisbursementPlan, '#8B5CF6', true)}
-            </div>
-            <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border-color); display:flex; justify-content:space-between;">
-                <div style="text-align:center;">
-                    <div style="font-size:12px; color:var(--text-secondary);">IGL Accounts</div>
-                    <div style="font-size:18px; font-weight:700;">${stats.disbIglAccPlan.toLocaleString()}</div>
+            
+            <div style="display:flex; flex-direction:column; gap:20px;">
+                <!-- By Amount -->
+                <div>
+                    <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px;">By Amount (₹ ${(stats.totalDisbursementPlan / 10000000).toFixed(2)} Cr)</div>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        ${renderPlanBar('IGL & FIG Amount', stats.disbIglAmtPlan, stats.totalDisbursementPlan, '#10B981', true)}
+                        ${renderPlanBar('IL Amount', stats.disbIlAmtPlan, stats.totalDisbursementPlan, '#8B5CF6', true)}
+                    </div>
                 </div>
-                <div style="text-align:center;">
-                    <div style="font-size:12px; color:var(--text-secondary);">IL Accounts</div>
-                    <div style="font-size:18px; font-weight:700;">${stats.disbIlAccPlan.toLocaleString()}</div>
+
+                <!-- By Accounts -->
+                <div>
+                    <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px; padding-top:12px; border-top:1px dashed var(--border-color);">By Accounts (${stats.totalDisbAccPlan.toLocaleString()})</div>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        ${renderPlanBar('IGL Accounts', stats.disbIglAccPlan, stats.totalDisbAccPlan, '#34D399')}
+                        ${renderPlanBar('IL Accounts', stats.disbIlAccPlan, stats.totalDisbAccPlan, '#A78BFA')}
+                    </div>
                 </div>
             </div>
         </div>
@@ -4732,7 +4737,8 @@ function calculateCEOStats() {
     let ftodPlan = 0, ftodAchieve = 0;
     let livedPlan = 0, livedAchieve = 0;
     let pnpaPlan = 0, pnpaAchieve = 0;
-    let npaActivation = 0, npaClosure = 0;
+    let npaActivation = 0, npaClosure = 0; // Actuals
+    let npaActivationPlan = 0, npaClosurePlan = 0; // Plans
 
     // Disbursement
     let disbIglAccPlan = 0, disbIglAmtPlan = 0; // Plans from daily_reports
@@ -4744,7 +4750,8 @@ function calculateCEOStats() {
     let disbSancAcc = 0, disbSancAmt = 0; // Sanction Pending (if applicable)
 
     // KYC
-    let kycFigIgl = 0, kycIl = 0, kycNpa = 0;
+    let kycFigIgl = 0, kycIl = 0, kycNpa = 0; // Actuals
+    let kycFigIglPlan = 0, kycIlPlan = 0, kycNpaPlan = 0; // Plans
 
     // Portfolio Health
     let portfolioHealth = { healthy: 0, slipped: 0, npa: 0 };
@@ -4787,12 +4794,19 @@ function calculateCEOStats() {
                 ftodPlan += safeInt(t.ftod_plan);
                 livedPlan += safeInt(t.nov_25_Slipped_Accounts_Plan);
                 pnpaPlan += safeInt(t.pnpa_plan);
+                npaActivationPlan += safeInt(t.npa_activation);
+                npaClosurePlan += safeInt(t.npa_closure);
 
                 // Disbursement Plans (from daily_reports)
                 disbIglAccPlan += safeInt(t.disb_igl_acc);
                 disbIglAmtPlan += safeFloat(t.disb_igl_amt);
                 disbIlAccPlan += safeInt(t.disb_il_acc);
                 disbIlAmtPlan += safeFloat(t.disb_il_amt);
+
+                // KYC Plans
+                kycFigIglPlan += safeInt(t.kyc_fig_igl);
+                kycIlPlan += safeInt(t.kyc_il);
+                kycNpaPlan += safeInt(t.kyc_npa);
             }
 
             // --- AGGREGATE ACHIEVEMENT DATA ---
@@ -4855,11 +4869,19 @@ function calculateCEOStats() {
 
     const totalCollectionPlan = ftodPlan + livedPlan + pnpaPlan;
 
+    // NPA Totals
+    const npaTotalPlan = npaActivationPlan + npaClosurePlan;
+
     // Disbursement Totals
     const totalDisbursementPlan = disbIglAmtPlan + disbIlAmtPlan;
     const totalDisbursementAchieve = disbIglAmtAchieve + disbIlAmtAchieve;
 
-    const kycTotal = kycFigIgl + kycIl + kycNpa;
+    // Total Disbursement Accounts
+    const totalDisbAccPlan = disbIglAccPlan + disbIlAccPlan;
+    const totalDisbAccAchieve = disbIglAccAchieve + disbIlAccAchieve;
+
+    // KYC Total (Plan)
+    const kycTotal = kycFigIglPlan + kycIlPlan + kycNpaPlan;
 
     return {
         totalBranches,
@@ -4876,9 +4898,12 @@ function calculateCEOStats() {
         livedPlan, livedAchieve,
         pnpaPlan, pnpaAchieve,
         npaActivation, npaClosure,
+        npaActivationPlan, npaClosurePlan,
+        npaTotalPlan,
 
         // Disbursement
         totalDisbursementPlan, totalDisbursementAchieve,
+        totalDisbAccPlan, totalDisbAccAchieve,
         disbIglAccPlan, disbIglAmtPlan,
         disbIlAccPlan, disbIlAmtPlan,
         disbIglAccAchieve, disbIglAmtAchieve,
@@ -4886,6 +4911,7 @@ function calculateCEOStats() {
 
         // KYC
         kycFigIgl, kycIl, kycNpa, kycTotal,
+        kycFigIglPlan, kycIlPlan, kycNpaPlan,
 
         // Portfolio
         portfolioHealth,
