@@ -622,13 +622,14 @@
         <!-- Report Table will be injected here -->
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeReportPreviewModal()">Close</button>
-        <button class="btn btn-primary" id="btnDownloadReport">Download Image</button>
+        <button class="btn btn-outline" onclick="toggleReportFullscreen()">Full Screen</button>
+        <button class="btn btn-primary" id="btnCopyReport">Copy</button>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="script.js"></script>
 </body>
 
