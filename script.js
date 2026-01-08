@@ -2641,13 +2641,59 @@ function generateReportHTML(title, level, rows, isPlan) {
     `;
 }
 
-// Convert HTML table to PNG and download
-// Copy Table Image to Clipboard using html2canvas
-async function copyTableImageToClipboard(tableHTML) {
-    // 1. Detect Mobile/Low-End Device
-    const isMobile = window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent);
+// --- CLIPBOARD HELPERS (Mobile Safe) ---
+function isMobileDevice() {
+    return window.innerWidth < 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
 
-    // 2. Create a hidden container
+function supportsAsyncClipboard() {
+    return !!(navigator.clipboard && typeof navigator.clipboard.write === 'function');
+}
+
+function supportsClipboardItems() {
+    return typeof ClipboardItem !== 'undefined';
+}
+
+async function getClipboardPermission() {
+    if (!navigator.permissions || !navigator.permissions.query) return 'unknown';
+    try {
+        const status = await navigator.permissions.query({ name: 'clipboard-write' });
+        return status.state || 'unknown';
+    } catch {
+        return 'unknown';
+    }
+}
+
+function legacyCopyText(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length); // iOS support
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return success;
+}
+
+// Convert HTML table to PNG and download
+// Copy Table Image to Clipboard using html2canvas (with mobile-aware fallbacks)
+async function copyTableImageToClipboard(tableHTML) {
+    const isMobile = isMobileDevice();
+    const canWriteImages = supportsAsyncClipboard() && supportsClipboardItems() && window.isSecureContext;
+    const permission = await getClipboardPermission();
+    const shouldSkipImage =
+        isMobile || !canWriteImages || permission === 'denied';
+
+    // Mobile browsers (especially Safari/Chrome) often block image writes; go straight to text copy.
+    if (shouldSkipImage) {
+        return await copyTableAsTextFallback(tableHTML);
+    }
+
+    // 1. Create a hidden container
     const container = document.createElement('div');
     container.style.cssText = `
         position: fixed;
@@ -2726,32 +2772,48 @@ async function copyTableImageToClipboard(tableHTML) {
     }
 }
 
-// Fallback: Copy as Rich Text / HTML
+// Fallback: Copy as Rich Text / HTML with plain-text escape hatch for mobile
 async function copyTableAsTextFallback(tableHTML) {
-    try {
-        const type = "text/html";
-        const blob = new Blob([tableHTML], { type });
-        const data = [new ClipboardItem({ [type]: blob })];
-        await navigator.clipboard.write(data);
-        showToast("Table copied as text! 📋 (Image failed)", "success");
-        return true;
-    } catch (err) {
-        console.error("HTML Fallback failed:", err);
+    const canWriteHtml = supportsAsyncClipboard() && supportsClipboardItems();
+
+    if (canWriteHtml && window.isSecureContext) {
         try {
-            // Ultimate Fallback: Plain Text
-            // Strip tags
-            const tempDiv = document.createElement("div");
-            tempDiv.innerHTML = tableHTML;
-            const text = tempDiv.innerText;
-            await navigator.clipboard.writeText(text);
-            showToast("Table copied as plain text! 📝 (Image failed)", "success");
+            const type = "text/html";
+            const blob = new Blob([tableHTML], { type });
+            const data = [new ClipboardItem({ [type]: blob })];
+            await navigator.clipboard.write(data);
+            showToast("Table copied as text! 📋", "success");
             return true;
-        } catch (finalErr) {
-            console.error("All copy methods failed", finalErr);
-            showToast("Copy failed. Please take a screenshot.", "alert");
-            return false;
+        } catch (err) {
+            console.warn("HTML clipboard write failed, falling back to text...", err);
         }
     }
+
+    // Strip tags for text copy
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = tableHTML;
+    const text = tempDiv.innerText;
+
+    // Try modern text API first
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast("Table copied as text! 📋", "success");
+            return true;
+        } catch (err) {
+            console.warn("navigator.clipboard.writeText failed, using legacy path...", err);
+        }
+    }
+
+    // Legacy fallback for iOS/older mobile browsers
+    const legacySuccess = legacyCopyText(text);
+    if (legacySuccess) {
+        showToast("Table copied as text! 📋", "success");
+        return true;
+    }
+
+    showToast("Copy failed. Please take a screenshot.", "alert");
+    return false;
 }
 
 // --- DOWNLOAD ACHIEVEMENT PLAN REPORT (With Comparison & Colors) ---
