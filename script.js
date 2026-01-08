@@ -2615,7 +2615,10 @@ function generateReportHTML(title, level, rows, isPlan) {
 // Convert HTML table to PNG and download
 // Copy Table Image to Clipboard using html2canvas
 async function copyTableImageToClipboard(tableHTML) {
-    // Create a hidden container
+    // 1. Detect Mobile/Low-End Device
+    const isMobile = window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent);
+    
+    // 2. Create a hidden container
     const container = document.createElement('div');
     container.style.cssText = `
         position: fixed;
@@ -2624,50 +2627,62 @@ async function copyTableImageToClipboard(tableHTML) {
         background: white;
         padding: 20px;
         z-index: 9999;
+        font-family: sans-serif; /* Ensure fonts load */
+    `;
+
+    // Add minimal styling to ensure table looks good for image
+    const styledTableHTML = `
+        <style>
+            table { border-collapse: collapse; width: 100%; color: #000; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f0f0f0; font-weight: bold; }
+        </style>
+        ${tableHTML}
     `;
 
     // Auto-adjust width for fit-content
-    container.innerHTML = `<div style="display:inline-block; width:max-content; background:white;">${tableHTML}</div>`;
+    container.innerHTML = `<div style="display:inline-block; width:max-content; background:white;">${styledTableHTML}</div>`;
     document.body.appendChild(container);
 
     try {
         // Wait for rendering
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 150)); // Slightly longer wait for mobile
 
         const contentEl = container.firstElementChild;
 
         // Use html2canvas
         if (typeof html2canvas === 'undefined') {
-            console.error("html2canvas not loaded");
             throw new Error("html2canvas library missing");
         }
 
+        // 3. Generate Canvas with Dynamic Scale
+        const scale = isMobile ? 1.5 : 2; // Reduce scale on mobile to prevent memory crash
         const canvas = await html2canvas(contentEl, {
             backgroundColor: '#ffffff',
-            scale: 2, // Higher resolution
+            scale: scale,
             logging: false,
-            useCORS: true
+            useCORS: true,
+            allowTaint: true
         });
 
         document.body.removeChild(container);
 
-        // Copy to Clipboard
+        // 4. Try Direct Clipboard API (Image)
         return new Promise((resolve) => {
             canvas.toBlob(async blob => {
                 if (!blob) {
-                    console.error("Canvas toBlob failed");
-                    resolve(false);
+                    console.warn("Canvas blob generation failed, trying text fallback...");
+                    resolve(await copyTableAsTextFallback(tableHTML)); 
                     return;
                 }
                 try {
                     const item = new ClipboardItem({ 'image/png': blob });
                     await navigator.clipboard.write([item]);
-                    showToast("Report copied to clipboard! 📋", "success");
+                    showToast("Report image copied! 📷", "success");
                     resolve(true);
                 } catch (err) {
-                    console.error("Clipboard write failed:", err);
-                    showToast("Clipboard access denied. Check permissions.", "alert");
-                    resolve(false);
+                    console.warn("Image copy failed (Security/Mobile), trying text fallback...", err);
+                    resolve(await copyTableAsTextFallback(tableHTML));
                 }
             }, 'image/png');
         });
@@ -2677,8 +2692,36 @@ async function copyTableImageToClipboard(tableHTML) {
         if (document.body.contains(container)) {
             document.body.removeChild(container);
         }
-        showToast("Error generating image. Support contact needed.", "alert");
-        return false;
+        // Final Fallback attempt
+        return await copyTableAsTextFallback(tableHTML);
+    }
+}
+
+// Fallback: Copy as Rich Text / HTML
+async function copyTableAsTextFallback(tableHTML) {
+    try {
+        const type = "text/html";
+        const blob = new Blob([tableHTML], { type });
+        const data = [new ClipboardItem({ [type]: blob })];
+        await navigator.clipboard.write(data);
+        showToast("Table copied as text! 📋 (Image failed)", "success");
+        return true;
+    } catch (err) {
+        console.error("HTML Fallback failed:", err);
+        try {
+            // Ultimate Fallback: Plain Text
+            // Strip tags
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = tableHTML;
+            const text = tempDiv.innerText;
+            await navigator.clipboard.writeText(text);
+            showToast("Table copied as plain text! 📝 (Image failed)", "success");
+            return true;
+        } catch (finalErr) {
+            console.error("All copy methods failed", finalErr);
+            showToast("Copy failed. Please take a screenshot.", "alert");
+            return false;
+        }
     }
 }
 
