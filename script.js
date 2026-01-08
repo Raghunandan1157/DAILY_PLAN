@@ -1950,6 +1950,14 @@ function showReportPreviewModal(htmlContent, title, filename) {
         }
     };
 
+    // Set Excel Action
+    const excelBtn = document.getElementById('btnExcelReport');
+    if (excelBtn) {
+        excelBtn.onclick = () => {
+            downloadReportAsExcel(title, filename);
+        };
+    }
+
     // Show
     modal.classList.add('visible');
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
@@ -1986,6 +1994,27 @@ function closeReportPreviewModal() {
     if (modal) {
         modal.classList.remove('visible');
         document.body.style.overflow = '';
+    }
+}
+
+function downloadReportAsExcel(title, filename) {
+    const table = document.getElementById('reportPreviewBody').querySelector('table');
+    if (!table) {
+        showToast("No report table found to export", "alert");
+        return;
+    }
+
+    try {
+        // Create workbook from table
+        const wb = XLSX.utils.table_to_book(table, { sheet: "Report" });
+
+        // Generate Excel file
+        XLSX.writeFile(wb, (filename || 'Report') + '.xlsx');
+
+        showToast("Report downloaded as Excel! 📊");
+    } catch (error) {
+        console.error("Excel export failed:", error);
+        showToast("Failed to export Excel. Please try again.", "alert");
     }
 }
 
@@ -2617,7 +2646,7 @@ function generateReportHTML(title, level, rows, isPlan) {
 async function copyTableImageToClipboard(tableHTML) {
     // 1. Detect Mobile/Low-End Device
     const isMobile = window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent);
-    
+
     // 2. Create a hidden container
     const container = document.createElement('div');
     container.style.cssText = `
@@ -2672,7 +2701,7 @@ async function copyTableImageToClipboard(tableHTML) {
             canvas.toBlob(async blob => {
                 if (!blob) {
                     console.warn("Canvas blob generation failed, trying text fallback...");
-                    resolve(await copyTableAsTextFallback(tableHTML)); 
+                    resolve(await copyTableAsTextFallback(tableHTML));
                     return;
                 }
                 try {
