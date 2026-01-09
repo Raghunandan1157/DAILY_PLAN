@@ -515,6 +515,38 @@
     </div>
   </div>
 
+  <!-- LAST MONTH SUMMARY MODAL -->
+  <div class="detail-modal-overlay" id="lastMonthSummaryModal">
+    <div class="detail-modal-container">
+      <div class="detail-modal-header">
+        <button class="detail-modal-back" onclick="closeLastMonthSummary()" aria-label="Go Back">
+          <svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Back to Dashboard
+        </button>
+        <div class="detail-modal-title">
+          <span>📅</span>
+          <span>Last Month Summary</span>
+        </div>
+        <button class="detail-modal-close" onclick="closeLastMonthSummary()" aria-label="Close Modal">
+          <svg class="icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="detail-modal-body" id="lastMonthSummaryBody">
+        <!-- Content will go here -->
+        <div style="padding: 40px; text-align: center; color: var(--text-secondary);">
+          <h2>Summary Loading...</h2>
+          <p>This feature is coming soon.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- PREMIUM PROFILE MODAL -->
   <div class="modal-overlay" id="profileModal" style="backdrop-filter: blur(8px); background: rgba(0,0,0,0.5);">
     <div class="premium-modal-container">

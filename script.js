@@ -3207,6 +3207,24 @@ function renderCEOPlanDashboard(stats, buffer) {
                 <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Total Amount Plan</div>
             </div>
         </div>
+        
+        <div class="metric-card clickable" onclick="showLastMonthSummary()" style="cursor:pointer; transition: transform 0.2s;">
+            <div class="metric-header">
+                <div class="metric-icon" style="background:#F3E8FF; color:#9333EA;">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <div class="metric-title">Last Month Summary</div>
+                <div class="metric-value" style="font-size: 16px; margin-top: 4px;">View Report →</div>
+                <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Performance Analysis</div>
+            </div>
+        </div>
     `;
 
     // ROW 2: DETAILED BREAKDOWN
@@ -5311,6 +5329,16 @@ function openDetailModal(type, data = null) {
 
 function closeDetailModal() {
     document.getElementById('detailModal').classList.remove('visible');
+}
+
+function showLastMonthSummary() {
+    const modal = document.getElementById('lastMonthSummaryModal');
+    if (modal) modal.classList.add('visible');
+}
+
+function closeLastMonthSummary() {
+    const modal = document.getElementById('lastMonthSummaryModal');
+    if (modal) modal.classList.remove('visible');
 }
 
 // Helper function to open branch modal from detail view
