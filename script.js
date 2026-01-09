@@ -2642,8 +2642,16 @@ function generateReportHTML(title, level, rows, isPlan) {
 }
 
 // --- CLIPBOARD HELPERS (Mobile Safe) ---
+// Comprehensive mobile-compatible clipboard implementation
+// Fixes for: iOS Safari, Android Chrome, Desktop browsers
+
 function isMobileDevice() {
     return window.innerWidth < 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function isIOS() {
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent) || 
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
 function supportsAsyncClipboard() {
@@ -2655,41 +2663,118 @@ function supportsClipboardItems() {
 }
 
 async function getClipboardPermission() {
-    if (!navigator.permissions || !navigator.permissions.query) return 'unknown';
+    if (!navigator.permissions || !navigator.permissions.query) return 'granted'; // Assume granted if can't check
     try {
         const status = await navigator.permissions.query({ name: 'clipboard-write' });
-        return status.state || 'unknown';
+        return status.state || 'granted';
     } catch {
-        return 'unknown';
+        return 'granted'; // Permissions API may not support clipboard-write query
     }
 }
 
+// Robust legacy copy using multiple fallback methods
 function legacyCopyText(text) {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.setAttribute('readonly', '');
-    textarea.style.position = 'fixed';
-    textarea.style.left = '-9999px';
-    textarea.style.top = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    textarea.setSelectionRange(0, textarea.value.length); // iOS support
-    const success = document.execCommand('copy');
-    document.body.removeChild(textarea);
-    return success;
+    // Method 1: Textarea approach (works on most browsers)
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        // Critical: Position must be visible for iOS but off-screen for others
+        textarea.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 2em;
+            height: 2em;
+            padding: 0;
+            border: none;
+            outline: none;
+            box-shadow: none;
+            background: transparent;
+            font-size: 16px;
+            opacity: 0;
+            z-index: 999999;
+        `;
+        
+        document.body.appendChild(textarea);
+        
+        if (isIOS()) {
+            // iOS specific: Need to use setSelectionRange and contentEditable trick
+            textarea.contentEditable = true;
+            textarea.readOnly = false;
+            
+            const range = document.createRange();
+            range.selectNodeContents(textarea);
+            
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            textarea.setSelectionRange(0, 999999);
+        } else {
+            textarea.select();
+            textarea.setSelectionRange(0, textarea.value.length);
+        }
+        
+        const success = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (success) return true;
+    } catch (e) {
+        console.warn('Textarea copy failed:', e);
+    }
+    
+    // Method 2: ContentEditable div approach (iOS fallback)
+    try {
+        const div = document.createElement('div');
+        div.contentEditable = true;
+        div.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100px;
+            height: 100px;
+            opacity: 0;
+            z-index: 999999;
+            white-space: pre-wrap;
+        `;
+        div.textContent = text;
+        document.body.appendChild(div);
+        
+        div.focus();
+        
+        const range = document.createRange();
+        range.selectNodeContents(div);
+        
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        const success = document.execCommand('copy');
+        document.body.removeChild(div);
+        
+        if (success) return true;
+    } catch (e) {
+        console.warn('ContentEditable copy failed:', e);
+    }
+    
+    return false;
 }
 
-// Convert HTML table to PNG and download
-// Copy Table Image to Clipboard using html2canvas (with mobile-aware fallbacks)
+// Main copy function - prioritizes text copy for reliability on mobile
 async function copyTableImageToClipboard(tableHTML) {
     const isMobile = isMobileDevice();
-    const canWriteImages = supportsAsyncClipboard() && supportsClipboardItems() && window.isSecureContext;
-    const permission = await getClipboardPermission();
-    const shouldSkipImage =
-        isMobile || !canWriteImages || permission === 'denied';
-
-    // Mobile browsers (especially Safari/Chrome) often block image writes; go straight to text copy.
-    if (shouldSkipImage) {
+    
+    // On mobile, always skip image copy - it's unreliable
+    // Go straight to text with proper fallbacks
+    if (isMobile) {
+        return await copyTableAsTextFallback(tableHTML);
+    }
+    
+    // Desktop: Try image copy first
+    const canWriteImages = supportsAsyncClipboard() && supportsClipboardItems();
+    
+    if (!canWriteImages) {
         return await copyTableAsTextFallback(tableHTML);
     }
 
@@ -2702,10 +2787,9 @@ async function copyTableImageToClipboard(tableHTML) {
         background: white;
         padding: 20px;
         z-index: 9999;
-        font-family: sans-serif; /* Ensure fonts load */
+        font-family: sans-serif;
     `;
 
-    // Add minimal styling to ensure table looks good for image
     const styledTableHTML = `
         <style>
             table { border-collapse: collapse; width: 100%; color: #000; }
@@ -2715,26 +2799,21 @@ async function copyTableImageToClipboard(tableHTML) {
         ${tableHTML}
     `;
 
-    // Auto-adjust width for fit-content
     container.innerHTML = `<div style="display:inline-block; width:max-content; background:white;">${styledTableHTML}</div>`;
     document.body.appendChild(container);
 
     try {
-        // Wait for rendering
-        await new Promise(resolve => setTimeout(resolve, 150)); // Slightly longer wait for mobile
+        await new Promise(resolve => setTimeout(resolve, 150));
 
         const contentEl = container.firstElementChild;
 
-        // Use html2canvas
         if (typeof html2canvas === 'undefined') {
             throw new Error("html2canvas library missing");
         }
 
-        // 3. Generate Canvas with Dynamic Scale
-        const scale = isMobile ? 1.5 : 2; // Reduce scale on mobile to prevent memory crash
         const canvas = await html2canvas(contentEl, {
             backgroundColor: '#ffffff',
-            scale: scale,
+            scale: 2,
             logging: false,
             useCORS: true,
             allowTaint: true
@@ -2742,7 +2821,6 @@ async function copyTableImageToClipboard(tableHTML) {
 
         document.body.removeChild(container);
 
-        // 4. Try Direct Clipboard API (Image)
         return new Promise((resolve) => {
             canvas.toBlob(async blob => {
                 if (!blob) {
@@ -2756,7 +2834,7 @@ async function copyTableImageToClipboard(tableHTML) {
                     showToast("Report image copied! 📷", "success");
                     resolve(true);
                 } catch (err) {
-                    console.warn("Image copy failed (Security/Mobile), trying text fallback...", err);
+                    console.warn("Image copy failed, trying text fallback...", err);
                     resolve(await copyTableAsTextFallback(tableHTML));
                 }
             }, 'image/png');
@@ -2767,53 +2845,89 @@ async function copyTableImageToClipboard(tableHTML) {
         if (document.body.contains(container)) {
             document.body.removeChild(container);
         }
-        // Final Fallback attempt
         return await copyTableAsTextFallback(tableHTML);
     }
 }
 
-// Fallback: Copy as Rich Text / HTML with plain-text escape hatch for mobile
+// Robust text copy with multiple fallback tiers
 async function copyTableAsTextFallback(tableHTML) {
-    const canWriteHtml = supportsAsyncClipboard() && supportsClipboardItems();
-
-    if (canWriteHtml && window.isSecureContext) {
-        try {
-            const type = "text/html";
-            const blob = new Blob([tableHTML], { type });
-            const data = [new ClipboardItem({ [type]: blob })];
-            await navigator.clipboard.write(data);
-            showToast("Table copied as text! 📋", "success");
-            return true;
-        } catch (err) {
-            console.warn("HTML clipboard write failed, falling back to text...", err);
-        }
-    }
-
-    // Strip tags for text copy
+    // Strip HTML tags to get plain text
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = tableHTML;
-    const text = tempDiv.innerText;
-
-    // Try modern text API first
+    const text = tempDiv.innerText || tempDiv.textContent || '';
+    
+    // TIER 1: Try modern Clipboard API (works best on desktop and newer mobile)
     if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         try {
             await navigator.clipboard.writeText(text);
-            showToast("Table copied as text! 📋", "success");
+            showToast("Table copied! 📋", "success");
             return true;
         } catch (err) {
-            console.warn("navigator.clipboard.writeText failed, using legacy path...", err);
+            console.warn("Clipboard API writeText failed:", err.message);
+            // Continue to fallbacks - don't return false yet
         }
     }
-
-    // Legacy fallback for iOS/older mobile browsers
+    
+    // TIER 2: Legacy execCommand copy (sync, works within user gesture)
     const legacySuccess = legacyCopyText(text);
     if (legacySuccess) {
-        showToast("Table copied as text! 📋", "success");
+        showToast("Table copied! 📋", "success");
         return true;
     }
-
-    showToast("Copy failed. Please take a screenshot.", "alert");
-    return false;
+    
+    // TIER 3: Prompt user to manually copy
+    // This is a last resort for very restricted browsers
+    try {
+        // Create a visible prompt with the text for manual copy
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; padding: 24px; max-width: 90%; max-height: 80%; overflow: auto;">
+                <h3 style="margin: 0 0 16px 0; color: #333;">Copy Table Data</h3>
+                <p style="color: #666; margin-bottom: 16px;">Automatic copy failed. Please select all text below and copy manually:</p>
+                <textarea id="manualCopyArea" style="width: 100%; height: 200px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; font-size: 12px;" readonly>${text}</textarea>
+                <div style="display: flex; gap: 12px; margin-top: 16px;">
+                    <button id="selectAllBtn" style="flex: 1; padding: 12px; background: #4F46E5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Select All</button>
+                    <button id="closeManualCopy" style="flex: 1; padding: 12px; background: #e5e5e5; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        const textarea = document.getElementById('manualCopyArea');
+        document.getElementById('selectAllBtn').onclick = () => {
+            textarea.select();
+            textarea.setSelectionRange(0, textarea.value.length);
+        };
+        document.getElementById('closeManualCopy').onclick = () => {
+            document.body.removeChild(modal);
+        };
+        modal.onclick = (e) => {
+            if (e.target === modal) document.body.removeChild(modal);
+        };
+        
+        // Auto-select the text
+        setTimeout(() => {
+            textarea.focus();
+            textarea.select();
+        }, 100);
+        
+        showToast("Please copy manually from the dialog", "alert");
+        return false;
+    } catch (e) {
+        console.error("Manual copy fallback failed:", e);
+        showToast("Copy failed. Please take a screenshot.", "alert");
+        return false;
+    }
 }
 
 // --- DOWNLOAD ACHIEVEMENT PLAN REPORT (With Comparison & Colors) ---
