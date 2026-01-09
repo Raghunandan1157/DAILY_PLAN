@@ -5331,9 +5331,330 @@ function closeDetailModal() {
     document.getElementById('detailModal').classList.remove('visible');
 }
 
+const mockDashboardData = {
+    "(All)": {
+        paid: "90.44", paidSub: "280.6",
+        par: "1,499", parSub: "7,318",
+        res: "32.2%",
+        eff: "20.5%",
+        buckets: [
+            { label: "1 to 30 days", books: "714", paid: "29.16", paidPerc: 44.7, resPerc: 67.6 },
+            { label: "31 to 60 days", books: "645", paid: "24.14", paidPerc: 40.1, resPerc: 59.2 },
+            { label: "61 to 90 days", books: "812", paid: "29.53", paidPerc: 46.7, resPerc: 58.9 },
+            { label: "NPA", books: "5,147", paid: "7.62", paidPerc: 14.9, resPerc: 5.1 }
+        ],
+        bubbles: [
+            { x: 20, y: 85, val: 85, label: "JabalpurCluster", color: "bubble-pink" },
+            { x: 60, y: 70, val: 70, label: "IndoreCluster", color: "bubble-orange" },
+            { x: 90, y: 30, val: 30, label: "SalemCluster", color: "bubble-yellow" },
+            { x: 15, y: 70, val: "", label: "DehradunCluster", color: "bubble-pink" },
+            { x: 50, y: 65, val: "", label: "AshtaCluster", color: "bubble-pink" },
+            { x: 55, y: 50, val: "", label: "HaryanaCluster", color: "bubble-orange" }
+        ]
+    },
+    "North": {
+        paid: "45.12", paidSub: "120.4",
+        par: "850", parSub: "3,100",
+        res: "38.5%",
+        eff: "24.1%",
+        buckets: [
+            { label: "1 to 30 days", books: "350", paid: "15.00", paidPerc: 50.0, resPerc: 72.0 },
+            { label: "31 to 60 days", books: "300", paid: "12.00", paidPerc: 45.0, resPerc: 65.0 },
+            { label: "61 to 90 days", books: "400", paid: "14.00", paidPerc: 48.0, resPerc: 62.0 },
+            { label: "NPA", books: "2,500", paid: "4.12", paidPerc: 18.0, resPerc: 8.0 }
+        ],
+        bubbles: [
+            { x: 30, y: 80, val: 80, label: "DelhiCluster", color: "bubble-pink" },
+            { x: 25, y: 60, val: 60, label: "JaipurCluster", color: "bubble-orange" },
+            { x: 40, y: 40, val: 40, label: "LucknowCluster", color: "bubble-yellow" }
+        ]
+    },
+    "South": {
+        paid: "30.15", paidSub: "100.2",
+        par: "450", parSub: "2,500",
+        res: "28.1%",
+        eff: "18.4%",
+        buckets: [
+            { label: "1 to 30 days", books: "250", paid: "10.00", paidPerc: 40.0, resPerc: 60.0 },
+            { label: "31 to 60 days", books: "200", paid: "8.00", paidPerc: 35.0, resPerc: 55.0 },
+            { label: "61 to 90 days", books: "300", paid: "10.00", paidPerc: 42.0, resPerc: 52.0 },
+            { label: "NPA", books: "1,800", paid: "2.15", paidPerc: 12.0, resPerc: 4.0 }
+        ],
+        bubbles: [
+            { x: 80, y: 30, val: 30, label: "ChennaiCluster", color: "bubble-yellow" },
+            { x: 70, y: 40, val: 40, label: "BangaloreCluster", color: "bubble-orange" },
+            { x: 85, y: 20, val: 20, label: "KeralaCluster", color: "bubble-pink" }
+        ]
+    }
+};
+
 function showLastMonthSummary() {
     const modal = document.getElementById('lastMonthSummaryModal');
-    if (modal) modal.classList.add('visible');
+    const body = document.getElementById('lastMonthSummaryBody');
+    if (modal && body) {
+        modal.classList.add('visible');
+        renderLastMonthDashboard(body, "(All)");
+    }
+}
+
+function handleSummaryFilterChange(event, container) {
+    const selectedZone = event.target.value;
+    renderLastMonthDashboard(container, selectedZone);
+}
+
+function renderLastMonthDashboard(container, zone) {
+    const data = mockDashboardData[zone] || mockDashboardData["(All)"];
+    
+    // Generate Bubbles HTML
+    const bubblesHtml = data.bubbles.map(b => `
+        <div class="scatter-bubble ${b.color} animate-enter" 
+             style="left: ${b.x}%; bottom: ${b.y}%; width: ${b.val ? 30 + (b.val/5) : 20}px; height: ${b.val ? 30 + (b.val/5) : 20}px;">
+            ${b.val}
+            <div class="chart-tooltip">
+                <strong>${b.label}</strong><br>
+                NPA: ${b.y}%<br>
+                Eff: ${b.x}%
+            </div>
+        </div>
+        <div class="scatter-label animate-enter" style="left: ${b.x}%; bottom: ${b.y}%; transform: translate(-50%, -${b.val ? 130 : 50}%);">
+            ${b.label}
+        </div>
+    `).join('');
+
+    // Generate Bucket Table Rows HTML
+    const bucketRowsHtml = data.buckets.map(row => `
+        <tr>
+            <td class="s-bucket-col">${row.label}</td>
+            <td>${row.books}</td>
+            <td>
+                <div class="s-progress-wrapper" style="gap:6px;">
+                    <span>${row.paid}</span>
+                    <div class="s-progress-track" style="width:50px; height:10px;">
+                        <div class="s-progress-fill fill-gray" style="width:${row.paidPerc}%;"></div>
+                    </div>
+                    <span class="s-val-label" style="font-size:10px;">${row.paidPerc}</span>
+                </div>
+            </td>
+            <td>
+                 <div class="s-progress-wrapper" style="gap:6px;">
+                    <div class="s-progress-track" style="height:10px;">
+                        <div class="s-progress-fill fill-teal" style="width:${row.resPerc}%;"></div>
+                    </div>
+                    <span class="s-val-label" style="font-size:10px;">${row.resPerc}%</span>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="summary-dashboard" style="gap:16px; padding:20px;">
+            <!-- Filter Bar -->
+            <div class="summary-filter-bar" style="padding: 10px 16px;">
+                <div style="flex:1;">
+                    <label style="display:block; font-size:11px; color:#6B7280; margin-bottom:4px;">Zone</label>
+                    <select class="s-select" id="zoneSelect" style="padding:6px 10px;">
+                        <option value="(All)" ${zone === '(All)' ? 'selected' : ''}>(All)</option>
+                        <option value="North" ${zone === 'North' ? 'selected' : ''}>North</option>
+                        <option value="South" ${zone === 'South' ? 'selected' : ''}>South</option>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block; font-size:11px; color:#6B7280; margin-bottom:4px;">State</label>
+                    <select class="s-select" style="padding:6px 10px;"><option>(All)</option></select>
+                </div>
+            </div>
+
+            <!-- Metrics Row -->
+            <div class="summary-metrics-row animate-enter delay-1" style="gap:16px;">
+                <!-- Metric 1 -->
+                <div class="s-metric-card" style="padding:16px; gap:12px;">
+                    <div class="s-metric-icon" style="width:40px; height:40px; font-size:18px;">
+                        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 18V6"></path></svg>
+                    </div>
+                    <div class="s-metric-content">
+                        <div class="s-metric-value" style="font-size:18px;">${data.paid} <span style="font-size:12px; font-weight:500;">(in Cr.)</span></div>
+                        <div class="s-metric-label" style="font-size:11px;">Amount Paid</div>
+                        <div class="s-metric-sub" style="font-size:10px;">${data.paidSub} <span style="color:#6B7280;">Opening POS</span></div>
+                    </div>
+                </div>
+
+                <!-- Metric 2 -->
+                <div class="s-metric-card" style="padding:16px; gap:12px;">
+                    <div class="s-metric-icon" style="width:40px; height:40px; font-size:18px;">
+                         <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    </div>
+                    <div class="s-metric-content">
+                         <div class="s-metric-value" style="font-size:18px;">${data.par}</div>
+                         <div class="s-metric-label" style="font-size:11px;">PAR Resolution</div>
+                         <div class="s-metric-sub" style="font-size:10px;">${data.parSub} <span style="color:#6B7280;">(# of Cases)</span></div>
+                    </div>
+                </div>
+
+                <!-- Metric 3 -->
+                <div class="s-metric-card" style="padding:16px; gap:12px;">
+                    <div class="s-metric-icon" style="width:40px; height:40px; font-size:18px;">
+                         <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                    </div>
+                    <div class="s-metric-content">
+                         <div class="s-metric-value" style="font-size:18px;">${data.res} <span style="font-size:12px; color:#10B981;">($)</span></div>
+                         <div class="s-metric-label" style="font-size:11px;">Resolution %</div>
+                    </div>
+                </div>
+
+                <!-- Metric 4 -->
+                <div class="s-metric-card" style="padding:16px; gap:12px;">
+                    <div class="s-metric-icon" style="width:40px; height:40px; font-size:18px;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                    </div>
+                    <div class="s-metric-content">
+                         <div class="s-metric-value" style="font-size:18px;">${data.eff} <span style="font-size:12px; color:#3B82F6;">(#)</span></div>
+                         <div class="s-metric-label" style="font-size:11px;">Efficiency %</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="summary-details-grid" style="gap:16px;">
+                
+                <!-- Widget 1: Bucket Wise Performance -->
+                <div class="s-widget animate-enter delay-2" style="padding:16px;">
+                    <div class="s-widget-header" style="font-size:13px; margin-bottom:12px;">Bucket Wise Performance</div>
+                    <div class="s-table-container">
+                        <table class="s-table" style="font-size:11px;">
+                            <thead>
+                                <tr>
+                                    <th>Opening Bucket</th>
+                                    <th>Opening Books</th>
+                                    <th>Total Amount Paid</th>
+                                    <th>% Resolution</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${bucketRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Widget 2: Bucket-Status wise Opening POS -->
+                <div class="s-widget animate-enter delay-2" style="padding:16px;">
+                    <div class="s-widget-header" style="font-size:13px; margin-bottom:12px;">Bucket-Status wise Opening POS (in Crs.)</div>
+                     <div class="s-table-container">
+                        <table class="s-table" style="font-size:11px;">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Opening Bucket</th>
+                                    <th colspan="3" style="text-align:center;">Sub Status</th>
+                                    <th rowspan="2">Bucket Mix</th>
+                                </tr>
+                                <tr>
+                                    <th style="font-size:10px;">Forward Flow</th>
+                                    <th style="font-size:10px;">Normalized</th>
+                                    <th style="font-size:10px;">Rolled Back</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="s-bucket-col">1 to 30 days</td>
+                                    <td><span class="badge-red">15.6</span></td>
+                                    <td><span class="badge-green">1.3</span></td>
+                                    <td><span class="badge-gray">27.9</span></td>
+                                    <td>
+                                        <div style="display:flex; height:14px; width:100%; border-radius:2px; overflow:hidden;">
+                                            <div style="background:#9CA3AF; width:62%"></div>
+                                            <div style="background:#EF4444; width:38%"></div>
+                                        </div>
+                                        <div style="display:flex; justify-content:space-between; font-size:9px; color:#6B7280; margin-top:2px;">
+                                            <span>62.3%</span><span>34.8%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- Keeps other static rows for simplicity in demo or can assume generic -->
+                                <tr>
+                                    <td class="s-bucket-col">31 to 60 days</td>
+                                    <td><span class="badge-red">16.0</span></td>
+                                    <td><span class="badge-green">0.8</span></td>
+                                    <td><span class="badge-gray">23.1</span></td>
+                                    <td>
+                                         <div style="display:flex; height:14px; width:100%; border-radius:2px; overflow:hidden;">
+                                            <div style="background:#9CA3AF; width:57%"></div>
+                                            <div style="background:#EF4444; width:43%"></div>
+                                        </div>
+                                         <div style="display:flex; justify-content:space-between; font-size:9px; color:#6B7280; margin-top:2px;">
+                                            <span>57.4%</span><span>39.9%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Widget 3: State wise Performance -->
+                 <div class="s-widget animate-enter delay-3" style="padding:16px;">
+                    <div class="s-widget-header" style="font-size:13px; margin-bottom:12px;">State wise Performance</div>
+                    <div class="s-table-container">
+                        <table class="s-table" style="font-size:11px;">
+                            <thead>
+                                <tr>
+                                    <th>State</th>
+                                    <th>Opening Books</th>
+                                    <th>Total Amount Paid</th>
+                                    <th>% Resolution</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="s-bucket-col">Tamil Nadu</td>
+                                    <td>1,808</td>
+                                    <td>32.97</td>
+                                    <td>
+                                         <div class="s-progress-wrapper" style="gap:6px;">
+                                            <div class="s-progress-track" style="height:10px;"><div class="s-progress-fill fill-teal" style="width:34%;"></div></div>
+                                            <span class="s-val-label" style="font-size:10px;">34.6%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="s-bucket-col">Maharashtra</td>
+                                    <td>1,016</td>
+                                    <td>11.93</td>
+                                    <td>
+                                         <div class="s-progress-wrapper" style="gap:6px;">
+                                            <div class="s-progress-track" style="height:10px;"><div class="s-progress-fill fill-teal" style="width:30%;"></div></div>
+                                            <span class="s-val-label" style="font-size:10px;">30.4%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                 <!-- Widget 4: Bubble Chart -->
+                <div class="s-widget animate-enter delay-3" style="padding:16px; min-height:300px;">
+                    <div class="s-widget-header" style="font-size:13px; margin-bottom:12px;">Cluster Wise Performance</div>
+                    
+                    <div class="scatter-chart-container">
+                        <!-- Y-Axis Label -->
+                        <div class="scatter-axis-label-y">NPA %</div>
+                        <!-- X-Axis Label -->
+                        <div class="scatter-axis-label-x">Selected Benchmark X Axis : 50</div>
+
+                        <!-- Bubbles -->
+                        ${bubblesHtml}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    `;
+
+    // Attach Event Listener
+    const select = document.getElementById('zoneSelect');
+    if(select) {
+        select.addEventListener('change', (e) => handleSummaryFilterChange(e, container));
+    }
 }
 
 function closeLastMonthSummary() {
