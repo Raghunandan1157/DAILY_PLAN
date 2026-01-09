@@ -1931,24 +1931,109 @@ function showReportPreviewModal(htmlContent, title, filename) {
 
     // Set Copy Action
     downloadBtn.onclick = async () => {
+        // Start animation and indicate copying
         downloadBtn.textContent = "Copying...";
         downloadBtn.disabled = true;
+        downloadBtn.classList.add('btn-success-anim');
 
+        // Attempt to copy image (mobile & desktop)
         const success = await copyTableImageToClipboard(htmlContent);
 
         if (success) {
             downloadBtn.textContent = "Copied! ✅";
-            downloadBtn.classList.add('btn-success-anim');
-            setTimeout(() => {
-                downloadBtn.textContent = "Copy";
-                downloadBtn.disabled = false;
-                downloadBtn.classList.remove('btn-success-anim');
-            }, 2000);
         } else {
             downloadBtn.textContent = "Copy";
-            downloadBtn.disabled = false;
         }
+        // Reset after a short period
+        setTimeout(() => {
+            downloadBtn.textContent = "Copy";
+            downloadBtn.disabled = false;
+            downloadBtn.classList.remove('btn-success-anim');
+        }, 2000);
     };
+
+    // Main copy function - tries image copy on ALL devices (mobile + desktop)
+    async function copyTableImageToClipboard(tableHTML) {
+        // Request clipboard-write permission early (if supported)
+        const permission = await getClipboardPermission();
+        if (permission === 'denied') {
+            // Permission denied – fall back to text copy
+            return await copyTableAsTextFallback(tableHTML);
+        }
+
+        const canWriteImages = supportsAsyncClipboard() && supportsClipboardItems();
+        // If clipboard API not available, go to fallback
+        if (!canWriteImages) {
+            return await copyTableAsTextFallback(tableHTML);
+        }
+
+        // 1. Create a hidden container for html2canvas
+        const container = document.createElement('div');
+        container.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        background: white;
+        padding: 20px;
+        z-index: 9999;
+        font-family: sans-serif;
+    `;
+
+        const styledTableHTML = `
+        <style>
+            table { border-collapse: collapse; width: 100%; color: #000; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f0f0f0; font-weight: bold; }
+        </style>
+        ${tableHTML}
+    `;
+
+        container.innerHTML = `<div style="display:inline-block; width:max-content; background:white;">${styledTableHTML}</div>`;
+        document.body.appendChild(container);
+
+        try {
+            await new Promise(resolve => setTimeout(resolve, 150));
+            const contentEl = container.firstElementChild;
+            if (typeof html2canvas === 'undefined') {
+                throw new Error("html2canvas library missing");
+            }
+            // Use lower scale on mobile to prevent memory issues
+            const isMobile = isMobileDevice();
+            const scale = isMobile ? 1.5 : 2;
+            const canvas = await html2canvas(contentEl, {
+                backgroundColor: '#ffffff',
+                scale: scale,
+                logging: false,
+                useCORS: true,
+                allowTaint: true
+            });
+            document.body.removeChild(container);
+            return new Promise((resolve) => {
+                canvas.toBlob(async blob => {
+                    if (!blob) {
+                        console.warn("Canvas blob generation failed, trying HTML fallback...");
+                        resolve(await copyTableAsTextFallback(tableHTML));
+                        return;
+                    }
+                    try {
+                        const item = new ClipboardItem({ 'image/png': blob });
+                        await navigator.clipboard.write([item]);
+                        showToast("Report image copied! 📷", "success");
+                        resolve(true);
+                    } catch (err) {
+                        console.warn("Image copy failed, trying HTML fallback...", err);
+                        resolve(await copyTableAsTextFallback(tableHTML));
+                    }
+                }, 'image/png');
+            });
+        } catch (e) {
+            console.error("Image generation error:", e);
+            if (document.body.contains(container)) {
+                document.body.removeChild(container);
+            }
+            return await copyTableAsTextFallback(tableHTML);
+        }
+    }
 
     // Set Excel Action
     const excelBtn = document.getElementById('btnExcelReport');
