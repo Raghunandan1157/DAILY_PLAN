@@ -79,7 +79,7 @@ KALBURGI-2	KALBURGI	PRASHANTH	KALBURGI
 JEVARGI	KALBURGI	PRASHANTH	KALBURGI
 INDI	INDI	RAJKUMAR PAWAR	KALBURGI
 CHADCHAN	INDI	RAJKUMAR PAWAR	KALBURGI
-AFZALPUR	INDI	RAJKUMAR PAWAR	KALBURGI
+AFZALPUR	KALBURGI	PRASHANTH	KALBURGI
 ALMEL	INDI	RAJKUMAR PAWAR	KALBURGI
 KUSHTAGI	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI
 GANGAVATHI	KUSHTAGI	VIRUPAKSHAPPA CHOUDI	KALBURGI
@@ -2650,8 +2650,8 @@ function isMobileDevice() {
 }
 
 function isIOS() {
-    return /iPhone|iPad|iPod/i.test(navigator.userAgent) || 
-           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
 function supportsAsyncClipboard() {
@@ -2695,35 +2695,35 @@ function legacyCopyText(text) {
             opacity: 0;
             z-index: 999999;
         `;
-        
+
         document.body.appendChild(textarea);
-        
+
         if (isIOS()) {
             // iOS specific: Need to use setSelectionRange and contentEditable trick
             textarea.contentEditable = true;
             textarea.readOnly = false;
-            
+
             const range = document.createRange();
             range.selectNodeContents(textarea);
-            
+
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
-            
+
             textarea.setSelectionRange(0, 999999);
         } else {
             textarea.select();
             textarea.setSelectionRange(0, textarea.value.length);
         }
-        
+
         const success = document.execCommand('copy');
         document.body.removeChild(textarea);
-        
+
         if (success) return true;
     } catch (e) {
         console.warn('Textarea copy failed:', e);
     }
-    
+
     // Method 2: ContentEditable div approach (iOS fallback)
     try {
         const div = document.createElement('div');
@@ -2740,45 +2740,45 @@ function legacyCopyText(text) {
         `;
         div.textContent = text;
         document.body.appendChild(div);
-        
+
         div.focus();
-        
+
         const range = document.createRange();
         range.selectNodeContents(div);
-        
+
         const selection = window.getSelection();
         selection.removeAllRanges();
         selection.addRange(range);
-        
+
         const success = document.execCommand('copy');
         document.body.removeChild(div);
-        
+
         if (success) return true;
     } catch (e) {
         console.warn('ContentEditable copy failed:', e);
     }
-    
+
     return false;
 }
 
-// Main copy function - prioritizes text copy for reliability on mobile
+// Helper: Extract plain text from HTML table
+function extractTableText(tableHTML) {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = tableHTML;
+    return tempDiv.innerText || tempDiv.textContent || '';
+}
+
+// Main copy function - tries image copy on ALL devices (mobile + desktop)
 async function copyTableImageToClipboard(tableHTML) {
     const isMobile = isMobileDevice();
-    
-    // On mobile, always skip image copy - it's unreliable
-    // Go straight to text with proper fallbacks
-    if (isMobile) {
-        return await copyTableAsTextFallback(tableHTML);
-    }
-    
-    // Desktop: Try image copy first
     const canWriteImages = supportsAsyncClipboard() && supportsClipboardItems();
-    
+
+    // If clipboard API not available, go to fallback
     if (!canWriteImages) {
         return await copyTableAsTextFallback(tableHTML);
     }
 
-    // 1. Create a hidden container
+    // 1. Create a hidden container for html2canvas
     const container = document.createElement('div');
     container.style.cssText = `
         position: fixed;
@@ -2811,9 +2811,12 @@ async function copyTableImageToClipboard(tableHTML) {
             throw new Error("html2canvas library missing");
         }
 
+        // Use lower scale on mobile to prevent memory issues
+        const scale = isMobile ? 1.5 : 2;
+
         const canvas = await html2canvas(contentEl, {
             backgroundColor: '#ffffff',
-            scale: 2,
+            scale: scale,
             logging: false,
             useCORS: true,
             allowTaint: true
@@ -2824,7 +2827,7 @@ async function copyTableImageToClipboard(tableHTML) {
         return new Promise((resolve) => {
             canvas.toBlob(async blob => {
                 if (!blob) {
-                    console.warn("Canvas blob generation failed, trying text fallback...");
+                    console.warn("Canvas blob generation failed, trying HTML fallback...");
                     resolve(await copyTableAsTextFallback(tableHTML));
                     return;
                 }
@@ -2834,7 +2837,8 @@ async function copyTableImageToClipboard(tableHTML) {
                     showToast("Report image copied! 📷", "success");
                     resolve(true);
                 } catch (err) {
-                    console.warn("Image copy failed, trying text fallback...", err);
+                    // Mobile browsers often block image clipboard write
+                    console.warn("Image copy failed, trying HTML fallback...", err);
                     resolve(await copyTableAsTextFallback(tableHTML));
                 }
             }, 'image/png');
@@ -2849,13 +2853,33 @@ async function copyTableImageToClipboard(tableHTML) {
     }
 }
 
-// Robust text copy with multiple fallback tiers
+// Fallback: Try HTML copy first (preserves table formatting), then plain text
 async function copyTableAsTextFallback(tableHTML) {
-    // Strip HTML tags to get plain text
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = tableHTML;
-    const text = tempDiv.innerText || tempDiv.textContent || '';
-    
+    const canWriteHtml = supportsAsyncClipboard() && supportsClipboardItems();
+
+    // TIER 1: Try copying as HTML (preserves table formatting when pasted)
+    if (canWriteHtml && window.isSecureContext) {
+        try {
+            const htmlBlob = new Blob([tableHTML], { type: 'text/html' });
+            const textBlob = new Blob([extractTableText(tableHTML)], { type: 'text/plain' });
+
+            // Write both HTML and plain text - apps will use the best format they support
+            const item = new ClipboardItem({
+                'text/html': htmlBlob,
+                'text/plain': textBlob
+            });
+            await navigator.clipboard.write([item]);
+            showToast("Table copied with formatting! 📋", "success");
+            return true;
+        } catch (err) {
+            console.warn("HTML clipboard write failed:", err.message);
+            // Continue to text fallback
+        }
+    }
+
+    // Extract plain text from HTML
+    const text = extractTableText(tableHTML);
+
     // TIER 1: Try modern Clipboard API (works best on desktop and newer mobile)
     if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         try {
@@ -2867,14 +2891,14 @@ async function copyTableAsTextFallback(tableHTML) {
             // Continue to fallbacks - don't return false yet
         }
     }
-    
+
     // TIER 2: Legacy execCommand copy (sync, works within user gesture)
     const legacySuccess = legacyCopyText(text);
     if (legacySuccess) {
         showToast("Table copied! 📋", "success");
         return true;
     }
-    
+
     // TIER 3: Prompt user to manually copy
     // This is a last resort for very restricted browsers
     try {
@@ -2902,7 +2926,7 @@ async function copyTableAsTextFallback(tableHTML) {
             </div>
         `;
         document.body.appendChild(modal);
-        
+
         const textarea = document.getElementById('manualCopyArea');
         document.getElementById('selectAllBtn').onclick = () => {
             textarea.select();
@@ -2914,13 +2938,13 @@ async function copyTableAsTextFallback(tableHTML) {
         modal.onclick = (e) => {
             if (e.target === modal) document.body.removeChild(modal);
         };
-        
+
         // Auto-select the text
         setTimeout(() => {
             textarea.focus();
             textarea.select();
         }, 100);
-        
+
         showToast("Please copy manually from the dialog", "alert");
         return false;
     } catch (e) {
