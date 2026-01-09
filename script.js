@@ -1952,6 +1952,18 @@ function showReportPreviewModal(htmlContent, title, filename) {
         }, 2000);
     };
 
+    // Set Share Action
+    const shareBtn = document.getElementById('btnShareReport');
+    if (shareBtn) {
+        shareBtn.onclick = async () => {
+            shareBtn.disabled = true;
+            shareBtn.textContent = "Processing...";
+            await shareReportImage(htmlContent);
+            shareBtn.textContent = "Share Image";
+            shareBtn.disabled = false;
+        };
+    }
+
     // Set Excel Action
     const excelBtn = document.getElementById('btnExcelReport');
     if (excelBtn) {
@@ -2770,17 +2782,8 @@ function extractTableText(tableHTML) {
     return tempDiv.innerText || tempDiv.textContent || '';
 }
 
-// Main copy function - tries image copy on ALL devices (mobile + desktop)
-async function copyTableImageToClipboard(tableHTML) {
-    const isMobile = isMobileDevice();
-    const canWriteImages = supportsAsyncClipboard() && supportsClipboardItems();
-
-    // If clipboard API not available, go to fallback
-    if (!canWriteImages) {
-        return await copyTableAsTextFallback(tableHTML);
-    }
-
-    // 1. Create a hidden container for html2canvas
+// Helper: Generate Blob from Table HTML
+async function generateTableImageBlob(tableHTML) {
     const container = document.createElement('div');
     container.style.cssText = `
         position: fixed;
@@ -2806,16 +2809,12 @@ async function copyTableImageToClipboard(tableHTML) {
 
     try {
         await new Promise(resolve => setTimeout(resolve, 150));
-
         const contentEl = container.firstElementChild;
-
         if (typeof html2canvas === 'undefined') {
             throw new Error("html2canvas library missing");
         }
-
-        // Use lower scale on mobile to prevent memory issues
+        const isMobile = isMobileDevice();
         const scale = isMobile ? 1.5 : 2;
-
         const canvas = await html2canvas(contentEl, {
             backgroundColor: '#ffffff',
             scale: scale,
@@ -2823,55 +2822,97 @@ async function copyTableImageToClipboard(tableHTML) {
             useCORS: true,
             allowTaint: true
         });
-
         document.body.removeChild(container);
-
-        return new Promise((resolve) => {
-            canvas.toBlob(async blob => {
-                if (!blob) {
-                    console.warn("Canvas blob generation failed, trying HTML fallback...");
-                    resolve(await copyTableAsTextFallback(tableHTML));
-                    return;
-                }
-                try {
-                    const item = new ClipboardItem({ 'image/png': blob });
-                    await navigator.clipboard.write([item]);
-                    showToast("Report image copied! 📷", "success");
-                    resolve(true);
-                } catch (err) {
-                    // Mobile browsers block image clipboard write - download the image instead
-                    console.warn("Image copy failed, downloading image...", err);
-
-                    if (isMobileDevice()) {
-                        // Download image for mobile
-                        try {
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = 'report_' + Date.now() + '.png';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(url);
-                            showToast("Image downloaded! Share from Photos 📱", "success");
-                            resolve(true);
-                        } catch (downloadErr) {
-                            console.warn("Download failed too:", downloadErr);
-                            resolve(await copyTableAsTextFallback(tableHTML));
-                        }
-                    } else {
-                        resolve(await copyTableAsTextFallback(tableHTML));
-                    }
-                }
-            }, 'image/png');
-        });
-
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     } catch (e) {
         console.error("Image generation error:", e);
         if (document.body.contains(container)) {
             document.body.removeChild(container);
         }
+        return null;
+    }
+}
+
+// Function to Share Report Image using Web Share API
+async function shareReportImage(tableHTML) {
+    if (!navigator.canShare) {
+        showToast("Sharing not supported on this browser", "alert");
+        return;
+    }
+    // Show loading toast
+    showToast("Generating image for sharing...", "info");
+
+    try {
+        const blob = await generateTableImageBlob(tableHTML);
+        if (!blob) throw new Error("Failed to generate image");
+
+        const file = new File([blob], "daily_report.png", { type: "image/png" });
+        const shareData = {
+            files: [file],
+            title: 'Daily Report',
+            text: 'Here is the daily report.'
+        };
+
+        if (navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+            showToast("Shared successfully! 🚀", "success");
+        } else {
+            showToast("Device doesn't support image sharing", "alert");
+        }
+    } catch (err) {
+        console.warn("Share failed:", err);
+        if (err.name !== 'AbortError') {
+            showToast("Share failed. Try Copy instead.", "alert");
+        }
+    }
+}
+
+// Main copy function - tries image copy on ALL devices (mobile + desktop)
+async function copyTableImageToClipboard(tableHTML) {
+    const isMobile = isMobileDevice();
+    const canWriteImages = supportsAsyncClipboard() && supportsClipboardItems();
+
+    // If clipboard API not available, go to fallback
+    if (!canWriteImages) {
         return await copyTableAsTextFallback(tableHTML);
+    }
+
+    const blob = await generateTableImageBlob(tableHTML);
+
+    if (!blob) {
+        console.warn("Canvas blob generation failed, trying HTML fallback...");
+        return await copyTableAsTextFallback(tableHTML);
+    }
+
+    try {
+        const item = new ClipboardItem({ 'image/png': blob });
+        await navigator.clipboard.write([item]);
+        showToast("Report image copied! 📷", "success");
+        return true;
+    } catch (err) {
+        // Mobile browsers block image clipboard write - download the image instead
+        console.warn("Image copy failed, downloading image...", err);
+
+        if (isMobileDevice()) {
+            // Download image for mobile
+            try {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'report_' + Date.now() + '.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showToast("Image downloaded! Share from Photos 📱", "success");
+                return true;
+            } catch (downloadErr) {
+                console.warn("Download failed too:", downloadErr);
+                return await copyTableAsTextFallback(tableHTML);
+            }
+        } else {
+            return await copyTableAsTextFallback(tableHTML);
+        }
     }
 }
 
