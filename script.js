@@ -4148,7 +4148,41 @@ function openBranchModal(branchName) {
     }
     else if (reportState === 'ACHIEVEMENT') {
         // STATE 2: SET ACHIEVEMENT
-        // ALL UNLOCKED (Allow editing targets too)
+        // Check if current time is after 6 PM (18:00)
+        const currentHour = new Date().getHours();
+        const isAfter6PM = currentHour >= 18;
+
+        if (!isAfter6PM) {
+            // Block achievement entry before 6 PM
+            const banner = document.createElement("div");
+            banner.className = "read-only-banner";
+            banner.style.background = "#FEF3C7"; // Light amber
+            banner.style.color = "#D97706";
+            banner.style.border = "1px solid #F59E0B";
+            banner.style.padding = "12px 16px";
+            banner.style.borderRadius = "8px";
+            banner.style.textAlign = "center";
+            banner.style.fontSize = "14px";
+            banner.style.fontWeight = "500";
+            banner.innerHTML = `<span style="font-size:18px;">⏰</span> You can enter achievement after <strong>6 PM</strong>`;
+            document.querySelector(".modal-body").prepend(banner);
+
+            // Disable all inputs
+            const allInputs = document.querySelectorAll('.modal-body input');
+            allInputs.forEach(input => {
+                if (input.type !== 'checkbox') {
+                    input.disabled = true;
+                    input.style.backgroundColor = "#f3f4f6";
+                    input.style.cursor = "not-allowed";
+                }
+            });
+
+            // Hide the save button in footer
+            footer.style.display = 'none';
+            return;
+        }
+
+        // ALL UNLOCKED (Allow editing targets too) - Only after 6 PM
         const banner = document.createElement("div");
         banner.className = "read-only-banner";
         banner.style.background = "#D1FAE5"; // Light Green
@@ -5352,7 +5386,7 @@ const mockDashboardData = {
             { x: 55, y: 50, val: "", label: "HaryanaCluster", color: "bubble-orange" }
         ]
     },
-    "North": {
+    "Region 1": {
         paid: "45.12", paidSub: "120.4",
         par: "850", parSub: "3,100",
         res: "38.5%",
@@ -5369,7 +5403,7 @@ const mockDashboardData = {
             { x: 40, y: 40, val: 40, label: "LucknowCluster", color: "bubble-yellow" }
         ]
     },
-    "South": {
+    "Region 2": {
         paid: "30.15", paidSub: "100.2",
         par: "450", parSub: "2,500",
         res: "28.1%",
@@ -5398,17 +5432,17 @@ function showLastMonthSummary() {
 }
 
 function handleSummaryFilterChange(event, container) {
-    const selectedZone = event.target.value;
-    renderLastMonthDashboard(container, selectedZone);
+    const selectedRegion = event.target.value;
+    renderLastMonthDashboard(container, selectedRegion);
 }
 
-function renderLastMonthDashboard(container, zone) {
-    const data = mockDashboardData[zone] || mockDashboardData["(All)"];
-    
+function renderLastMonthDashboard(container, region) {
+    const data = mockDashboardData[region] || mockDashboardData["(All)"];
+
     // Generate Bubbles HTML
     const bubblesHtml = data.bubbles.map(b => `
         <div class="scatter-bubble ${b.color} animate-enter" 
-             style="left: ${b.x}%; bottom: ${b.y}%; width: ${b.val ? 30 + (b.val/5) : 20}px; height: ${b.val ? 30 + (b.val/5) : 20}px;">
+             style="left: ${b.x}%; bottom: ${b.y}%; width: ${b.val ? 30 + (b.val / 5) : 20}px; height: ${b.val ? 30 + (b.val / 5) : 20}px;">
             ${b.val}
             <div class="chart-tooltip">
                 <strong>${b.label}</strong><br>
@@ -5451,16 +5485,22 @@ function renderLastMonthDashboard(container, zone) {
             <!-- Filter Bar -->
             <div class="summary-filter-bar" style="padding: 10px 16px;">
                 <div style="flex:1;">
-                    <label style="display:block; font-size:11px; color:#6B7280; margin-bottom:4px;">Zone</label>
-                    <select class="s-select" id="zoneSelect" style="padding:6px 10px;">
-                        <option value="(All)" ${zone === '(All)' ? 'selected' : ''}>(All)</option>
-                        <option value="North" ${zone === 'North' ? 'selected' : ''}>North</option>
-                        <option value="South" ${zone === 'South' ? 'selected' : ''}>South</option>
+                    <label style="display:block; font-size:11px; color:#6B7280; margin-bottom:4px;">Region</label>
+                    <select class="s-select" id="regionSelect" style="padding:6px 10px;">
+                        <option value="(All)" ${region === '(All)' ? 'selected' : ''}>(All)</option>
+                        <option value="Region 1" ${region === 'Region 1' ? 'selected' : ''}>Region 1</option>
+                        <option value="Region 2" ${region === 'Region 2' ? 'selected' : ''}>Region 2</option>
                     </select>
                 </div>
                 <div style="flex:1;">
-                    <label style="display:block; font-size:11px; color:#6B7280; margin-bottom:4px;">State</label>
-                    <select class="s-select" style="padding:6px 10px;"><option>(All)</option></select>
+                    <label style="display:block; font-size:11px; color:#6B7280; margin-bottom:4px;">District</label>
+                    <select class="s-select" style="padding:6px 10px;">
+                        <option>(All)</option>
+                        <option>Indore</option>
+                        <option>Bhopal</option>
+                        <option>Chennai</option>
+                        <option>Jabalpur</option>
+                    </select>
                 </div>
             </div>
 
@@ -5651,8 +5691,8 @@ function renderLastMonthDashboard(container, zone) {
     `;
 
     // Attach Event Listener
-    const select = document.getElementById('zoneSelect');
-    if(select) {
+    const select = document.getElementById('regionSelect');
+    if (select) {
         select.addEventListener('change', (e) => handleSummaryFilterChange(e, container));
     }
 }
