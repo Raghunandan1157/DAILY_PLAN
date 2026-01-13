@@ -170,6 +170,22 @@ function getSlippedLabel(dateStr) {
     return `${getPreviousMonthName(dateStr)} Slipped`;
 }
 
+// Get dynamic Fiscal Year label (e.g., "FY 2025-26")
+// Fiscal year in India runs from April to March
+function getFiscalYearLabel(dateStr) {
+    const targetDate = dateStr ? new Date(dateStr) : new Date();
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth(); // 0-indexed (0 = Jan, 3 = Apr)
+
+    // If month is Jan-Mar (0-2), we're in the FY that started in previous year
+    // If month is Apr-Dec (3-11), we're in the FY that started this year
+    const fyStartYear = month < 3 ? year - 1 : year;
+    const fyEndYear = fyStartYear + 1;
+
+    // Format: "FY 2025-26"
+    return `FY ${fyStartYear}-${String(fyEndYear).slice(-2)}`;
+}
+
 function calculateTotalCollectionPercentage() {
     let totalPlan = 0;
     let totalAchieve = 0;
@@ -956,7 +972,31 @@ function aggregateDataByBranch(rows) {
 
 // Merge achievement data with plan data when Supabase achievement rows miss values
 // IMPORTANT: Only merges when there is ACTUAL achievement data in Supabase, not empty objects
+// NOTE: Only merge fields that have DIFFERENT names between plan and achievement tables.
+// Fields with SAME names (npa_activation, npa_closure, disb_*, kyc_*) should NOT be merged
+// because they are independent values in both tables.
 function mergeAchievementsWithPlan(branchDetails) {
+    // Only include fields that have corresponding plan counterparts with DIFFERENT names
+    // e.g., ftod_actual (achievement) -> ftod_plan (plan)
+    // Exclude: npa_activation, npa_closure, disb_*, kyc_* as they are independent values
+    const achievementToMerge = [
+        'ftod_actual',
+        'nov_25_Slipped_Accounts_Actual',
+        'pnpa_actual',
+        'fy_od_acc',
+        'fy_non_start_acc'
+    ];
+
+    // Mapping from achievement field to corresponding plan field
+    const achievementToPlanMap = {
+        'ftod_actual': 'ftod_plan',
+        'nov_25_Slipped_Accounts_Actual': 'nov_25_Slipped_Accounts_Plan',
+        'pnpa_actual': 'pnpa_plan',
+        'fy_od_acc': 'fy_od_plan',
+        'fy_non_start_acc': 'fy_non_start_plan'
+    };
+
+    // Original full list for reference (used for hasRealAchievementData check)
     const achievementFields = [
         'ftod_actual',
         'nov_25_Slipped_Accounts_Actual',
@@ -998,16 +1038,20 @@ function mergeAchievementsWithPlan(branchDetails) {
 
         const merged = { ...achievement };
 
-        achievementFields.forEach(field => {
-            const achVal = achievement ? achievement[field] : null;
+        // Only merge fields that have different names between plan and achievement tables
+        // Use the mapping to get the correct plan field name
+        achievementToMerge.forEach(achField => {
+            const achVal = achievement ? achievement[achField] : null;
             const hasAchVal = achVal !== null && achVal !== undefined && achVal !== '';
             if (!hasAchVal) {
-                const planVal = plan ? plan[field] : null;
+                // Get the corresponding plan field name from the mapping
+                const planField = achievementToPlanMap[achField];
+                const planVal = plan ? plan[planField] : null;
                 if (planVal !== null && planVal !== undefined && planVal !== '') {
-                    merged[field] = planVal;
+                    merged[achField] = planVal;
                 }
             } else if (typeof achVal === 'string' && achVal.trim() !== '' && !isNaN(Number(achVal))) {
-                merged[field] = Number(achVal);
+                merged[achField] = Number(achVal);
             }
         });
 
@@ -2254,10 +2298,15 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
     let bodyRows = '';
     let totalRowAchievementSum = 0;
     let rowCountForAvg = 0;
+    let rowIndex = 0;
 
     sortedRows.forEach(row => {
         const p = row.plan;
         const a = row.achieve;
+
+        // Alternating row color for better readability
+        const rowBgColor = rowIndex % 2 === 0 ? '#FFFFFF' : '#F8F9FA';
+        rowIndex++;
 
         // --- EXTRACT VALUES ---
 
@@ -2319,8 +2368,8 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
         }
 
         bodyRows += `
-            <tr style="font-size: 10px;">
-                <td style="background: ${colors.white}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: left; font-weight: 600;">${row.name}</td>
+            <tr style="font-size: 10px; background: ${rowBgColor};">
+                <td style="background: ${rowBgColor}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: left; font-weight: 600;">${row.name}</td>
 
                 <!-- PLAN DATA -->
                 <td style="background: ${colors.ftod}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center;">${fmt(p_ftod)}</td>
@@ -2439,22 +2488,33 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
         </tr>
     `;
 
-    // Common Column Headers Row
+    // Category Headers Row (merged cells for grouped columns)
+    const categoryHeaders = `
+        <td style="background: ${colors.ftod}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px; font-weight:bold;">FTOD</td>
+        <td style="background: ${colors.slipped}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px; font-weight:bold;">${getSlippedLabel(state.systemDate)}</td>
+        <td style="background: ${colors.pnpa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px; font-weight:bold;">PNPA</td>
+        <td colspan="2" style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px; font-weight:bold;">NPA Accounts</td>
+        <td colspan="2" style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px; font-weight:bold;">${getFiscalYearLabel(state.systemDate)}</td>
+        <td colspan="4" style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px; font-weight:bold;">Disbursement</td>
+        <td colspan="3" style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px; font-weight:bold;">KYC Sourcing</td>
+    `;
+
+    // Sub-column Headers Row (matching Set Target data entry names)
     const subHeaders = `
-        <td style="background: ${colors.ftod}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">FTOD</td>
-        <td style="background: ${colors.slipped}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">${getSlippedLabel(state.systemDate)}</td>
-        <td style="background: ${colors.pnpa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">PNPA</td>
-        <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">Act</td>
-        <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">Close</td>
-        <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">OD</td>
-        <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">NS</td>
-        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IGL A/c</td>
-        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IGL Amt</td>
-        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL A/c</td>
-        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL Amt</td>
-        <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">FIG/IGL</td>
-        <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">IL</td>
-        <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:9px;">NPA</td>
+        <td style="background: ${colors.ftod}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">Accounts</td>
+        <td style="background: ${colors.slipped}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">Accounts</td>
+        <td style="background: ${colors.pnpa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">Accounts</td>
+        <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">Activation</td>
+        <td style="background: ${colors.npa}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">Closure</td>
+        <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">OD Acc</td>
+        <td style="background: ${colors.fy2526}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">NS Acc</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">IGL&FIG Acc</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">IGL&FIG Amt</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">IL Acc</td>
+        <td style="background: ${colors.disb}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">IL Amt</td>
+        <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">FIG & IGL</td>
+        <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">IL</td>
+        <td style="background: ${colors.kyc}; border: 1px solid ${colors.border}; padding: 3px 6px; text-align: center; font-size:8px;">NPA</td>
     `;
 
     return `
@@ -2469,16 +2529,16 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
 
             <!-- MAIN TABLE -->
             <table style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: 100%; background:white;">
-            <!-- Section Headers -->
+            <!-- Row 1: PLAN / ACHIEVEMENT Headers -->
             <tr style="font-weight: bold; font-size: 11px;">
-                <td rowspan="2" style="background: ${colors.white}; border: 1px solid ${colors.border}; padding: 4px 8px; text-align: center; vertical-align:middle; width: 120px;">${firstColHeader}</td>
+                <td rowspan="3" style="background: ${colors.white}; border: 1px solid ${colors.border}; padding: 4px 8px; text-align: center; vertical-align:middle; width: 120px;">${firstColHeader}</td>
 
                 <!-- PLAN HEADER -->
                 <td colspan="14" style="background: ${colors.planBg}; border: 1px solid ${colors.border}; padding: 6px; text-align: center; border-bottom: 2px solid ${colors.border}; color:black;">
                     PLAN
                 </td>
 
-                <td rowspan="2" style="background: #000; width: 2px;"></td>
+                <td rowspan="3" style="background: #000; width: 2px;"></td>
 
                 <!-- ACHIEVEMENT HEADER -->
                 <td colspan="14" style="background: ${colors.achieveBg}; border: 1px solid ${colors.border}; padding: 6px; text-align: center; border-bottom: 2px solid ${colors.border}; color:black;">
@@ -2486,7 +2546,13 @@ function generateCombinedReportHTML(title, level, planRows, achieveRows) {
                 </td>
             </tr>
 
-            <!-- Sub Headers Row -->
+            <!-- Row 2: Category Headers (merged cells) -->
+            <tr style="font-weight: bold;">
+                ${categoryHeaders}
+                ${categoryHeaders}
+            </tr>
+
+            <!-- Row 3: Sub-column Headers -->
             <tr style="font-weight: bold;">
                 ${subHeaders}
                 ${subHeaders}
@@ -2537,9 +2603,14 @@ function generateReportHTML(title, level, rows, isPlan) {
 
     let bodyRows = '';
     const fmt = n => n === 0 ? '-' : n.toLocaleString('en-IN');
+    let rowIndex = 0;
 
     rows.forEach(row => {
         const d = row.data || {};
+
+        // Alternating row color for better readability
+        const rowBgColor = rowIndex % 2 === 0 ? '#FFFFFF' : '#F8F9FA';
+        rowIndex++;
 
         // Extract values using dynamic mapping
         const ftod = parseInt(d[f('ftod_plan', 'ftod_actual')]) || 0;
@@ -2572,8 +2643,8 @@ function generateReportHTML(title, level, rows, isPlan) {
         totals.kycFig += kycFig; totals.kycIl += kycIl; totals.kycNpa += kycNpa;
 
         bodyRows += `
-            <tr style="font-size: 10px;">
-                <td style="background: ${colors.white}; border: 1px solid #000; padding: 3px 6px; text-align: left; font-weight: 600;">${row.name}</td>
+            <tr style="font-size: 10px; background: ${rowBgColor};">
+                <td style="background: ${rowBgColor}; border: 1px solid #000; padding: 3px 6px; text-align: left; font-weight: 600;">${row.name}</td>
                 <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(ftod)}</td>
                 <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(slipped)}</td>
                 <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center;">${fmt(pnpa)}</td>
@@ -2621,31 +2692,31 @@ function generateReportHTML(title, level, rows, isPlan) {
                     ${title}
                 </td>
             </tr>
-            <!-- Header Row 1 -->
+            <!-- Header Row 1: Category Headers (merged cells) -->
             <tr style="font-weight: bold; font-size: 10px;">
                 <td rowspan="2" style="background: ${colors.white}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">${firstColHeader}</td>
                 <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">FTOD</td>
                 <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">${getSlippedLabel(state.systemDate)}</td>
                 <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">PNPA</td>
-                <td colspan="2" style="background: ${colors.npa}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">NPA</td>
-                <td colspan="2" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">FY 2025-26</td>
-                <td colspan="4" style="background: ${colors.disb}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">Disbursement ${suffix}</td>
+                <td colspan="2" style="background: ${colors.npa}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">NPA Accounts</td>
+                <td colspan="2" style="background: ${colors.fy2526}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">${getFiscalYearLabel(state.systemDate)}</td>
+                <td colspan="4" style="background: ${colors.disb}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">Disbursement</td>
                 <td colspan="3" style="background: ${colors.kyc}; border: 1px solid #000; padding: 4px 8px; text-align: center; color:black;">KYC Sourcing</td>
             </tr>
-            <!-- Header Row 2 -->
+            <!-- Header Row 2: Sub-column Headers (matching Set Target) -->
             <tr style="font-weight: bold; font-size: 9px;">
                 <td style="background: ${colors.ftod}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">${suffix}</td>
                 <td style="background: ${colors.slipped}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">${suffix}</td>
                 <td style="background: ${colors.pnpa}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">${suffix}</td>
                 <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">Activation</td>
                 <td style="background: ${colors.npa}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">Closure</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">OD ${suffix}</td>
-                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">NS ${suffix}</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL A/c</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL Amt</td>
-                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL A/c</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">OD Acc</td>
+                <td style="background: ${colors.fy2526}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">NS Acc</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL&FIG Acc</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL&FIG Amt</td>
+                <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL Acc</td>
                 <td style="background: ${colors.disb}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL Amt</td>
-                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IGL&FIG</td>
+                <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">FIG & IGL</td>
                 <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">IL</td>
                 <td style="background: ${colors.kyc}; border: 1px solid #000; padding: 3px 6px; text-align: center; color:black;">NPA</td>
             </tr>
@@ -3977,7 +4048,7 @@ function createViewSummary(targetData, achieveData) {
     )}
                         </div>
                         <div>
-                            ${section('FY 2025-26 Accounts',
+                            ${section(getFiscalYearLabel(state.systemDate) + ' Accounts',
         metricRow('Total OD Accounts', 'fy_od_acc', null, true) +
         metricRow('OD Collection Plan', 'fy_od_plan') +
         metricRow('Non-Starter Accounts', 'fy_non_start_acc', null, true) +
@@ -5551,6 +5622,29 @@ function renderLastMonthDashboard(container, region) {
                          <div class="s-metric-label" style="font-size:11px;">Efficiency %</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Table 1 -->
+            <div class="s-widget animate-enter" style="padding:16px; margin-bottom: 16px;">
+                 <div class="s-widget-header" style="font-size:13px; margin-bottom:12px;">Table 1</div>
+                 <div class="s-table-container">
+                    <table class="s-table" style="font-size:11px;">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="3" style="text-align:center; padding: 20px; color: var(--text-secondary);">
+                                    
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
             </div>
 
             <!-- Content Grid -->
