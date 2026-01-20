@@ -147,7 +147,7 @@ let state = {
     isLoading: false, // Track loading state
     realtimeChannels: [], // Track subscriptions for cleanup
     viewMode: 'PLAN', // 'PLAN' (Plan only) or 'REVIEW' (Plan vs Achievement)
-    reportLevel: 'BRANCH', // 'BRANCH', 'DISTRICT', 'REGION'
+    reportLevel: 'REGION', // 'BRANCH', 'DISTRICT', 'REGION'
     dateFrom: null, // Range Start
     dateTo: null,   // Range End
     isDragging: false,
@@ -155,6 +155,25 @@ let state = {
 };
 
 // --- HELPER FUNCTIONS ---
+
+// Indian number format: 12,34,567
+function formatIndianNumber(num) {
+    if (num === '' || num === null || num === undefined) return '';
+    const str = String(num).replace(/,/g, '');
+    if (isNaN(str) || str === '') return '';
+    const [intPart, decPart] = str.split('.');
+    const lastThree = intPart.slice(-3);
+    const otherNumbers = intPart.slice(0, -3);
+    const formatted = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + (otherNumbers ? ',' : '') + lastThree;
+    return decPart !== undefined ? formatted + '.' + decPart : formatted;
+}
+
+// Strip commas for database save
+function unformatNumber(str) {
+    if (str === '' || str === null || str === undefined) return '';
+    return String(str).replace(/,/g, '');
+}
+
 function getPreviousMonthName(dateStr) {
     const targetDate = dateStr ? new Date(dateStr) : new Date();
     // Fix: Set to 1st of month to avoid month-end rollover issues (e.g. Mar 31 -> Mar 3)
@@ -4337,6 +4356,24 @@ function openBranchModal(branchName) {
         footer.insertBefore(btn, footer.firstChild);
     }
 
+    // Add Indian number formatting to amount fields
+    const amountFields = ['ftod_plan', 'nov_25_Slipped_Accounts_Plan', 'pnpa_plan',
+                          'fy_od_plan', 'fy_non_start_plan', 'disb_igl_amt', 'disb_il_amt'];
+    amountFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.oninput = function() {
+                const cursorPos = this.selectionStart;
+                const oldLength = this.value.length;
+                const raw = this.value.replace(/,/g, '');
+                this.value = formatIndianNumber(raw);
+                const newLength = this.value.length;
+                const newPos = cursorPos + (newLength - oldLength);
+                this.setSelectionRange(newPos, newPos);
+            };
+        }
+    });
+
     document.getElementById("branchModal").classList.add("visible");
 }
 
@@ -4412,7 +4449,8 @@ async function saveBranchDetails(andNext) {
         if (el) {
             // No longer requiring all fields - allow empty values
             // Empty values will be sent as empty string and converted to null/0 by saveToSupabase
-            data[id] = el.value;
+            // Strip commas from formatted numbers before saving
+            data[id] = unformatNumber(el.value);
         }
     }
 
