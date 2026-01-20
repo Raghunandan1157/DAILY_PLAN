@@ -770,6 +770,18 @@ function formatDateISO(date) {
     return new Date(date.getTime() - offset).toISOString().split('T')[0];
 }
 
+// Get yesterday's date in ISO format (YYYY-MM-DD)
+function getYesterdayISO() {
+    const today = new Date();
+    today.setDate(today.getDate() - 1);
+    return formatDateISO(today);
+}
+
+// Check if a given ISO date string is today
+function isToday(isoDate) {
+    return isoDate === formatDateISO(new Date());
+}
+
 function validateDateRange() {
     const from = document.getElementById('dateFrom').value;
     const to = document.getElementById('dateTo').value;
@@ -1151,6 +1163,38 @@ async function fetchSupabaseData() {
     } finally {
         console.log("fetchSupabaseData: Entering finally, calling setLoading(false)");
         setLoading(false);
+    }
+}
+
+// Check if yesterday's achievement exists for a branch
+async function checkYesterdayAchievementExists(branchName) {
+    const yesterdayDate = getYesterdayISO();
+    try {
+        const { count, error } = await supabaseClient
+            .from('daily_reports_achievements')
+            .select('*', { count: 'exact', head: true })
+            .eq('date', yesterdayDate)
+            .eq('branch_name', branchName);
+        if (error) return true; // Fail open
+        return count > 0;
+    } catch (err) {
+        return true; // Fail open
+    }
+}
+
+// Check if yesterday's plan exists for a branch
+async function checkYesterdayPlanExists(branchName) {
+    const yesterdayDate = getYesterdayISO();
+    try {
+        const { count, error } = await supabaseClient
+            .from('daily_reports')
+            .select('*', { count: 'exact', head: true })
+            .eq('date', yesterdayDate)
+            .eq('branch_name', branchName);
+        if (error) return false;
+        return count > 0;
+    } catch (err) {
+        return false;
     }
 }
 
@@ -4101,7 +4145,65 @@ let currentEditingBranch = null;
 // Track current modal state for use in save function
 let currentModalState = 'TARGET';
 
-function openBranchModal(branchName) {
+// Track pending yesterday redirect state
+let pendingYesterdayRedirect = { branchName: null, yesterdayDate: null };
+
+function showYesterdayReminderModal(branchName) {
+    const yesterdayDate = getYesterdayISO();
+    pendingYesterdayRedirect = { branchName, yesterdayDate };
+
+    // Set branch name in modal
+    document.getElementById('reminderBranchName').textContent = branchName;
+
+    // Format and set yesterday's date
+    const dateObj = new Date(yesterdayDate + 'T00:00:00');
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    document.getElementById('reminderYesterdayDate').textContent = formattedDate;
+
+    // Show modal
+    document.getElementById('yesterdayReminderModal').classList.add('visible');
+}
+
+function closeYesterdayReminderModal() {
+    document.getElementById('yesterdayReminderModal').classList.remove('visible');
+    pendingYesterdayRedirect = { branchName: null, yesterdayDate: null };
+}
+
+async function redirectToYesterdayAchievement() {
+    const { branchName, yesterdayDate } = pendingYesterdayRedirect;
+    if (!branchName || !yesterdayDate) return;
+
+    // Close the reminder modal
+    closeYesterdayReminderModal();
+
+    // Change systemDate to yesterday
+    state.systemDate = yesterdayDate;
+
+    // Update UI to reflect the date change
+    const dateObj = new Date(yesterdayDate + 'T00:00:00');
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+    document.getElementById('headerDate').textContent = formattedDate;
+
+    // Show loading and fetch yesterday's data
+    setLoading(true);
+    await fetchSupabaseData();
+    setLoading(false);
+
+    // Open branch modal - will show ACHIEVEMENT mode since yesterday has plan but no achievement
+    openBranchModal(branchName);
+}
+
+async function openBranchModal(branchName) {
     currentEditingBranch = branchName;
     document.getElementById("modalBranchTitle").textContent = `${branchName} - Details`;
 
@@ -4117,6 +4219,21 @@ function openBranchModal(branchName) {
 
     // Local alias for use in this function
     let reportState = currentModalState;
+
+    // 2. CHECK FOR MISSING YESTERDAY'S ACHIEVEMENT (DM only, today's plan entry)
+    if (currentModalState === 'TARGET' && state.role === 'DM') {
+        const todayISO = formatDateISO(new Date());
+        if (state.systemDate === todayISO) {
+            const yesterdayHasPlan = await checkYesterdayPlanExists(branchName);
+            if (yesterdayHasPlan) {
+                const yesterdayHasAchievement = await checkYesterdayAchievementExists(branchName);
+                if (!yesterdayHasAchievement) {
+                    showYesterdayReminderModal(branchName);
+                    return; // Block plan entry
+                }
+            }
+        }
+    }
 
     // Helper to update labels dynamically
     const updateLabel = (id, text) => {
@@ -4238,12 +4355,15 @@ function openBranchModal(branchName) {
     }
     else if (reportState === 'ACHIEVEMENT') {
         // STATE 2: SET ACHIEVEMENT
-        // Check if current time is after 6 PM (18:00)
+        // Check if viewing TODAY and if current time is before 6 PM
+        const todayISO = formatDateISO(new Date());
+        const isViewingToday = state.systemDate === todayISO;
         const currentHour = new Date().getHours();
         const isAfter6PM = currentHour >= 18;
 
-        if (!isAfter6PM) {
-            // Block achievement entry before 6 PM
+        // Only block if TODAY's achievement and before 6 PM
+        if (isViewingToday && !isAfter6PM) {
+            // Block achievement entry before 6 PM for today only
             const banner = document.createElement("div");
             banner.className = "read-only-banner";
             banner.style.background = "#FEF3C7"; // Light amber
@@ -4254,7 +4374,7 @@ function openBranchModal(branchName) {
             banner.style.textAlign = "center";
             banner.style.fontSize = "14px";
             banner.style.fontWeight = "500";
-            banner.innerHTML = `<span style="font-size:18px;">⏰</span> You can enter achievement after <strong>6 PM</strong>`;
+            banner.innerHTML = `<span style="font-size:18px;">⏰</span> You can enter today's achievement after <strong>6 PM</strong>`;
             document.querySelector(".modal-body").prepend(banner);
 
             // Disable all inputs
@@ -4272,7 +4392,7 @@ function openBranchModal(branchName) {
             return;
         }
 
-        // ALL UNLOCKED (Allow editing targets too) - Only after 6 PM
+        // ALL UNLOCKED - Allow entry (either after 6 PM for today, or any time for past dates)
         const banner = document.createElement("div");
         banner.className = "read-only-banner";
         banner.style.background = "#D1FAE5"; // Light Green

@@ -298,6 +298,35 @@
     <span id="toastMsg">Action Successful</span>
   </div>
 
+  <!-- YESTERDAY REMINDER MODAL -->
+  <div class="modal-overlay" id="yesterdayReminderModal" style="z-index: 10001;">
+    <div class="modal-container" style="max-width: 450px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border-bottom: none; padding-bottom: 0;">
+        <div style="width: 64px; height: 64px; background: #FEF3C7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+          <svg style="width: 32px; height: 32px; stroke: #D97706; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+      </div>
+      <div class="modal-body" style="padding: 0 24px 24px; text-align: center;">
+        <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 600; color: var(--text-primary);">Action Required</h3>
+        <p style="margin: 0 0 16px; color: var(--text-secondary); font-size: 14px; line-height: 1.5;">
+          You must complete yesterday's achievement for <strong id="reminderBranchName"></strong> before adding today's plan.
+        </p>
+        <div style="background: #F3F4F6; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+          <span style="font-size: 12px; color: var(--text-secondary);">Yesterday's Date</span>
+          <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);" id="reminderYesterdayDate"></div>
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button class="btn btn-outline" style="flex: 1; max-width: 140px;" onclick="closeYesterdayReminderModal()">Cancel</button>
+          <button class="btn btn-primary" style="flex: 1; max-width: 200px; background: #D97706;" onclick="redirectToYesterdayAchievement()">Go to Yesterday's Achievement</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- GLOBAL LOADER -->
   <div class="global-loader" id="global-loader">
     <div class="loader-spinner"></div>
