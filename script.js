@@ -4220,21 +4220,6 @@ async function openBranchModal(branchName) {
     // Local alias for use in this function
     let reportState = currentModalState;
 
-    // 2. CHECK FOR MISSING YESTERDAY'S ACHIEVEMENT (DM only, today's plan entry)
-    if (currentModalState === 'TARGET' && state.role === 'DM') {
-        const todayISO = formatDateISO(new Date());
-        if (state.systemDate === todayISO) {
-            const yesterdayHasPlan = await checkYesterdayPlanExists(branchName);
-            if (yesterdayHasPlan) {
-                const yesterdayHasAchievement = await checkYesterdayAchievementExists(branchName);
-                if (!yesterdayHasAchievement) {
-                    showYesterdayReminderModal(branchName);
-                    return; // Block plan entry
-                }
-            }
-        }
-    }
-
     // Helper to update labels dynamically
     const updateLabel = (id, text) => {
         const el = document.getElementById(id);
