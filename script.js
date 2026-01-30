@@ -2272,7 +2272,7 @@ function getAggregatedReportData(level, isPlan) {
                 data: data // The numeric data
             });
         });
-        return rows; // Already sorted by nature of rawData order usually
+        return rows.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     // 2. REGION or DISTRICT LEVEL (Aggregation)
