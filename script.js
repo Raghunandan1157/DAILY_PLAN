@@ -1099,11 +1099,12 @@ function mergeAchievementsWithPlan(branchDetails) {
 }
 
 // --- SUPABASE ACTIONS ---
-async function fetchSupabaseData() {
+async function fetchSupabaseData(retryCount = 0) {
+    const MAX_RETRIES = 3;
     const targetDate = state.systemDate;
-    console.log("fetchSupabaseData: Starting for date " + targetDate);
+    console.log("fetchSupabaseData: Starting for date " + targetDate + (retryCount > 0 ? ` (retry ${retryCount}/${MAX_RETRIES})` : ''));
 
-    setLoading(true, 'Loading data...');
+    setLoading(true, retryCount > 0 ? `Retrying... (${retryCount}/${MAX_RETRIES})` : 'Loading data...');
 
     try {
         // Parallel Fetch with timeout for reliability
@@ -1112,7 +1113,7 @@ async function fetchSupabaseData() {
             timeoutId = setTimeout(() => {
                 console.error("fetchSupabaseData: Timeout triggered");
                 reject(new Error('Request timeout'));
-            }, 15000)
+            }, 30000) // 30s timeout (increased for slow connections)
         );
 
         const p1 = supabaseClient.from('daily_reports').select('*').eq('date', targetDate);
@@ -1128,6 +1129,16 @@ async function fetchSupabaseData() {
 
         if (resPlan.error || resAchieve.error) {
             const errorMsg = resPlan.error?.message || resAchieve.error?.message || 'Unknown error';
+            const isNetworkError = errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('timeout');
+
+            if (isNetworkError && retryCount < MAX_RETRIES) {
+                const delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
+                console.warn(`Fetch network error, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+                clearTimeout(timeoutId);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return fetchSupabaseData(retryCount + 1);
+            }
+
             console.error("Supabase Load Error:", errorMsg);
             showToast('Failed to load data: ' + errorMsg, 'alert');
             return;
@@ -1159,7 +1170,23 @@ async function fetchSupabaseData() {
         console.log("fetchSupabaseData: renderDashboard completed");
     } catch (err) {
         console.error("Fetch Error:", err);
-        showToast('Connection error. Please check your network.', 'alert');
+
+        // Retry on network/timeout errors
+        const isNetworkError = err.message && (
+            err.message.includes('Failed to fetch') ||
+            err.message.includes('timeout') ||
+            err.message.includes('NetworkError')
+        );
+
+        if (isNetworkError && retryCount < MAX_RETRIES) {
+            const delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
+            console.warn(`Fetch timeout, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+            showToast(`Connection slow, retrying... (${retryCount + 1}/${MAX_RETRIES})`, 'warning');
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return fetchSupabaseData(retryCount + 1);
+        }
+
+        showToast('Connection error. Please check your network and try again.', 'alert');
     } finally {
         console.log("fetchSupabaseData: Entering finally, calling setLoading(false)");
         setLoading(false);
@@ -1266,7 +1293,8 @@ function setupRealtime() {
     state.realtimeChannels.push(achievementChannel);
 }
 
-async function saveToSupabase(branchName, branchData, table) {
+async function saveToSupabase(branchName, branchData, table, retryCount = 0) {
+    const MAX_RETRIES = 3;
     const dateToSave = state.systemDate; // Expected YYYY-MM-DD
 
     // Get meta info
@@ -1313,20 +1341,58 @@ async function saveToSupabase(branchName, branchData, table) {
         kyc_npa: toNum(branchData.kyc_npa)
     };
 
+    try {
+        const { data, error } = await supabaseClient
+            .from(table)
+            .upsert(payload, { onConflict: 'date,branch_name' })
+            .select();
 
-    const { data, error } = await supabaseClient
-        .from(table)
-        .upsert(payload, { onConflict: 'date,branch_name' })
-        .select();
+        if (error) {
+            // Check if it's a network/timeout error (retryable)
+            const isNetworkError = error.message && (
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('NetworkError') ||
+                error.message.includes('timeout') ||
+                error.message.includes('ERR_CONNECTION')
+            );
 
+            if (isNetworkError && retryCount < MAX_RETRIES) {
+                const delay = Math.min(2000 * Math.pow(2, retryCount), 10000); // 2s, 4s, 8s
+                console.warn(`Save timeout for ${branchName}, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+                showToast(`Connection slow, retrying... (${retryCount + 1}/${MAX_RETRIES})`, 'warning');
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return saveToSupabase(branchName, branchData, table, retryCount + 1);
+            }
 
-    if (error) {
-        console.error("Supabase Save Error:", error);
-        // Show detailed error to help user debug RLS/Type issues
-        alert(`Save Failed: ${error.message}\nHint: Check RLS policies or column types.`);
-        return { success: false, error };
+            console.error("Supabase Save Error:", error);
+            if (isNetworkError) {
+                alert(`Save Failed: Network connection timed out after ${MAX_RETRIES} retries.\nPlease check your internet connection and try again.`);
+            } else {
+                alert(`Save Failed: ${error.message}\nHint: Check RLS policies or column types.`);
+            }
+            return { success: false, error };
+        }
+        return { success: true, row: (data && data[0]) ? data[0] : payload };
+    } catch (err) {
+        // Catch network-level errors (e.g. Failed to fetch thrown as exception)
+        const isNetworkError = err.message && (
+            err.message.includes('Failed to fetch') ||
+            err.message.includes('NetworkError') ||
+            err.message.includes('timeout')
+        );
+
+        if (isNetworkError && retryCount < MAX_RETRIES) {
+            const delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
+            console.warn(`Save network error for ${branchName}, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+            showToast(`Connection slow, retrying... (${retryCount + 1}/${MAX_RETRIES})`, 'warning');
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return saveToSupabase(branchName, branchData, table, retryCount + 1);
+        }
+
+        console.error("Supabase Save Error:", err);
+        alert(`Save Failed: Network connection error.\nPlease check your internet connection and try again.`);
+        return { success: false, error: err };
     }
-    return { success: true, row: (data && data[0]) ? data[0] : payload };
 }
 
 // --- THEME ---
