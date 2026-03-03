@@ -156,6 +156,20 @@ let state = {
 
 // --- HELPER FUNCTIONS ---
 
+// Lazy-load external scripts on demand (only downloads once, caches for reuse)
+const _loadedScripts = {};
+function loadScript(url) {
+    if (_loadedScripts[url]) return _loadedScripts[url];
+    _loadedScripts[url] = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load: ' + url));
+        document.head.appendChild(script);
+    });
+    return _loadedScripts[url];
+}
+
 // Indian number format: 12,34,567
 function formatIndianNumber(num) {
     if (num === '' || num === null || num === undefined) return '';
@@ -2257,7 +2271,7 @@ function closeReportPreviewModal() {
     }
 }
 
-function downloadReportAsExcel(title, filename) {
+async function downloadReportAsExcel(title, filename) {
     const table = document.getElementById('reportPreviewBody').querySelector('table');
     if (!table) {
         showToast("No report table found to export", "alert");
@@ -2265,6 +2279,8 @@ function downloadReportAsExcel(title, filename) {
     }
 
     try {
+        showToast("Preparing Excel...", "info");
+        await loadScript('https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js');
         // Create workbook from table
         const wb = XLSX.utils.table_to_book(table, { sheet: "Report" });
 
@@ -3083,9 +3099,7 @@ async function generateTableImageBlob(tableHTML) {
     try {
         await new Promise(resolve => setTimeout(resolve, 150));
         const contentEl = container.firstElementChild;
-        if (typeof html2canvas === 'undefined') {
-            throw new Error("html2canvas library missing");
-        }
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
         const isMobile = isMobileDevice();
         const scale = isMobile ? 1.5 : 2;
         const canvas = await html2canvas(contentEl, {
