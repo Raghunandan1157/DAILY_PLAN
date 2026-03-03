@@ -359,14 +359,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         state.dateTo = isoToday;
         state.systemDate = isoToday;
     }
-    // Load Persisted Range or Default to Today
-    if (!loadPersistedDateRange()) {
-        const today = new Date();
-        const isoToday = formatDateISO(today);
-        state.dateFrom = isoToday;
-        state.dateTo = isoToday;
-        state.systemDate = isoToday;
-    }
     const { headers, rows } = parseTSV(defaultTSVData);
     state.rawData = { headers, rows };
     state.fullTree = buildHierarchy(headers, rows);
@@ -905,9 +897,11 @@ function navigateDatePicker(delta) {
 
 // Fetch data for a date range (aggregates multiple days)
 // Core fetch and aggregate logic - Reusable
-async function fetchAndAggregateData(fromDate, toDate) {
-    let p1 = supabaseClient.from('daily_reports').select('*').gte('date', fromDate).lte('date', toDate);
-    let p2 = supabaseClient.from('daily_reports_achievements').select('*').gte('date', fromDate).lte('date', toDate);
+async function fetchAndAggregateData(fromDate, toDate, retryCount = 0) {
+    const MAX_RETRIES = 3;
+    const selectCols = 'branch_name,date,region,district,dm_name,ftod_actual,ftod_plan,nov_25_Slipped_Accounts_Actual,nov_25_Slipped_Accounts_Plan,pnpa_actual,pnpa_plan,npa_activation,npa_closure,fy_od_acc,fy_od_plan,fy_non_start_acc,fy_non_start_plan,disb_igl_acc,disb_igl_amt,disb_il_acc,disb_il_amt,kyc_fig_igl,kyc_il,kyc_npa';
+    let p1 = supabaseClient.from('daily_reports').select(selectCols).gte('date', fromDate).lte('date', toDate);
+    let p2 = supabaseClient.from('daily_reports_achievements').select(selectCols).gte('date', fromDate).lte('date', toDate);
 
     // DM optimization: only fetch branches assigned to this DM
     if (state.role === 'DM') {
@@ -918,35 +912,73 @@ async function fetchAndAggregateData(fromDate, toDate) {
         }
     }
 
-    const [resPlan, resAchieve] = await Promise.all([p1, p2]);
+    // Add timeout protection (mobile networks need longer)
+    let timeoutId;
+    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
+    const timeoutMs = isMobile ? 60000 : 45000; // Range queries fetch more data, allow extra time
+    const timeoutPromise = new Promise((_, reject) =>
+        timeoutId = setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+    );
 
-    if (resPlan.error || resAchieve.error) {
-        throw new Error(resPlan.error?.message || resAchieve.error?.message);
+    try {
+        const [resPlan, resAchieve] = await Promise.race([
+            Promise.all([p1, p2]),
+            timeoutPromise
+        ]);
+        clearTimeout(timeoutId);
+
+        if (resPlan.error || resAchieve.error) {
+            const errorMsg = resPlan.error?.message || resAchieve.error?.message;
+            const isNetworkError = errorMsg && (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('timeout'));
+            if (isNetworkError && retryCount < MAX_RETRIES) {
+                const delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
+                console.warn(`Range fetch error, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+                showToast(`Connection slow, retrying... (${retryCount + 1}/${MAX_RETRIES})`, 'warning');
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return fetchAndAggregateData(fromDate, toDate, retryCount + 1);
+            }
+            throw new Error(errorMsg);
+        }
+
+        // Aggregate data by branch
+        const aggregatedPlans = aggregateDataByBranch(resPlan.data || []);
+        const aggregatedAchievements = aggregateDataByBranch(resAchieve.data || []);
+
+        // Create Branch Details Map
+        const branchDetails = {};
+
+        aggregatedPlans.forEach(row => {
+            const br = row.branch_name;
+            if (!branchDetails[br]) branchDetails[br] = {};
+            branchDetails[br].target = row;
+        });
+
+        aggregatedAchievements.forEach(row => {
+            const br = row.branch_name;
+            if (!branchDetails[br]) branchDetails[br] = {};
+            branchDetails[br].achievement = row;
+        });
+
+        // Backfill missing achievement values with plan data when needed
+        mergeAchievementsWithPlan(branchDetails);
+
+        return branchDetails;
+    } catch (err) {
+        clearTimeout(timeoutId);
+        const isNetworkError = err.message && (
+            err.message.includes('Failed to fetch') ||
+            err.message.includes('timeout') ||
+            err.message.includes('NetworkError')
+        );
+        if (isNetworkError && retryCount < MAX_RETRIES) {
+            const delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
+            console.warn(`Range fetch timeout, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+            showToast(`Connection slow, retrying... (${retryCount + 1}/${MAX_RETRIES})`, 'warning');
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return fetchAndAggregateData(fromDate, toDate, retryCount + 1);
+        }
+        throw err;
     }
-
-    // Aggregate data by branch
-    const aggregatedPlans = aggregateDataByBranch(resPlan.data || []);
-    const aggregatedAchievements = aggregateDataByBranch(resAchieve.data || []);
-
-    // Create Branch Details Map
-    const branchDetails = {};
-
-    aggregatedPlans.forEach(row => {
-        const br = row.branch_name;
-        if (!branchDetails[br]) branchDetails[br] = {};
-        branchDetails[br].target = row;
-    });
-
-    aggregatedAchievements.forEach(row => {
-        const br = row.branch_name;
-        if (!branchDetails[br]) branchDetails[br] = {};
-        branchDetails[br].achievement = row;
-    });
-
-    // Backfill missing achievement values with plan data when needed
-    mergeAchievementsWithPlan(branchDetails);
-
-    return branchDetails;
 }
 
 // Fetch data for a date range (aggregates multiple days)
@@ -1124,18 +1156,21 @@ async function fetchSupabaseData(retryCount = 0, skipRender = false) {
 
     try {
         // Parallel Fetch with timeout for reliability
+        // Mobile networks (especially Android on cellular) need longer timeouts
         let timeoutId;
-        const timeoutMs = state.role === 'DM' ? 15000 : 30000; // DM fetches less data, shorter timeout
+        const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
+        const timeoutMs = isMobile ? 45000 : 30000; // 45s mobile, 30s desktop
         const timeout = new Promise((_, reject) =>
             timeoutId = setTimeout(() => {
-                console.error("fetchSupabaseData: Timeout triggered");
+                console.error("fetchSupabaseData: Timeout triggered after " + timeoutMs + "ms");
                 reject(new Error('Request timeout'));
             }, timeoutMs)
         );
 
         // DM optimization: only fetch branches assigned to this DM
-        let p1 = supabaseClient.from('daily_reports').select('*').eq('date', targetDate);
-        let p2 = supabaseClient.from('daily_reports_achievements').select('*').eq('date', targetDate);
+        const selectCols = 'branch_name,date,region,district,dm_name,ftod_actual,ftod_plan,nov_25_Slipped_Accounts_Actual,nov_25_Slipped_Accounts_Plan,pnpa_actual,pnpa_plan,npa_activation,npa_closure,fy_od_acc,fy_od_plan,fy_non_start_acc,fy_non_start_plan,disb_igl_acc,disb_igl_amt,disb_il_acc,disb_il_amt,kyc_fig_igl,kyc_il,kyc_npa';
+        let p1 = supabaseClient.from('daily_reports').select(selectCols).eq('date', targetDate);
+        let p2 = supabaseClient.from('daily_reports_achievements').select(selectCols).eq('date', targetDate);
 
         if (state.role === 'DM') {
             const dmBranches = getDMBranches();
@@ -1455,6 +1490,8 @@ function handleLogin(role) {
         user = document.getElementById("dmSelect").value;
         if (!user) return alert("Please select a manager.");
         state.role = 'DM';
+        // Remember selected DM for next visit
+        localStorage.setItem('nlpl_last_dm', user);
     }
     state.currentUser = user;
 
@@ -5394,6 +5431,12 @@ function populateDMDropdown(rows, headers) {
         opt.value = dm; opt.textContent = dm;
         sel.appendChild(opt);
     });
+
+    // Auto-select last used DM from localStorage
+    const savedDM = localStorage.getItem('nlpl_last_dm');
+    if (savedDM && Array.from(dms).includes(savedDM)) {
+        sel.value = savedDM;
+    }
 }
 
 function getDMNode() {
