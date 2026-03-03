@@ -1219,13 +1219,13 @@ async function fetchSupabaseData(retryCount = 0, skipRender = false) {
     console.log("fetchSupabaseData: Starting for date " + targetDate + (retryCount > 0 ? ` (retry ${retryCount}/${MAX_RETRIES})` : ''));
 
     // Show cached data instantly while we fetch fresh data from network
+    const hasCachedData = retryCount === 0 && !!getCachedData(cacheKey);
     if (retryCount === 0) {
-        const cached = getCachedData(cacheKey);
-        if (cached) {
+        if (hasCachedData) {
             console.log("fetchSupabaseData: Showing cached data for " + cacheKey);
-            state.branchDetails = cached;
+            state.branchDetails = getCachedData(cacheKey);
             if (!skipRender) renderDashboard();
-            setLoading(true, 'Refreshing...');
+            setLoading(false); // Don't block UI — user already sees data
         } else {
             setLoading(true, 'Loading data...');
         }
@@ -1272,6 +1272,13 @@ async function fetchSupabaseData(retryCount = 0, skipRender = false) {
             const errorMsg = resPlan.error?.message || resAchieve.error?.message || 'Unknown error';
             const isNetworkError = errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('timeout');
 
+            // If user already sees cached data, don't retry — just warn
+            if (hasCachedData) {
+                console.warn('fetchSupabaseData: Network error but cache shown, skipping retries');
+                showToast('Showing cached data. Could not refresh from server.', 'warning');
+                return;
+            }
+
             if (isNetworkError && retryCount < MAX_RETRIES) {
                 const delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
                 console.warn(`Fetch network error, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
@@ -1317,12 +1324,18 @@ async function fetchSupabaseData(retryCount = 0, skipRender = false) {
     } catch (err) {
         console.error("Fetch Error:", err);
 
-        // Retry on network/timeout errors
+        // Retry on network/timeout errors — but skip retries if cache already shown
         const isNetworkError = err.message && (
             err.message.includes('Failed to fetch') ||
             err.message.includes('timeout') ||
             err.message.includes('NetworkError')
         );
+
+        if (hasCachedData) {
+            console.warn('fetchSupabaseData: Timeout but cache shown, skipping retries');
+            showToast('Showing cached data. Could not refresh from server.', 'warning');
+            return;
+        }
 
         if (isNetworkError && retryCount < MAX_RETRIES) {
             const delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
@@ -1332,12 +1345,7 @@ async function fetchSupabaseData(retryCount = 0, skipRender = false) {
             return fetchSupabaseData(retryCount + 1, skipRender);
         }
 
-        // If we already showed cached data, just warn instead of blocking
-        if (getCachedData(cacheKey)) {
-            showToast('Showing cached data. Could not refresh from server.', 'warning');
-        } else {
-            showToast('Connection error. Please check your network and try again.', 'alert');
-        }
+        showToast('Connection error. Please check your network and try again.', 'alert');
     } finally {
         console.log("fetchSupabaseData: Entering finally, calling setLoading(false)");
         setLoading(false);
